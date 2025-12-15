@@ -1,25 +1,49 @@
 import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 
-// phaseHistory から Gemini に渡すプロンプト文字列を生成
-export function buildPhasePrompt(phaseHistory) {
-    const dataStr = JSON.stringify(phaseHistory.slice(-15)); // 直近15回分を送る
+// phaseHistory と統計情報から Gemini に渡すプロンプト文字列を生成
+export function buildPhasePrompt(phaseHistory, globalStats) {
+    const phaseSlice = Array.isArray(phaseHistory)
+        ? phaseHistory.slice(-30)
+        : [];
+    const phaseStr = JSON.stringify(phaseSlice);
+    const statsStr = globalStats
+        ? JSON.stringify(globalStats)
+        : '{}';
 
     return `
 あなたはカオス理論と統計学の専門家です。
 ナンバーズ3の当選番号を正弦波モデルで解析し、各回において「正解を出すために必要だった位相パラメータ(optimalPhase)」を逆算しました。
 
-以下はその「最適位相パラメータ」の推移データです：
-${dataStr}
+以下はその「最適位相パラメータ」の推移データ（直近30回）です：
+${phaseStr}
 
 データフォーマット: {"date":日付, "actual":実際の当選数字, "optimalPhase":その時の最適位相}
 
+さらに、約7000件分の全履歴から集計した統計サマリJSONを渡します:
+${statsStr}
+
+統計サマリの内容（例）:
+- totalCount: データ件数
+- digitFreqByPos: 各桁(百/十/一)ごとの 0〜9 出現頻度
+- transitionMatrixByPos: 各桁ごとの「前回の数字→今回の数字」の遷移頻度（簡易マルコフ連鎖）
+- topCombos: 頻出3桁コンボの上位20件
+- last10Numbers: 直近10回分のフルナンバー（例: "191"）
+
 指令:
 1. 位相(optimalPhase)の変動パターン（上昇トレンド、周期性、急激な変化など）を分析してください。
-2. 次回（未来）の「最適位相」を予測してください。
-3. その予測された位相を数式に代入し、「次回の当選が期待される3桁の数字」を<strong>3パターン</strong>提示してください（例: 123, 456, 789）。
+2. digitFreqByPos と transitionMatrixByPos、topCombos、last10Numbers を組み合わせて、
+   - 単純頻度
+   - 遷移確率（マルコフ連鎖的な観点）
+   - 直近トレンド（hot/cold 数字）
+   を総合的に評価してください。
+3. 1と2の結果を統合し、「次回の当選が統計的に期待される3桁の数字」を<strong>3パターン</strong>提示してください（例: 123, 456, 789）。
+   それぞれについて、なぜ有力だと判断したのかを、上記の統計的根拠（頻度、遷移、直近トレンドなど）と
+   位相モデルの両方から簡潔に説明してください。
 
 回答形式:
-簡単な分析コメントと、最終的な「予測3桁数字：A, B, C」のように3パターンを提示してください。
+1. 分析コメント（位相モデル + 統計モデルの両方の観点）
+2. 最終的な「予測3桁数字：A, B, C」のように、3パターンを明示してください。
+   可能であれば「第1候補」「第2候補」「第3候補」のように、有力度の序列も添えてください。
 `;
 }
 
@@ -32,7 +56,8 @@ export function estimateTokensForPrompt(prompt) {
 
 // Gemini に問い合わせ
 // modelName には "gemini-1.5-flash" などを指定（未指定時はローカルストレージ or デフォルトを使用）
-export async function askGemini(apiKey, phaseHistory, modelName) {
+// globalStats には MathEngine.getGlobalStats() の結果を渡す
+export async function askGemini(apiKey, phaseHistory, modelName, globalStats) {
     if (!apiKey) throw new Error("API Keyが必要です");
 
     const genAI = new GoogleGenerativeAI(apiKey);
@@ -43,7 +68,7 @@ export async function askGemini(apiKey, phaseHistory, modelName) {
 
     const model = genAI.getGenerativeModel({ model: selectedModel });
 
-    const prompt = buildPhasePrompt(phaseHistory);
+    const prompt = buildPhasePrompt(phaseHistory, globalStats);
 
     const result = await model.generateContent(prompt);
     return result.response.text();

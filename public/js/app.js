@@ -18,6 +18,7 @@ const recentSummaryBody = document.getElementById('recentSummaryBody');
 
 let engine = null;
 let analysisResult = null;
+let analysisStats = null;
 
 // APIキー管理
 saveKeyBtn.addEventListener('click', () => {
@@ -138,6 +139,8 @@ analyzeBtn.addEventListener('click', async () => {
         
         // 例として「百の位(index 0)」を解析
         analysisResult = engine.calculatePhaseTrend(0);
+        // 全履歴を使った統計サマリ
+        analysisStats = engine.getGlobalStats();
         
         // チャート描画
         drawChart(analysisResult);
@@ -162,7 +165,7 @@ analyzeBtn.addEventListener('click', async () => {
 
         // プロンプト長から推定トークン数を計算し表示
         if (tokenEstimate && analysisResult && analysisResult.length) {
-            const prompt = buildPhasePrompt(analysisResult);
+            const prompt = buildPhasePrompt(analysisResult, analysisStats);
             const estTokens = estimateTokensForPrompt(prompt);
             tokenEstimate.innerText = `推定プロンプト長: 約 ${estTokens.toLocaleString()} トークン`;
         }
@@ -189,7 +192,7 @@ predictBtn.addEventListener('click', async () => {
         : (localStorage.getItem('gemini_model') || 'gemini-1.5-flash');
 
     try {
-        const response = await askGemini(key, analysisResult, modelName);
+        const response = await askGemini(key, analysisResult, modelName, analysisStats);
         output.innerText = response;
     } catch (e) {
         output.innerText = "Error: " + e.message;
