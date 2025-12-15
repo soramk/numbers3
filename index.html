@@ -4,7 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Numbers3 Neural Equation Solver</title>
-    <link rel="stylesheet" href="styles.css">
+    <!-- ルートに移動したため、assets を public/ パスに修正 -->
+    <link rel="stylesheet" href="public/styles.css">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
@@ -21,6 +22,17 @@
             <section class="card">
                 <h2>1. Historical Analysis & Reverse Engineering</h2>
                 <p>過去データから「当選数字を導き出すための方程式（係数）」を逆算し、その推移を解析します。</p>
+
+                <div style="margin-bottom:10px; font-size:0.85rem;">
+                    <p style="margin:0 0 4px 0; opacity:0.9;">① <code>public/data.json</code> のデータを使う</p>
+                    <p style="margin:0 0 4px 0; opacity:0.9;">② または、下のテキストエリアに次の形式で貼り付けて解析:</p>
+                    <pre style="margin:4px 0 6px 0; padding:6px; background:#000; border-radius:4px; font-size:0.8rem;">
+0001	1994-10-07	191
+0002	1994-10-14	988
+0003	1994-10-21	194</pre>
+                    <textarea id="manualDataInput" placeholder="回号[TAB]YYYY-MM-DD[TAB]当選番号(3桁) ..." style="width:100%; min-height:70px; padding:6px; box-sizing:border-box; font-size:0.8rem;"></textarea>
+                </div>
+
                 <button id="analyzeBtn" class="primary-btn">データ解析・逆算開始</button>
                 <div class="chart-container">
                     <canvas id="coeffChart"></canvas>
@@ -40,6 +52,7 @@
         </main>
     </div>
 
-    <script type="module" src="js/app.js"></script>
+    <!-- JSも public/ 配下から読み込む -->
+    <script type="module" src="public/js/app.js"></script>
 </body>
 </html>

@@ -8,6 +8,7 @@ const analyzeBtn = document.getElementById('analyzeBtn');
 const predictBtn = document.getElementById('predictBtn');
 const output = document.getElementById('output');
 const resultArea = document.getElementById('resultArea');
+const manualDataInput = document.getElementById('manualDataInput');
 
 let engine = null;
 let analysisResult = null;
@@ -19,12 +20,44 @@ saveKeyBtn.addEventListener('click', () => {
 });
 apiKeyInput.value = localStorage.getItem('gemini_api_key') || '';
 
+// テキストエリアから TSV 形式をパース
+function parseManualData(text) {
+    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
+    const records = [];
+
+    for (const line of lines) {
+        // タブ or 空白区切りを許可
+        const parts = line.split(/[\t ]+/);
+        if (parts.length < 3) continue;
+        const date = parts[1];
+        const num = parts[2];
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
+        if (!/^\d{3}$/.test(num)) continue;
+        records.push({ date, num });
+    }
+
+    return records;
+}
+
 // データロードと解析実行
 analyzeBtn.addEventListener('click', async () => {
     try {
-        // data.jsonをfetch
-        const response = await fetch('data.json');
-        const data = await response.json();
+        let data;
+
+        // 手入力データがある場合はそちらを優先
+        const manualText = (manualDataInput && manualDataInput.value.trim()) ? manualDataInput.value.trim() : '';
+        if (manualText) {
+            const parsed = parseManualData(manualText);
+            if (!parsed.length) {
+                alert('手入力データの形式が正しくありません。例の形式に従ってください。');
+                return;
+            }
+            data = parsed;
+        } else {
+            // ルート index.html から見ると data.json は public/ 配下
+            const response = await fetch('public/data.json');
+            data = await response.json();
+        }
         
         engine = new MathEngine(data);
         
