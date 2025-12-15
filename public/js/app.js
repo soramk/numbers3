@@ -1,5 +1,5 @@
 import { MathEngine } from './math_engine.js';
-import { askGemini } from './gemini_api.js';
+import { askGemini, buildPhasePrompt, estimateTokensForPrompt } from './gemini_api.js';
 
 // DOM要素
 const apiKeyInput = document.getElementById('apiKey');
@@ -9,6 +9,10 @@ const predictBtn = document.getElementById('predictBtn');
 const output = document.getElementById('output');
 const resultArea = document.getElementById('resultArea');
 const manualDataInput = document.getElementById('manualDataInput');
+const fetchModelsBtn = document.getElementById('fetchModelsBtn');
+const modelSelect = document.getElementById('modelSelect');
+const modelInfo = document.getElementById('modelInfo');
+const tokenEstimate = document.getElementById('tokenEstimate');
 
 let engine = null;
 let analysisResult = null;
@@ -19,6 +23,75 @@ saveKeyBtn.addEventListener('click', () => {
     alert('API Keyを保存しました');
 });
 apiKeyInput.value = localStorage.getItem('gemini_api_key') || '';
+
+// Geminiモデル一覧を取得してセレクトに反映
+async function fetchModels() {
+    const key = apiKeyInput.value || localStorage.getItem('gemini_api_key');
+    if (!key) {
+        alert('先に Gemini API Key を入力して保存してください。');
+        return;
+    }
+    try {
+        if (modelInfo) {
+            modelInfo.innerText = 'モデル一覧を取得中...';
+        }
+        const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${encodeURIComponent(key)}`);
+        if (!res.ok) {
+            throw new Error(`HTTP ${res.status} ${res.statusText}`);
+        }
+        const data = await res.json();
+        if (data.error) {
+            throw new Error(data.error.message || 'APIエラー');
+        }
+        const models = (data.models || []).filter(m =>
+            m.supportedGenerationMethods?.includes('generateContent')
+        );
+        if (!models.length) {
+            throw new Error('generateContent に対応したモデルが見つかりませんでした。');
+        }
+        if (modelSelect) {
+            modelSelect.innerHTML = '';
+            models.forEach(m => {
+                const opt = document.createElement('option');
+                // name は "models/gemini-1.5-flash" 形式なので末尾だけを使う
+                const shortName = m.name.replace('models/', '');
+                opt.value = shortName;
+                opt.textContent = m.displayName || shortName;
+                modelSelect.appendChild(opt);
+            });
+            // 保存済みモデルがあれば選択
+            const saved = localStorage.getItem('gemini_model');
+            if (saved && Array.from(modelSelect.options).some(o => o.value === saved)) {
+                modelSelect.value = saved;
+            }
+        }
+        if (modelInfo) {
+            modelInfo.innerText = 'モデル一覧の取得に成功しました。';
+        }
+    } catch (e) {
+        console.error(e);
+        if (modelInfo) {
+            modelInfo.innerText = 'モデル取得エラー: ' + (e.message || e);
+        } else {
+            alert('モデル取得エラー: ' + (e.message || e));
+        }
+    }
+}
+
+if (fetchModelsBtn) {
+    fetchModelsBtn.addEventListener('click', fetchModels);
+}
+
+if (modelSelect) {
+    // 初期値の復元
+    const savedModel = localStorage.getItem('gemini_model');
+    if (savedModel) {
+        modelSelect.value = savedModel;
+    }
+    modelSelect.addEventListener('change', () => {
+        localStorage.setItem('gemini_model', modelSelect.value);
+    });
+}
 
 // テキストエリアから TSV 形式をパース
 function parseManualData(text) {
@@ -66,6 +139,13 @@ analyzeBtn.addEventListener('click', async () => {
         
         // チャート描画
         drawChart(analysisResult);
+
+        // プロンプト長から推定トークン数を計算し表示
+        if (tokenEstimate && analysisResult && analysisResult.length) {
+            const prompt = buildPhasePrompt(analysisResult);
+            const estTokens = estimateTokensForPrompt(prompt);
+            tokenEstimate.innerText = `推定プロンプト長: 約 ${estTokens.toLocaleString()} トークン`;
+        }
         
         predictBtn.disabled = false;
         alert('解析完了。係数の推移グラフを表示しました。');
@@ -83,8 +163,13 @@ predictBtn.addEventListener('click', async () => {
     resultArea.classList.remove('hidden');
     output.innerText = "Geminiが思考中... 数式のゆらぎを解析しています...";
 
+    // 選択中のモデル名
+    const modelName = modelSelect && modelSelect.value
+        ? modelSelect.value
+        : (localStorage.getItem('gemini_model') || 'gemini-1.5-flash');
+
     try {
-        const response = await askGemini(key, analysisResult);
+        const response = await askGemini(key, analysisResult, modelName);
         output.innerText = response;
     } catch (e) {
         output.innerText = "Error: " + e.message;
