@@ -8,16 +8,50 @@ const analyzeBtn = document.getElementById('analyzeBtn');
 const predictBtn = document.getElementById('predictBtn');
 const output = document.getElementById('output');
 const resultArea = document.getElementById('resultArea');
+const savePredictionBtn = document.getElementById('savePredictionBtn');
 const fetchModelsBtn = document.getElementById('fetchModelsBtn');
 const modelSelect = document.getElementById('modelSelect');
 const modelInfo = document.getElementById('modelInfo');
 const tokenEstimate = document.getElementById('tokenEstimate');
 const recentSummaryBox = document.getElementById('recentSummary');
 const recentSummaryBody = document.getElementById('recentSummaryBody');
+const historyArea = document.getElementById('historyArea');
+const historyBody = document.getElementById('historyBody');
+const exportHistoryBtn = document.getElementById('exportHistoryBtn');
 
 let engine = null;
 let analysisResult = null;
 let analysisStats = null;
+let predictionHistory = [];
+
+// 予測履歴の読み込み
+try {
+    const raw = localStorage.getItem('numbers3_prediction_history');
+    if (raw) {
+        predictionHistory = JSON.parse(raw);
+    }
+} catch (e) {
+    predictionHistory = [];
+}
+
+function renderHistory() {
+    if (!historyArea || !historyBody) return;
+    if (!predictionHistory.length) {
+        historyArea.classList.add('hidden');
+        historyBody.textContent = '';
+        return;
+    }
+    historyArea.classList.remove('hidden');
+    let text = '';
+    predictionHistory.forEach((item, idx) => {
+        text += `#${idx + 1}  [${item.timestamp}]  model=${item.model}\n`;
+        text += item.text.trim() + '\n';
+        text += '----------------------------------------\n';
+    });
+    historyBody.textContent = text;
+}
+
+renderHistory();
 
 // APIキー管理
 saveKeyBtn.addEventListener('click', () => {
@@ -161,10 +195,72 @@ predictBtn.addEventListener('click', async () => {
     try {
         const response = await askGemini(key, analysisResult, modelName, analysisStats);
         output.innerText = response;
+        if (savePredictionBtn) {
+            savePredictionBtn.disabled = false;
+            savePredictionBtn.dataset.model = modelName;
+        }
     } catch (e) {
         output.innerText = "Error: " + e.message;
     }
 });
+
+// 予測結果の保存
+if (savePredictionBtn) {
+    savePredictionBtn.addEventListener('click', () => {
+        const text = output ? output.innerText : '';
+        if (!text || text.trim().length === 0) {
+            alert('保存できる予測結果がありません。先に「Geminiに予測させる」を実行してください。');
+            return;
+        }
+        const modelName = savePredictionBtn.dataset.model || (modelSelect && modelSelect.value) || 'unknown';
+        const now = new Date();
+        const ts = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        predictionHistory.unshift({
+            timestamp: ts,
+            model: modelName,
+            text
+        });
+        // 履歴が増えすぎないように直近50件までに制限
+        if (predictionHistory.length > 50) {
+            predictionHistory = predictionHistory.slice(0, 50);
+        }
+        localStorage.setItem('numbers3_prediction_history', JSON.stringify(predictionHistory));
+        renderHistory();
+        alert('予測結果を保存しました。');
+    });
+}
+
+// 履歴エクスポート（テキストファイル）
+if (exportHistoryBtn) {
+    exportHistoryBtn.addEventListener('click', () => {
+        if (!predictionHistory.length) {
+            alert('エクスポートできる履歴がありません。');
+            return;
+        }
+        let text = 'Numbers3 Prediction History\n';
+        text += '========================================\n\n';
+        predictionHistory.forEach((item, idx) => {
+            text += `#${idx + 1}  [${item.timestamp}]  model=${item.model}\n`;
+            text += item.text.trim() + '\n';
+            text += '----------------------------------------\n';
+        });
+        const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const d = String(now.getDate()).padStart(2, '0');
+        const hh = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        a.href = url;
+        a.download = `numbers3_predictions_${y}${m}${d}_${hh}${mm}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    });
+}
 
 // Chart.jsによるグラフ描画
 function drawChart(data) {

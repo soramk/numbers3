@@ -49,11 +49,26 @@
                 <div id="resultArea" class="result-box hidden">
                     <h3>Prediction Result</h3>
                     <div id="output" class="console-text"></div>
+                    <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+                        <button id="savePredictionBtn" class="secondary-btn" style="width:auto; padding:6px 14px; font-size:0.8rem;">この予測結果を保存</button>
+                    </div>
                 </div>
             </section>
 
             <section class="card">
-                <h2>3. このツールで使っている分析手法</h2>
+                <h2>3. Prediction History</h2>
+                <p>保存した予測結果の履歴です。日付・時刻とともに、そのときのAIの出力を一覧できます（ブラウザのローカルに保存されます）。</p>
+                <div id="historyArea" class="result-box hidden">
+                    <h3>Saved Predictions</h3>
+                    <div id="historyBody" class="console-text"></div>
+                    <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+                        <button id="exportHistoryBtn" class="secondary-btn" style="width:auto; padding:6px 14px; font-size:0.8rem;">履歴をファイルにエクスポート</button>
+                    </div>
+                </div>
+            </section>
+
+            <section class="card">
+                <h2>4. このツールで使っている分析手法</h2>
                 <p>内部では、物理モデル・統計モデル・AIによる推論を組み合わせて、次回の当選3桁を推定しています。</p>
                 <ul class="method-list">
                     <li><strong>波動方程式による位相解析</strong>：各回の当選3桁を、簡易的な正弦波モデル（時間 t と位相 Phase を持つ関数）で説明できるようにし、各桁ごとに「その回に最適だった位相」を逆算します。</li>
