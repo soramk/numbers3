@@ -11,6 +11,7 @@ export class MathEngine {
     }
 
     // 1つの位（例: 百の位）に対して、最適な「位相(Phase)」の推移を逆算する
+    // （現在は主にデバッグ用途で使用。3桁同時解析には calculatePhaseTrendAll を利用。）
     calculatePhaseTrend(digitType, windowSize = 30) {
         const history = [];
         
@@ -47,21 +48,67 @@ export class MathEngine {
     }
 
     /**
-     * 直近N回分について、「実際の数字」と「その回に最適化された方程式が出す数字」を並べて確認できるサマリを返す。
-     * ユーザー自身の予想と見比べて、どのようなゆらぎ方程式になっているかを反芻しやすくする用途。
+     * 3桁すべての位について、直近 windowSize 回分の最適位相を逆算する。
+     * 各レコードごとに digits[3], optimalPhases[3] を持つ構造を返す。
      */
-    getRecentEquationSummary(digitType = 0, count = 10) {
-        const trend = this.calculatePhaseTrend(digitType, count);
+    calculatePhaseTrendAll(windowSize = 30) {
+        const history = [];
+        const recentData = this.data.slice(-windowSize);
+
+        recentData.forEach((record, index) => {
+            const time = index;
+            const numStr = String(record.num).padStart(3, '0');
+            const digits = [
+                parseInt(numStr[0], 10),
+                parseInt(numStr[1], 10),
+                parseInt(numStr[2], 10)
+            ];
+
+            const optimalPhases = [];
+
+            // 各桁ごとに最適位相を探索
+            digits.forEach(target => {
+                let bestPhase = 0;
+                let minError = Infinity;
+                for (let p = 0; p < 6.28; p += 0.1) {
+                    const prediction = Math.floor(5 * Math.sin(0.5 * time + p) + 5) % 10;
+                    const error = Math.abs(target - prediction);
+                    if (error < minError) {
+                        minError = error;
+                        bestPhase = p;
+                    }
+                }
+                optimalPhases.push(parseFloat(bestPhase.toFixed(2)));
+            });
+
+            history.push({
+                date: record.date,
+                num3: numStr,
+                digits,
+                optimalPhases,
+                timeIndex: time
+            });
+        });
+
+        return history;
+    }
+
+    /**
+     * 直近N回分について、3桁の実際の数字と、各桁ごとに最適化した方程式の出力3桁を並べるサマリ。
+     */
+    getRecentEquationSummaryAll(count = 30) {
+        const trend = this.calculatePhaseTrendAll(count);
         return trend.map(entry => {
             const t = entry.timeIndex;
-            // 解析に用いている簡易モデルと同じ式
-            // y = floor( 5 * sin( 0.5 * t + Phase ) + 5 ) mod 10
-            const modelValue = Math.floor(5 * Math.sin(0.5 * t + entry.optimalPhase) + 5) % 10;
+            const modelDigits = entry.optimalPhases.map(phase => {
+                // 各桁の位相に対するモデル値
+                return Math.floor(5 * Math.sin(0.5 * t + phase) + 5) % 10;
+            });
             return {
                 date: entry.date,
-                actual: entry.actual,
-                optimalPhase: entry.optimalPhase,
-                modelValue
+                actual3: entry.num3,
+                model3: modelDigits.join(''),
+                phases: entry.optimalPhases
             };
         });
     }

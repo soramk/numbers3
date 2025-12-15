@@ -8,7 +8,6 @@ const analyzeBtn = document.getElementById('analyzeBtn');
 const predictBtn = document.getElementById('predictBtn');
 const output = document.getElementById('output');
 const resultArea = document.getElementById('resultArea');
-const manualDataInput = document.getElementById('manualDataInput');
 const fetchModelsBtn = document.getElementById('fetchModelsBtn');
 const modelSelect = document.getElementById('modelSelect');
 const modelInfo = document.getElementById('modelInfo');
@@ -96,69 +95,37 @@ if (modelSelect) {
     });
 }
 
-// テキストエリアから TSV 形式をパース
-function parseManualData(text) {
-    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l);
-    const records = [];
-
-    for (const line of lines) {
-        // タブ or 空白区切りを許可
-        const parts = line.split(/[\t ]+/);
-        if (parts.length < 3) continue;
-        const date = parts[1];
-        const num = parts[2];
-        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
-        if (!/^\d{3}$/.test(num)) continue;
-        records.push({ date, num });
-    }
-
-    return records;
-}
-
 // データロードと解析実行
 analyzeBtn.addEventListener('click', async () => {
     try {
-        let data;
-
-        // 手入力データがある場合はそちらを優先
-        const manualText = (manualDataInput && manualDataInput.value.trim()) ? manualDataInput.value.trim() : '';
-        if (manualText) {
-            const parsed = parseManualData(manualText);
-            if (!parsed.length) {
-                alert('手入力データの形式が正しくありません。例の形式に従ってください。');
-                return;
-            }
-            data = parsed;
-        } else {
-            // ルート index.html から見ると data.json は public/ 配下
-            const response = await fetch('public/data.json');
-            data = await response.json();
-        }
+        // ルート index.html から見ると data.json は public/ 配下
+        const response = await fetch('public/data.json');
+        const data = await response.json();
         
         engine = new MathEngine(data);
         
-        // 例として「百の位(index 0)」を解析
-        analysisResult = engine.calculatePhaseTrend(0);
+        // 3桁すべての位について、直近30回分の最適位相を逆算
+        analysisResult = engine.calculatePhaseTrendAll(30);
         // 全履歴を使った統計サマリ
         analysisStats = engine.getGlobalStats();
         
         // チャート描画
         drawChart(analysisResult);
 
-        // 直近10回について、モデルが出す数字と実際の数字を並べて表示
+        // 直近30回について、3桁のモデル出力と実際の3桁数字を並べて表示
         if (recentSummaryBox && recentSummaryBody) {
-            const summary = engine.getRecentEquationSummary(0, 10);
+            const summary = engine.getRecentEquationSummaryAll(30);
             let text = '';
-            text += '日付        実際  方程式の出力  位相\n';
-            text += '--------------------------------------\n';
+            text += '日付        実際(3桁)  方程式(3桁)   位相(百,十,一)\n';
+            text += '---------------------------------------------------\n';
             summary.forEach(row => {
                 const dateStr = row.date;
-                const actualStr = String(row.actual);
-                const modelStr = String(row.modelValue);
-                const phaseStr = row.optimalPhase.toFixed(2);
-                text += `${dateStr}   ${actualStr}    ${modelStr}         ${phaseStr}\n`;
+                const actualStr = String(row.actual3);
+                const modelStr = String(row.model3);
+                const phaseStr = `(${row.phases[0].toFixed(2)},${row.phases[1].toFixed(2)},${row.phases[2].toFixed(2)})`;
+                text += `${dateStr}   ${actualStr}      ${modelStr}        ${phaseStr}\n`;
             });
-            text += '\n※ 方程式: y = floor( 5 * sin( 0.5 * t + Phase ) + 5 ) mod 10';
+            text += '\n※ 各桁の方程式: y = floor( 5 * sin( 0.5 * t + Phase_pos ) + 5 ) mod 10';
             recentSummaryBody.textContent = text;
             recentSummaryBox.classList.remove('hidden');
         }
@@ -203,8 +170,9 @@ predictBtn.addEventListener('click', async () => {
 function drawChart(data) {
     const ctx = document.getElementById('coeffChart').getContext('2d');
     const labels = data.map(d => d.date.slice(5)); // 月日のみ
-    const phases = data.map(d => d.optimalPhase);
-    const actuals = data.map(d => d.actual);
+    // グラフは代表として「百の位」の位相と数字を表示
+    const phases = data.map(d => d.optimalPhases[0]);
+    const actuals = data.map(d => d.digits[0]);
 
     new Chart(ctx, {
         type: 'line',
