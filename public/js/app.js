@@ -13,6 +13,8 @@ const fetchModelsBtn = document.getElementById('fetchModelsBtn');
 const modelSelect = document.getElementById('modelSelect');
 const modelInfo = document.getElementById('modelInfo');
 const tokenEstimate = document.getElementById('tokenEstimate');
+const recentSummaryBox = document.getElementById('recentSummary');
+const recentSummaryBody = document.getElementById('recentSummaryBody');
 
 let engine = null;
 let analysisResult = null;
@@ -139,6 +141,24 @@ analyzeBtn.addEventListener('click', async () => {
         
         // チャート描画
         drawChart(analysisResult);
+
+        // 直近10回について、モデルが出す数字と実際の数字を並べて表示
+        if (recentSummaryBox && recentSummaryBody) {
+            const summary = engine.getRecentEquationSummary(0, 10);
+            let text = '';
+            text += '日付        実際  方程式の出力  位相\n';
+            text += '--------------------------------------\n';
+            summary.forEach(row => {
+                const dateStr = row.date;
+                const actualStr = String(row.actual);
+                const modelStr = String(row.modelValue);
+                const phaseStr = row.optimalPhase.toFixed(2);
+                text += `${dateStr}   ${actualStr}    ${modelStr}         ${phaseStr}\n`;
+            });
+            text += '\n※ 方程式: y = floor( 5 * sin( 0.5 * t + Phase ) + 5 ) mod 10';
+            recentSummaryBody.textContent = text;
+            recentSummaryBox.classList.remove('hidden');
+        }
 
         // プロンプト長から推定トークン数を計算し表示
         if (tokenEstimate && analysisResult && analysisResult.length) {
