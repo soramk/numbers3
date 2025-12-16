@@ -95,15 +95,51 @@ export class MathEngine {
 
     /**
      * 直近N回分について、3桁の実際の数字と、各桁ごとに最適化した方程式の出力3桁を並べるサマリ。
+     * 注意: 各回の「モデル予測値」は、その回の実際の数字から逆算した位相を使うのではなく、
+     * 前回までの位相の推移から予測した位相を使って計算する。
      */
     getRecentEquationSummaryAll(count = 30) {
         const trend = this.calculatePhaseTrendAll(count);
-        return trend.map(entry => {
+        return trend.map((entry, idx) => {
             const t = entry.timeIndex;
-            const modelDigits = entry.optimalPhases.map(phase => {
-                // 各桁の位相に対するモデル値
-                return Math.floor(5 * Math.sin(0.5 * t + phase) + 5) % 10;
-            });
+            let modelDigits;
+            
+            if (idx === 0) {
+                // 最初の回は、その回の位相を使って計算（比較用）
+                modelDigits = entry.optimalPhases.map(phase => {
+                    return Math.floor(5 * Math.sin(0.5 * t + phase) + 5) % 10;
+                });
+            } else {
+                // 2回目以降は、前回までの位相の推移から予測した位相を使う
+                // 簡易的な予測: 前回の位相に、前回と前々回の位相差を加える（線形外挿）
+                const prevEntry = trend[idx - 1];
+                let predictedPhases;
+                
+                if (idx === 1) {
+                    // 2回目は前回の位相をそのまま使う
+                    predictedPhases = prevEntry.optimalPhases;
+                } else {
+                    // 3回目以降は、前回と前々回の位相差を加えて予測
+                    const prevPrevEntry = trend[idx - 2];
+                    predictedPhases = entry.optimalPhases.map((_, pos) => {
+                        const prevPhase = prevEntry.optimalPhases[pos];
+                        const prevPrevPhase = prevPrevEntry.optimalPhases[pos];
+                        const phaseDiff = prevPhase - prevPrevPhase;
+                        // 位相の差分を加えて予測（0-2πの範囲に正規化）
+                        let predicted = prevPhase + phaseDiff;
+                        // 0-2πの範囲に正規化
+                        while (predicted < 0) predicted += 6.28;
+                        while (predicted >= 6.28) predicted -= 6.28;
+                        return predicted;
+                    });
+                }
+                
+                // 予測された位相を使ってモデル値を計算
+                modelDigits = predictedPhases.map(phase => {
+                    return Math.floor(5 * Math.sin(0.5 * t + phase) + 5) % 10;
+                });
+            }
+            
             return {
                 date: entry.date,
                 actual3: entry.num3,
