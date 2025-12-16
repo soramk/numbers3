@@ -261,7 +261,10 @@ predictBtn.addEventListener('click', async () => {
         : (localStorage.getItem('gemini_model') || 'gemini-2.5-flash');
 
     try {
-        const response = await askGemini(key, analysisResult, modelName, analysisStats);
+        // 500回分のデータを明示的に渡す
+        const promptData = analysisResult ? analysisResult.slice(-500) : [];
+        console.log(`[predictBtn] プロンプトに渡すデータ件数: ${promptData.length}`);
+        const response = await askGemini(key, promptData, modelName, analysisStats);
         output.innerText = response;
         if (savePredictionBtn) {
             savePredictionBtn.disabled = false;

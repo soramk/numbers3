@@ -2,9 +2,12 @@ import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 
 // phaseHistory と統計情報から Gemini に渡すプロンプト文字列を生成
 export function buildPhasePrompt(phaseHistory, globalStats) {
+    // phaseHistoryが既に500回分にスライスされている場合はそのまま使用
+    // そうでない場合は最後の500回を取得
     const phaseSlice = Array.isArray(phaseHistory)
-        ? phaseHistory.slice(-500)
+        ? (phaseHistory.length > 500 ? phaseHistory.slice(-500) : phaseHistory)
         : [];
+    console.log(`[buildPhasePrompt] プロンプトに含めるデータ件数: ${phaseSlice.length}`);
     const phaseStr = JSON.stringify(phaseSlice);
     const statsStr = globalStats
         ? JSON.stringify(globalStats)
