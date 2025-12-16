@@ -372,11 +372,14 @@ function drawFrequencyChart(periodType = 'all', filterValue = null) {
     }
 
     const labels = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
-    const periodLabel = periodType === 'all' 
-        ? '全期間' 
-        : periodType === 'year' 
-            ? `${filterValue}年` 
-            : `${filterValue}`;
+    let periodLabel = '全期間';
+    if (periodType === 'year' && filterValue) {
+        periodLabel = `${filterValue}年`;
+    } else if (periodType === 'year_month' && filterValue) {
+        periodLabel = `${filterValue}`;
+    } else if (periodType === 'month_all' && filterValue) {
+        periodLabel = `${parseInt(filterValue, 10)}月（全年）`;
+    }
 
     frequencyChartInstance = new Chart(ctx, {
         type: 'bar',
@@ -474,14 +477,33 @@ if (frequencyPeriodType) {
             }
             
             const periods = engine.getAvailablePeriods();
-            const options = periodType === 'year' ? periods.years : periods.months;
-            
-            options.forEach(period => {
-                const option = document.createElement('option');
-                option.value = period;
-                option.textContent = periodType === 'year' ? `${period}年` : period;
-                periodValueSelect.appendChild(option);
-            });
+
+            let options = [];
+            if (periodType === 'year') {
+                options = periods.years || [];
+                options.forEach(period => {
+                    const option = document.createElement('option');
+                    option.value = period;
+                    option.textContent = `${period}年`;
+                    periodValueSelect.appendChild(option);
+                });
+            } else if (periodType === 'year_month') {
+                options = periods.yearMonths || [];
+                options.forEach(period => {
+                    const option = document.createElement('option');
+                    option.value = period;
+                    option.textContent = period;
+                    periodValueSelect.appendChild(option);
+                });
+            } else if (periodType === 'month_all') {
+                options = periods.monthNumbers || [];
+                options.forEach(mm => {
+                    const option = document.createElement('option');
+                    option.value = mm;
+                    option.textContent = `${parseInt(mm, 10)}月（全年）`;
+                    periodValueSelect.appendChild(option);
+                });
+            }
         }
     });
 }

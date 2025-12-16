@@ -236,8 +236,16 @@ export class MathEngine {
 
     /**
      * 指定された期間のデータから、各桁ごとの数字頻出率を計算する
-     * @param {string} periodType - 'all', 'year', 'month' のいずれか
-     * @param {string} filterValue - periodTypeが'year'の場合は'YYYY'、'month'の場合は'YYYY-MM'、'all'の場合はnull
+     * @param {string} periodType - 'all', 'year', 'year_month', 'month_all' のいずれか
+     *   - 'all'       : 全期間
+     *   - 'year'      : 指定年ごと（YYYY）
+     *   - 'year_month': 年＋月（YYYY-MM）
+     *   - 'month_all' : 全年度を通した特定の月（MM）
+     * @param {string|null} filterValue
+     *   - periodType が 'year'       の場合: 'YYYY'
+     *   - periodType が 'year_month' の場合: 'YYYY-MM'
+     *   - periodType が 'month_all'  の場合: 'MM'
+     *   - periodType が 'all'        の場合: null
      * @returns {Object} 各桁ごとの出現頻度と出現率
      */
     getDigitFrequencyByPeriod(periodType = 'all', filterValue = null) {
@@ -245,8 +253,14 @@ export class MathEngine {
 
         if (periodType === 'year' && filterValue) {
             filteredData = this.data.filter(record => record.date.startsWith(filterValue));
-        } else if (periodType === 'month' && filterValue) {
+        } else if (periodType === 'year_month' && filterValue) {
+            // 年＋月（例: 2001-03）
             filteredData = this.data.filter(record => record.date.startsWith(filterValue));
+        } else if (periodType === 'month_all' && filterValue) {
+            // 全年度を通した特定の「月」（例: '03' -> すべての3月）
+            filteredData = this.data.filter(record => {
+                return record.date && record.date.length >= 7 && record.date.substring(5, 7) === filterValue;
+            });
         }
 
         const digitFreqByPos = {
@@ -297,11 +311,12 @@ export class MathEngine {
 
     /**
      * 利用可能な年と月のリストを取得
-     * @returns {Object} {years: string[], months: string[]}
+     * @returns {Object} {years: string[], yearMonths: string[], monthNumbers: string[]}
      */
     getAvailablePeriods() {
         const years = new Set();
-        const months = new Set();
+        const yearMonths = new Set();
+        const monthNumbers = new Set();
 
         this.data.forEach(record => {
             if (record.date && record.date.length >= 4) {
@@ -309,14 +324,17 @@ export class MathEngine {
                 years.add(year);
             }
             if (record.date && record.date.length >= 7) {
-                const month = record.date.substring(0, 7);
-                months.add(month);
+                const ym = record.date.substring(0, 7);   // YYYY-MM
+                const m = record.date.substring(5, 7);     // MM
+                yearMonths.add(ym);
+                monthNumbers.add(m);
             }
         });
 
         return {
             years: Array.from(years).sort(),
-            months: Array.from(months).sort()
+            yearMonths: Array.from(yearMonths).sort(),
+            monthNumbers: Array.from(monthNumbers).sort()
         };
     }
 }

@@ -61,7 +61,7 @@
 
             <section class="card">
                 <h2>4. 各桁の頻出率分析</h2>
-                <p>過去のデータから、各桁（百の位、十の位、一の位）ごとの数字の出現頻度をグラフで表示します。年毎、月毎、全期間で切り替えて確認できます。</p>
+                <p>過去のデータから、各桁（百の位、十の位、一の位）ごとの数字の出現頻度をグラフで表示します。全期間・年毎・年＋月・「全年を通した同じ月」で切り替えて確認できます。</p>
                 
                 <div style="margin-bottom: 16px;">
                     <label for="frequencyPeriodType" style="display: block; margin-bottom: 8px;">期間選択:</label>
@@ -69,7 +69,8 @@
                         <select id="frequencyPeriodType" style="padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-color);">
                             <option value="all">全期間</option>
                             <option value="year">年毎</option>
-                            <option value="month">月毎</option>
+                            <option value="year_month">年＋月</option>
+                            <option value="month_all">月毎（全年）</option>
                         </select>
                         <select id="frequencyPeriodValue" style="padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-color); display: none;">
                             <option value="">選択してください</option>
