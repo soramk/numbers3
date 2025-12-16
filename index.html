@@ -60,7 +60,31 @@
             </section>
 
             <section class="card">
-                <h2>4. このツールで使っている分析手法</h2>
+                <h2>4. 各桁の頻出率分析</h2>
+                <p>過去のデータから、各桁（百の位、十の位、一の位）ごとの数字の出現頻度をグラフで表示します。年毎、月毎、全期間で切り替えて確認できます。</p>
+                
+                <div style="margin-bottom: 16px;">
+                    <label for="frequencyPeriodType" style="display: block; margin-bottom: 8px;">期間選択:</label>
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+                        <select id="frequencyPeriodType" style="padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-color);">
+                            <option value="all">全期間</option>
+                            <option value="year">年毎</option>
+                            <option value="month">月毎</option>
+                        </select>
+                        <select id="frequencyPeriodValue" style="padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-color); display: none;">
+                            <option value="">選択してください</option>
+                        </select>
+                        <button id="updateFrequencyChart" class="secondary-btn" style="width: auto; padding: 6px 16px;">グラフ更新</button>
+                    </div>
+                </div>
+                
+                <div class="chart-container" style="margin-top: 16px;">
+                    <canvas id="frequencyChart"></canvas>
+                </div>
+            </section>
+
+            <section class="card">
+                <h2>5. このツールで使っている分析手法</h2>
                 <p>内部では、物理モデル・統計モデル・AIによる推論を組み合わせて、次回の当選3桁を推定しています。</p>
                 <ul class="method-list">
                     <li><strong>波動方程式による位相解析</strong>：各回の当選3桁を、簡易的な正弦波モデル（時間 t と位相 Phase を持つ関数）で説明できるようにし、各桁ごとに「その回に最適だった位相」を逆算します。</li>

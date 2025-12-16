@@ -233,4 +233,90 @@ export class MathEngine {
             last10Numbers
         };
     }
+
+    /**
+     * 指定された期間のデータから、各桁ごとの数字頻出率を計算する
+     * @param {string} periodType - 'all', 'year', 'month' のいずれか
+     * @param {string} filterValue - periodTypeが'year'の場合は'YYYY'、'month'の場合は'YYYY-MM'、'all'の場合はnull
+     * @returns {Object} 各桁ごとの出現頻度と出現率
+     */
+    getDigitFrequencyByPeriod(periodType = 'all', filterValue = null) {
+        let filteredData = this.data;
+
+        if (periodType === 'year' && filterValue) {
+            filteredData = this.data.filter(record => record.date.startsWith(filterValue));
+        } else if (periodType === 'month' && filterValue) {
+            filteredData = this.data.filter(record => record.date.startsWith(filterValue));
+        }
+
+        const digitFreqByPos = {
+            0: Array(10).fill(0), // 百の位
+            1: Array(10).fill(0), // 十の位
+            2: Array(10).fill(0)  // 一の位
+        };
+
+        filteredData.forEach(record => {
+            const numStr = String(record.num).padStart(3, '0');
+            const digits = [
+                parseInt(numStr[0], 10),
+                parseInt(numStr[1], 10),
+                parseInt(numStr[2], 10)
+            ];
+
+            digits.forEach((d, pos) => {
+                if (!Number.isNaN(d) && d >= 0 && d <= 9) {
+                    digitFreqByPos[pos][d] += 1;
+                }
+            });
+        });
+
+        const totalCount = filteredData.length;
+        const digitRateByPos = {
+            0: Array(10).fill(0),
+            1: Array(10).fill(0),
+            2: Array(10).fill(0)
+        };
+
+        // 出現率を計算（パーセンテージ）
+        for (let pos = 0; pos < 3; pos++) {
+            for (let d = 0; d < 10; d++) {
+                digitRateByPos[pos][d] = totalCount > 0 
+                    ? (digitFreqByPos[pos][d] / totalCount * 100).toFixed(2)
+                    : 0;
+            }
+        }
+
+        return {
+            periodType,
+            filterValue,
+            totalCount,
+            digitFreqByPos,
+            digitRateByPos
+        };
+    }
+
+    /**
+     * 利用可能な年と月のリストを取得
+     * @returns {Object} {years: string[], months: string[]}
+     */
+    getAvailablePeriods() {
+        const years = new Set();
+        const months = new Set();
+
+        this.data.forEach(record => {
+            if (record.date && record.date.length >= 4) {
+                const year = record.date.substring(0, 4);
+                years.add(year);
+            }
+            if (record.date && record.date.length >= 7) {
+                const month = record.date.substring(0, 7);
+                months.add(month);
+            }
+        });
+
+        return {
+            years: Array.from(years).sort(),
+            months: Array.from(months).sort()
+        };
+    }
 }

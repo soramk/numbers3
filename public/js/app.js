@@ -21,11 +21,15 @@ const recentSummaryBody = document.getElementById('recentSummaryBody');
 const historyArea = document.getElementById('historyArea');
 const historyBody = document.getElementById('historyBody');
 const exportHistoryBtn = document.getElementById('exportHistoryBtn');
+const frequencyPeriodType = document.getElementById('frequencyPeriodType');
+const frequencyPeriodValue = document.getElementById('frequencyPeriodValue');
+const updateFrequencyChart = document.getElementById('updateFrequencyChart');
 
 let engine = null;
 let analysisResult = null;
 let analysisStats = null;
 let predictionHistory = [];
+let frequencyChartInstance = null;
 
 // 予測履歴の読み込み
 try {
@@ -213,6 +217,14 @@ analyzeBtn.addEventListener('click', async () => {
         }
         
         predictBtn.disabled = false;
+        
+        // 頻出率グラフを自動表示（全期間）
+        if (frequencyChartInstance) {
+            frequencyChartInstance.destroy();
+            frequencyChartInstance = null;
+        }
+        drawFrequencyChart('all', null);
+        
         alert('解析完了。係数の推移グラフを表示しました。');
     } catch (e) {
         console.error(e);
@@ -339,5 +351,154 @@ function drawChart(data) {
                 y1: { type: 'linear', display: true, position: 'right', min:0, max:9, grid: {drawOnChartArea: false} }
             }
         }
+    });
+}
+
+// 頻出率グラフの描画
+function drawFrequencyChart(periodType = 'all', filterValue = null) {
+    if (!engine) {
+        alert('先に「データ解析・逆算開始」を実行してください。');
+        return;
+    }
+
+    const freqData = engine.getDigitFrequencyByPeriod(periodType, filterValue);
+    const ctx = document.getElementById('frequencyChart');
+    
+    if (!ctx) return;
+
+    // 既存のグラフインスタンスを破棄
+    if (frequencyChartInstance) {
+        frequencyChartInstance.destroy();
+    }
+
+    const labels = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+    const periodLabel = periodType === 'all' 
+        ? '全期間' 
+        : periodType === 'year' 
+            ? `${filterValue}年` 
+            : `${filterValue}`;
+
+    frequencyChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: '百の位',
+                    data: freqData.digitRateByPos[0].map(v => parseFloat(v)),
+                    backgroundColor: 'rgba(88, 166, 255, 0.6)',
+                    borderColor: 'rgba(88, 166, 255, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: '十の位',
+                    data: freqData.digitRateByPos[1].map(v => parseFloat(v)),
+                    backgroundColor: 'rgba(35, 134, 54, 0.6)',
+                    borderColor: 'rgba(35, 134, 54, 1)',
+                    borderWidth: 1
+                },
+                {
+                    label: '一の位',
+                    data: freqData.digitRateByPos[2].map(v => parseFloat(v)),
+                    backgroundColor: 'rgba(255, 140, 0, 0.6)',
+                    borderColor: 'rgba(255, 140, 0, 1)',
+                    borderWidth: 1
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                title: {
+                    display: true,
+                    text: `各桁の数字出現率 (${periodLabel}) - データ件数: ${freqData.totalCount}件`,
+                    font: {
+                        size: 16
+                    }
+                },
+                legend: {
+                    display: true,
+                    position: 'top'
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const datasetLabel = context.dataset.label || '';
+                            const value = context.parsed.y;
+                            const index = context.dataIndex;
+                            // freqDataはクロージャでアクセス可能
+                            const posIndex = context.datasetIndex; // 0=百, 1=十, 2=一
+                            const count = freqData.digitFreqByPos[posIndex][index];
+                            return `${datasetLabel}: ${value}% (${count}回)`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: '出現率 (%)'
+                    },
+                    max: 15
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: '数字'
+                    }
+                }
+            }
+        }
+    });
+}
+
+// 期間タイプ変更時の処理
+if (frequencyPeriodType) {
+    frequencyPeriodType.addEventListener('change', () => {
+        const periodType = frequencyPeriodType.value;
+        const periodValueSelect = frequencyPeriodValue;
+        
+        if (periodType === 'all') {
+            periodValueSelect.style.display = 'none';
+            periodValueSelect.value = '';
+        } else {
+            periodValueSelect.style.display = 'block';
+            periodValueSelect.innerHTML = '<option value="">選択してください</option>';
+            
+            if (!engine) {
+                alert('先に「データ解析・逆算開始」を実行してください。');
+                return;
+            }
+            
+            const periods = engine.getAvailablePeriods();
+            const options = periodType === 'year' ? periods.years : periods.months;
+            
+            options.forEach(period => {
+                const option = document.createElement('option');
+                option.value = period;
+                option.textContent = periodType === 'year' ? `${period}年` : period;
+                periodValueSelect.appendChild(option);
+            });
+        }
+    });
+}
+
+// グラフ更新ボタンの処理
+if (updateFrequencyChart) {
+    updateFrequencyChart.addEventListener('click', () => {
+        const periodType = frequencyPeriodType ? frequencyPeriodType.value : 'all';
+        const filterValue = frequencyPeriodValue && frequencyPeriodValue.value 
+            ? frequencyPeriodValue.value 
+            : null;
+        
+        if (periodType !== 'all' && !filterValue) {
+            alert('期間を選択してください。');
+            return;
+        }
+        
+        drawFrequencyChart(periodType, filterValue);
     });
 }
