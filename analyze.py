@@ -55,6 +55,36 @@ def fetch_latest_result(timeout: int = 10, sleep_sec: float = 1.0) -> Optional[D
             resp = requests.get(url, headers=headers, timeout=timeout)
             resp.raise_for_status()
             
+            # 文字化けを防ぐため、エンコーディングを明示的に設定
+            if resp.encoding is None or resp.encoding.lower() in ['iso-8859-1', 'windows-1252']:
+                # エンコーディングが正しく検出されていない場合、apparent_encodingを使用
+                resp.encoding = resp.apparent_encoding or 'utf-8'
+            
+            # みずほ銀行サイトの場合、Shift_JISの可能性があるため明示的に設定
+            if site_type == "mizuhobank":
+                # Content-Typeヘッダーからエンコーディングを確認
+                content_type = resp.headers.get('Content-Type', '')
+                if 'charset=' in content_type:
+                    charset = content_type.split('charset=')[1].split(';')[0].strip().lower()
+                    if charset:
+                        resp.encoding = charset
+                else:
+                    # デフォルトでShift_JISを試す（みずほ銀行はShift_JISの可能性が高い）
+                    try:
+                        resp.encoding = 'shift_jis'
+                        # テスト: 日本語文字が正しくデコードできるか確認
+                        test_text = resp.text[:1000]
+                        if '抽せん' in test_text or '当選' in test_text:
+                            print(f"[fetch_latest_result] Shift_JISでデコード成功")
+                        else:
+                            # Shift_JISで失敗した場合、UTF-8を試す
+                            resp.encoding = 'utf-8'
+                            print(f"[fetch_latest_result] UTF-8でデコードを試行")
+                    except:
+                        resp.encoding = 'utf-8'
+                        print(f"[fetch_latest_result] エンコーディング検出失敗、UTF-8を使用")
+            
+            print(f"[fetch_latest_result] 使用エンコーディング: {resp.encoding}")
             soup = BeautifulSoup(resp.text, "html.parser")
             result = None
             
