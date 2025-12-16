@@ -315,6 +315,12 @@ select {
     padding-right: 4px;
 }
 
+/* プロンプト表示エリア */
+#promptContent {
+    -webkit-overflow-scrolling: touch;
+    padding-right: 4px;
+}
+
 @media (max-width: 768px) {
     html {
         width: 100%;

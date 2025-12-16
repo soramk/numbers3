@@ -25,12 +25,17 @@ const frequencyChartType = document.getElementById('frequencyChartType');
 const frequencyPeriodType = document.getElementById('frequencyPeriodType');
 const frequencyPeriodValue = document.getElementById('frequencyPeriodValue');
 const updateFrequencyChart = document.getElementById('updateFrequencyChart');
+const promptArea = document.getElementById('promptArea');
+const promptContent = document.getElementById('promptContent');
+const togglePromptBtn = document.getElementById('togglePromptBtn');
+const downloadPromptBtn = document.getElementById('downloadPromptBtn');
 
 let engine = null;
 let analysisResult = null;
 let analysisStats = null;
 let predictionHistory = [];
 let frequencyChartInstance = null;
+let currentPrompt = null;
 
 // 予測履歴の読み込み
 try {
@@ -213,8 +218,17 @@ analyzeBtn.addEventListener('click', async () => {
         if (tokenEstimate && analysisResult && analysisResult.length) {
             const promptData = analysisResult.slice(-100); // プロンプトには直近100回分を使用
             const prompt = buildPhasePrompt(promptData, analysisStats);
+            currentPrompt = prompt; // プロンプトを保存
             const estTokens = estimateTokensForPrompt(prompt);
             tokenEstimate.innerText = `推定プロンプト長: 約 ${estTokens.toLocaleString()} トークン（直近100回分の位相データを使用）`;
+            
+            // プロンプトエリアを表示
+            if (promptArea && promptContent && togglePromptBtn) {
+                promptContent.textContent = prompt;
+                promptArea.classList.remove('hidden');
+                promptContent.style.display = 'none'; // 初期状態は非表示
+                togglePromptBtn.textContent = '表示'; // 初期状態のボタンテキスト
+            }
         }
         
         predictBtn.disabled = false;
@@ -309,6 +323,44 @@ if (exportHistoryBtn) {
         const mm = String(now.getMinutes()).padStart(2, '0');
         a.href = url;
         a.download = `numbers3_predictions_${y}${m}${d}_${hh}${mm}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    });
+}
+
+// プロンプト表示/非表示の切り替え
+if (togglePromptBtn) {
+    togglePromptBtn.addEventListener('click', () => {
+        if (promptContent) {
+            const isHidden = promptContent.style.display === 'none' || promptContent.style.display === '';
+            promptContent.style.display = isHidden ? 'block' : 'none';
+            togglePromptBtn.textContent = isHidden ? '非表示' : '表示';
+        }
+    });
+}
+
+// プロンプトのダウンロード
+if (downloadPromptBtn) {
+    downloadPromptBtn.addEventListener('click', () => {
+        if (!currentPrompt) {
+            alert('プロンプトが生成されていません。先に「データ解析・逆算開始」を実行してください。');
+            return;
+        }
+        
+        const now = new Date();
+        const y = now.getFullYear();
+        const m = String(now.getMonth() + 1).padStart(2, '0');
+        const d = String(now.getDate()).padStart(2, '0');
+        const hh = String(now.getHours()).padStart(2, '0');
+        const mm = String(now.getMinutes()).padStart(2, '0');
+        
+        const blob = new Blob([currentPrompt], { type: 'text/plain;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `numbers3_prompt_${y}${m}${d}_${hh}${mm}.txt`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);

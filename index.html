@@ -44,6 +44,17 @@
                 <button id="predictBtn" class="secondary-btn" disabled>Geminiに予測させる</button>
                 <div id="tokenEstimate" style="font-size:0.8rem; opacity:0.85; margin-top:6px;"></div>
                 
+                <div id="promptArea" class="result-box hidden" style="margin-top:12px;">
+                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                        <h3 style="margin:0; font-size:0.96rem; color:#e5e7eb;">生成されたプロンプト</h3>
+                        <div style="display:flex; gap:8px;">
+                            <button id="togglePromptBtn" class="secondary-btn" style="width:auto; padding:6px 14px; font-size:0.8rem;">表示/非表示</button>
+                            <button id="downloadPromptBtn" class="secondary-btn" style="width:auto; padding:6px 14px; font-size:0.8rem;">ダウンロード</button>
+                        </div>
+                    </div>
+                    <div id="promptContent" class="console-text" style="display:none; max-height:400px; overflow-y:auto; white-space:pre-wrap; word-break:break-word;"></div>
+                </div>
+                
                 <div id="resultArea" class="result-box hidden">
                     <h3>Prediction Result</h3>
                     <div id="output" class="console-text"></div>
