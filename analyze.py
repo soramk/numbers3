@@ -61,216 +61,158 @@ def fetch_latest_result(timeout: int = 10, sleep_sec: float = 1.0) -> Optional[D
             # みずほ銀行サイトの場合
             if site_type == "mizuhobank":
                 print(f"[fetch_latest_result] みずほ銀行サイトを解析中...")
-                # テーブルを探す（「ナンバーズ3抽せん数字一覧表」のテーブル）
-                tables = soup.find_all("table")
-                print(f"[fetch_latest_result] テーブル数: {len(tables)}")
+                # N3抽出ツール.jsのアプローチを参考: ページ全体のテキストから直接抽出
+                page_text = soup.get_text()
                 
-                for table_idx, table in enumerate(tables):
-                    rows = table.find_all("tr")
-                    if len(rows) < 2:
-                        print(f"[fetch_latest_result] テーブル{table_idx}: 行数が少なすぎます ({len(rows)})")
-                        continue
-                    
-                    # ヘッダー行を確認（「回別」「抽せん日」「抽せん数字」など）
-                    header_row = rows[0]
-                    header_text = header_row.get_text()
-                    print(f"[fetch_latest_result] テーブル{table_idx} ヘッダー: {header_text[:100]}")
-                    
-                    if "抽せん日" in header_text or "抽せん数字" in header_text:
-                        # ヘッダー行の列数を確認
-                        header_cells = header_row.find_all(["td", "th"])
-                        print(f"[fetch_latest_result] ヘッダー列数: {len(header_cells)}")
-                        
-                        # 列のインデックスを特定
-                        date_col_idx = None
-                        num_col_idx = None
-                        for idx, cell in enumerate(header_cells):
-                            cell_text = cell.get_text(strip=True)
-                            if "抽せん日" in cell_text or "日" in cell_text:
-                                date_col_idx = idx
-                            if "抽せん数字" in cell_text or "数字" in cell_text:
-                                num_col_idx = idx
-                        
-                        print(f"[fetch_latest_result] 日付列インデックス: {date_col_idx}, 数字列インデックス: {num_col_idx}")
-                        
-                        # データ行を処理（2行目以降、最新のものから）
-                        for row_idx, row in enumerate(rows[1:], start=1):
-                            tds = row.find_all(["td", "th"])
-                            if len(tds) < max(date_col_idx or 0, num_col_idx or 0) + 1:
-                                continue
-                            
-                            # 列インデックスが特定できた場合
-                            if date_col_idx is not None and num_col_idx is not None:
-                                raw_date = tds[date_col_idx].get_text(strip=True)
-                                raw_num = tds[num_col_idx].get_text(strip=True)
-                            else:
-                                # フォールバック: 2列目と3列目を試す
-                                if len(tds) >= 3:
-                                    raw_date = tds[1].get_text(strip=True)
-                                    raw_num = tds[2].get_text(strip=True)
-                                elif len(tds) >= 2:
-                                    raw_date = tds[0].get_text(strip=True)
-                                    raw_num = tds[1].get_text(strip=True)
-                                else:
-                                    continue
-                            
-                            print(f"[fetch_latest_result] 行{row_idx}: 日付={raw_date}, 数字={raw_num}")
-                            
-                            # 日付をパース（「2025年12月16日」形式に対応）
-                            draw_date = None
-                            
-                            # パターン1: 「2025年12月16日」形式
-                            date_match = re.search(r"(\d{4})年(\d{1,2})月(\d{1,2})日", raw_date)
-                            if date_match:
-                                year, month, day = date_match.groups()
-                                draw_date = datetime(int(year), int(month), int(day)).strftime("%Y-%m-%d")
-                                print(f"[fetch_latest_result] 日付パース成功（年/月/日形式）: {draw_date}")
-                            
-                            # パターン2: 「2025/12/16」形式
-                            if not draw_date:
-                                date_match = re.search(r"(\d{4})[/.-](\d{1,2})[/.-](\d{1,2})", raw_date)
-                                if date_match:
-                                    year, month, day = date_match.groups()
-                                    draw_date = datetime(int(year), int(month), int(day)).strftime("%Y-%m-%d")
-                                    print(f"[fetch_latest_result] 日付パース成功（スラッシュ形式）: {draw_date}")
-                            
-                            # パターン3: 既に YYYY-MM-DD 形式の場合
-                            if not draw_date:
-                                try:
-                                    draw_date = datetime.strptime(raw_date[:10], "%Y-%m-%d").strftime("%Y-%m-%d")
-                                    print(f"[fetch_latest_result] 日付パース成功（ISO形式）: {draw_date}")
-                                except:
-                                    print(f"[fetch_latest_result] 日付パース失敗: {raw_date}")
-                                    continue
-                            
-                            # 当選番号を抽出（3桁、スペース区切りの可能性あり）
-                            # 例: "0 0 3" や "003" など
-                            digits = re.findall(r"\d", raw_num)
-                            if len(digits) >= 3:
-                                num_str = "".join(digits[:3]).zfill(3)
-                                result = {"date": draw_date, "num": num_str}
-                                print(f"[fetch_latest_result] みずほ銀行から取得成功: {draw_date} - {num_str}")
-                                break
-                        
-                        if result:
-                            break
+                # パターン1: 「第XX回」...「YYYY/MM/DD」...「当せん番号/当選番号」...「3桁の数字」
+                # または「第XX回」...「YYYY年MM月DD日」...「当せん番号/当選番号」...「3桁の数字」
+                patterns = [
+                    # パターン1: 「第XX回」...「YYYY/MM/DD」...「当せん番号/当選番号」...「3桁」
+                    r"第(\d+)回[\s\S]*?(\d{4})[/.-](\d{1,2})[/.-](\d{1,2})[\s\S]*?(?:当せん番号|当選番号)?[\s\S]*?(\d{3})",
+                    # パターン2: 「第XX回」...「YYYY年MM月DD日」...「当せん番号/当選番号」...「3桁」
+                    r"第(\d+)回[\s\S]*?(\d{4})年(\d{1,2})月(\d{1,2})日[\s\S]*?(?:当せん番号|当選番号)?[\s\S]*?(\d{3})",
+                    # パターン3: 「YYYY/MM/DD」...「当せん番号/当選番号」...「3桁」（回号なし）
+                    r"(\d{4})[/.-](\d{1,2})[/.-](\d{1,2})[\s\S]*?(?:当せん番号|当選番号)?[\s\S]*?(\d{3})",
+                    # パターン4: 「YYYY年MM月DD日」...「当せん番号/当選番号」...「3桁」（回号なし）
+                    r"(\d{4})年(\d{1,2})月(\d{1,2})日[\s\S]*?(?:当せん番号|当選番号)?[\s\S]*?(\d{3})",
+                ]
                 
-                # テーブルが見つからない場合、ページ全体から検索
+                for pattern_idx, pattern in enumerate(patterns, 1):
+                    matches = list(re.finditer(pattern, page_text))
+                    if matches:
+                        # 最新のマッチ（最後に見つかったもの）を取得
+                        latest_match = matches[-1]
+                        groups = latest_match.groups()
+                        
+                        if len(groups) == 5:  # パターン1, 2（回号あり）
+                            # groups[0] = 回号, groups[1-3] = 年月日, groups[4] = 当選番号
+                            year, month, day = int(groups[1]), int(groups[2]), int(groups[3])
+                            num_str = groups[4].zfill(3)
+                        elif len(groups) == 4:  # パターン3, 4（回号なし）
+                            # groups[0-2] = 年月日, groups[3] = 当選番号
+                            year, month, day = int(groups[0]), int(groups[1]), int(groups[2])
+                            num_str = groups[3].zfill(3)
+                        else:
+                            continue
+                        
+                        draw_date = datetime(year, month, day).strftime("%Y-%m-%d")
+                        result = {"date": draw_date, "num": num_str}
+                        print(f"[fetch_latest_result] パターン{pattern_idx}で取得成功: {draw_date} - {num_str}")
+                        break
+                
+                # パターンマッチが失敗した場合、より柔軟な検索を試す
                 if not result:
-                    print(f"[fetch_latest_result] テーブルから取得できませんでした。ページ全体から検索します...")
-                    page_text = soup.get_text()
+                    print(f"[fetch_latest_result] 標準パターンで見つかりませんでした。柔軟な検索を試します...")
                     
-                    # 最新の日付パターンを探す（「2025年12月16日」形式を優先）
+                    # 日付パターンを探す（最新のもの）
                     date_patterns = []
                     
-                    # パターン1: 「2025年12月16日」形式
-                    matches = re.finditer(r"(\d{4})年(\d{1,2})月(\d{1,2})日", page_text)
-                    for match in matches:
-                        year, month, day = match.groups()
-                        date_patterns.append((match.start(), int(year), int(month), int(day)))
+                    # 「YYYY/MM/DD」形式
+                    for match in re.finditer(r"(\d{4})[/.-](\d{1,2})[/.-](\d{1,2})", page_text):
+                        year, month, day = int(match.group(1)), int(match.group(2)), int(match.group(3))
+                        date_patterns.append((match.start(), year, month, day))
                     
-                    # パターン2: 「2025/12/16」形式（フォールバック）
-                    if not date_patterns:
-                        matches = re.finditer(r"(\d{4})[/.-](\d{1,2})[/.-](\d{1,2})", page_text)
-                        for match in matches:
-                            year, month, day = match.groups()
-                            date_patterns.append((match.start(), int(year), int(month), int(day)))
+                    # 「YYYY年MM月DD日」形式
+                    for match in re.finditer(r"(\d{4})年(\d{1,2})月(\d{1,2})日", page_text):
+                        year, month, day = int(match.group(1)), int(match.group(2)), int(match.group(3))
+                        date_patterns.append((match.start(), year, month, day))
                     
                     if date_patterns:
-                        # 最新の日付を取得（最初に見つかったもの、または最新のもの）
-                        latest_date_match = date_patterns[0]
-                        year, month, day = latest_date_match[1], latest_date_match[2], latest_date_match[3]
+                        # 最新の日付を取得（最後に見つかったもの）
+                        latest_date = date_patterns[-1]
+                        year, month, day = latest_date[1], latest_date[2], latest_date[3]
                         draw_date = datetime(year, month, day).strftime("%Y-%m-%d")
                         
-                        # その日付の近くにある3桁の数字を探す
-                        date_pos = latest_date_match[0]
-                        nearby_text = page_text[max(0, date_pos-50):date_pos+200]
-                        num_match = re.search(r"(\d)\s*(\d)\s*(\d)", nearby_text)
-                        if num_match:
+                        # その日付の近く（前後500文字）にある3桁の数字を探す
+                        date_pos = latest_date[0]
+                        nearby_text = page_text[max(0, date_pos-200):date_pos+500]
+                        
+                        # 3桁の数字を探す（連続した3桁、またはスペース区切りの3桁）
+                        num_matches = list(re.finditer(r"(\d)\s*(\d)\s*(\d)", nearby_text))
+                        if num_matches:
+                            # 日付に最も近い3桁の数字を取得
+                            num_match = num_matches[0]
                             num_str = "".join(num_match.groups()).zfill(3)
                             result = {"date": draw_date, "num": num_str}
-                            print(f"[fetch_latest_result] ページ全体から取得成功: {draw_date} - {num_str}")
+                            print(f"[fetch_latest_result] 柔軟な検索で取得成功: {draw_date} - {num_str}")
             
             # 楽天宝くじの場合
             elif site_type == "rakuten":
-                # 楽天宝くじサイトの構造に合わせて解析
-                # 最新の当選番号が表示されているテーブルやリストを探す
-                tables = soup.find_all("table")
-                for table in tables:
-                    rows = table.find_all("tr")
-                    if len(rows) < 2:
-                        continue
-                    
-                    # 最初のデータ行を取得
-                    for row in rows[1:]:
-                        tds = row.find_all(["td", "th"])
-                        if len(tds) >= 2:
-                            # 日付と当選番号を抽出
-                            raw_date = tds[0].get_text(strip=True)
-                            raw_num = tds[1].get_text(strip=True) if len(tds) > 1 else ""
-                            
-                            # 日付をパース（「2025年12月16日」形式に対応）
-                            draw_date = None
-                            
-                            # パターン1: 「2025年12月16日」形式（みずほ銀行サイトの標準形式）
-                            date_match = re.search(r"(\d{4})年(\d{1,2})月(\d{1,2})日", raw_date)
-                            if date_match:
-                                year, month, day = date_match.groups()
-                                draw_date = datetime(int(year), int(month), int(day)).strftime("%Y-%m-%d")
-                                print(f"[fetch_latest_result] 日付パース成功（年/月/日形式）: {draw_date}")
-                            
-                            # パターン2: 「2025/12/16」形式
-                            if not draw_date:
-                                date_match = re.search(r"(\d{4})[/.-](\d{1,2})[/.-](\d{1,2})", raw_date)
-                                if date_match:
-                                    year, month, day = date_match.groups()
-                                    draw_date = datetime(int(year), int(month), int(day)).strftime("%Y-%m-%d")
-                                    print(f"[fetch_latest_result] 日付パース成功（スラッシュ形式）: {draw_date}")
-                            
-                            # パターン3: 既に YYYY-MM-DD 形式の場合
-                            if not draw_date:
-                                try:
-                                    draw_date = datetime.strptime(raw_date[:10], "%Y-%m-%d").strftime("%Y-%m-%d")
-                                    print(f"[fetch_latest_result] 日付パース成功（ISO形式）: {draw_date}")
-                                except:
-                                    print(f"[fetch_latest_result] 日付パース失敗: {raw_date}")
-                                    continue
-                            
-                            # 当選番号を抽出
-                            digits = re.findall(r"\d", raw_num)
-                            if len(digits) >= 3:
-                                num_str = "".join(digits[:3]).zfill(3)
-                                result = {"date": draw_date, "num": num_str}
-                                break
-                    
-                    if result:
+                print(f"[fetch_latest_result] 楽天宝くじサイトを解析中...")
+                # N3抽出ツール.jsのアプローチを参考: ページ全体のテキストから直接抽出
+                page_text = soup.get_text()
+                
+                # パターン1: 「第XX回」...「YYYY/MM/DD」...「当せん番号/当選番号」...「3桁の数字」
+                # または「第XX回」...「YYYY年MM月DD日」...「当せん番号/当選番号」...「3桁の数字」
+                patterns = [
+                    # パターン1: 「第XX回」...「YYYY/MM/DD」...「当せん番号/当選番号」...「3桁」
+                    r"第(\d+)回[\s\S]*?(\d{4})[/.-](\d{1,2})[/.-](\d{1,2})[\s\S]*?(?:当せん番号|当選番号)?[\s\S]*?(\d{3})",
+                    # パターン2: 「第XX回」...「YYYY年MM月DD日」...「当せん番号/当選番号」...「3桁」
+                    r"第(\d+)回[\s\S]*?(\d{4})年(\d{1,2})月(\d{1,2})日[\s\S]*?(?:当せん番号|当選番号)?[\s\S]*?(\d{3})",
+                    # パターン3: 「YYYY/MM/DD」...「当せん番号/当選番号」...「3桁」（回号なし）
+                    r"(\d{4})[/.-](\d{1,2})[/.-](\d{1,2})[\s\S]*?(?:当せん番号|当選番号)?[\s\S]*?(\d{3})",
+                    # パターン4: 「YYYY年MM月DD日」...「当せん番号/当選番号」...「3桁」（回号なし）
+                    r"(\d{4})年(\d{1,2})月(\d{1,2})日[\s\S]*?(?:当せん番号|当選番号)?[\s\S]*?(\d{3})",
+                ]
+                
+                for pattern_idx, pattern in enumerate(patterns, 1):
+                    matches = list(re.finditer(pattern, page_text))
+                    if matches:
+                        # 最新のマッチ（最後に見つかったもの）を取得
+                        latest_match = matches[-1]
+                        groups = latest_match.groups()
+                        
+                        if len(groups) == 5:  # パターン1, 2（回号あり）
+                            # groups[0] = 回号, groups[1-3] = 年月日, groups[4] = 当選番号
+                            year, month, day = int(groups[1]), int(groups[2]), int(groups[3])
+                            num_str = groups[4].zfill(3)
+                        elif len(groups) == 4:  # パターン3, 4（回号なし）
+                            # groups[0-2] = 年月日, groups[3] = 当選番号
+                            year, month, day = int(groups[0]), int(groups[1]), int(groups[2])
+                            num_str = groups[3].zfill(3)
+                        else:
+                            continue
+                        
+                        draw_date = datetime(year, month, day).strftime("%Y-%m-%d")
+                        result = {"date": draw_date, "num": num_str}
+                        print(f"[fetch_latest_result] パターン{pattern_idx}で取得成功: {draw_date} - {num_str}")
                         break
                 
-                # テーブルが見つからない場合、ページ全体から検索
+                # パターンマッチが失敗した場合、より柔軟な検索を試す
                 if not result:
-                    page_text = soup.get_text()
-                    # 日付パターン（「2025年12月16日」形式を優先）
-                    draw_date = None
+                    print(f"[fetch_latest_result] 標準パターンで見つかりませんでした。柔軟な検索を試します...")
                     
-                    # パターン1: 「2025年12月16日」形式
-                    date_match = re.search(r"(\d{4})年(\d{1,2})月(\d{1,2})日", page_text)
-                    if date_match:
-                        year, month, day = date_match.groups()
-                        draw_date = datetime(int(year), int(month), int(day)).strftime("%Y-%m-%d")
+                    # 日付パターンを探す（最新のもの）
+                    date_patterns = []
                     
-                    # パターン2: 「2025/12/16」形式
-                    if not draw_date:
-                        date_match = re.search(r"(\d{4})[/.-](\d{1,2})[/.-](\d{1,2})", page_text)
-                        if date_match:
-                            year, month, day = date_match.groups()
-                            draw_date = datetime(int(year), int(month), int(day)).strftime("%Y-%m-%d")
+                    # 「YYYY/MM/DD」形式
+                    for match in re.finditer(r"(\d{4})[/.-](\d{1,2})[/.-](\d{1,2})", page_text):
+                        year, month, day = int(match.group(1)), int(match.group(2)), int(match.group(3))
+                        date_patterns.append((match.start(), year, month, day))
                     
-                    if draw_date:
-                        # 3桁の数字パターン
-                        num_match = re.search(r"(\d)\s*(\d)\s*(\d)", page_text)
-                        if num_match:
+                    # 「YYYY年MM月DD日」形式
+                    for match in re.finditer(r"(\d{4})年(\d{1,2})月(\d{1,2})日", page_text):
+                        year, month, day = int(match.group(1)), int(match.group(2)), int(match.group(3))
+                        date_patterns.append((match.start(), year, month, day))
+                    
+                    if date_patterns:
+                        # 最新の日付を取得（最後に見つかったもの）
+                        latest_date = date_patterns[-1]
+                        year, month, day = latest_date[1], latest_date[2], latest_date[3]
+                        draw_date = datetime(year, month, day).strftime("%Y-%m-%d")
+                        
+                        # その日付の近く（前後500文字）にある3桁の数字を探す
+                        date_pos = latest_date[0]
+                        nearby_text = page_text[max(0, date_pos-200):date_pos+500]
+                        
+                        # 3桁の数字を探す（連続した3桁、またはスペース区切りの3桁）
+                        num_matches = list(re.finditer(r"(\d)\s*(\d)\s*(\d)", nearby_text))
+                        if num_matches:
+                            # 日付に最も近い3桁の数字を取得
+                            num_match = num_matches[0]
                             num_str = "".join(num_match.groups()).zfill(3)
                             result = {"date": draw_date, "num": num_str}
+                            print(f"[fetch_latest_result] 柔軟な検索で取得成功: {draw_date} - {num_str}")
             
             # 結果が見つかった場合
             if result:
