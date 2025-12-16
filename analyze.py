@@ -337,6 +337,7 @@ class NumbersAnalyzer:
     def update_data(self) -> bool:
         """
         Webから最新データを取得してデータファイルを更新する
+        public/data.json と docs/public/data.json の両方に追記する
         
         Returns:
             bool: データが更新された場合 True、更新されなかった場合 False
@@ -370,11 +371,67 @@ class NumbersAnalyzer:
         # 日付でソート
         self.data.sort(key=lambda x: x['date'])
         
-        # ファイルに保存
+        # public/data.json に保存
         with open(self.data_path, 'w', encoding='utf-8') as f:
             json.dump(self.data, f, ensure_ascii=False, indent=2)
         
-        print(f"[update_data] データを更新しました: {latest_date} - {latest_num}")
+        print(f"[update_data] {self.data_path} を更新しました: {latest_date} - {latest_num}")
+        
+        # docs/public/data.json にも追記（形式を維持）
+        docs_data_path = None
+        if self.data_path == "public/data.json":
+            docs_data_path = "docs/public/data.json"
+        elif self.data_path == "../public/data.json":
+            docs_data_path = "docs/public/data.json"
+        
+        if docs_data_path:
+            try:
+                # docs/public/data.json が存在するか確認
+                if os.path.exists(docs_data_path):
+                    # 既存ファイルを読み込む
+                    with open(docs_data_path, 'r', encoding='utf-8') as f:
+                        docs_data = json.load(f)
+                    
+                    # データが空または不足している場合は、public/data.jsonから同期
+                    if len(docs_data) == 0 or len(docs_data) < len(self.data):
+                        print(f"[update_data] {docs_data_path} のデータが不足しています。{self.data_path} から同期します...")
+                        # public/data.jsonの全データをコピー
+                        docs_data = self.data.copy()
+                        print(f"[update_data] {len(docs_data)} 件のデータを同期しました")
+                    else:
+                        # 重複チェック
+                        docs_existing_records = {(item['date'], str(item['num']).zfill(3)) for item in docs_data}
+                        if (latest_date, latest_num) not in docs_existing_records:
+                            # 新しいデータを追加
+                            docs_data.append(new_record)
+                            # 日付でソート
+                            docs_data.sort(key=lambda x: x['date'])
+                            print(f"[update_data] {docs_data_path} に新しいデータを追加しました: {latest_date} - {latest_num}")
+                        else:
+                            print(f"[update_data] {docs_data_path} には既にデータが存在します: {latest_date} - {latest_num}")
+                else:
+                    # ファイルが存在しない場合は、public/data.jsonから全データをコピー
+                    print(f"[update_data] {docs_data_path} が存在しません。{self.data_path} から同期します...")
+                    docs_data = self.data.copy()
+                    # ディレクトリが存在しない場合は作成
+                    os.makedirs(os.path.dirname(docs_data_path), exist_ok=True)
+                
+                # docs/public/data.json の形式（1行1オブジェクト）で保存
+                with open(docs_data_path, 'w', encoding='utf-8') as f:
+                    f.write('[\n')
+                    for i, item in enumerate(docs_data):
+                        # 1行に1オブジェクトの形式で出力
+                        json_str = json.dumps(item, ensure_ascii=False)
+                        if i < len(docs_data) - 1:
+                            f.write(f'    {json_str},\n')
+                        else:
+                            f.write(f'    {json_str}\n')
+                    f.write(']')
+                print(f"[update_data] {docs_data_path} を更新しました（{len(docs_data)} 件）")
+            except Exception as e:
+                print(f"[update_data] {docs_data_path} の更新に失敗しました: {e}")
+                import traceback
+                print(f"[update_data] トレースバック: {traceback.format_exc()}")
         
         # DataFrameを再読み込み
         self.load_data()
