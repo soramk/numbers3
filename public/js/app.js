@@ -204,12 +204,12 @@ analyzeBtn.addEventListener('click', async () => {
             recentSummaryBox.classList.remove('hidden');
         }
 
-        // プロンプト長から推定トークン数を計算し表示（直近30回分のみをプロンプトに含める）
+        // プロンプト長から推定トークン数を計算し表示（直近100回分をプロンプトに含める）
         if (tokenEstimate && analysisResult && analysisResult.length) {
-            const promptData = analysisResult.slice(-30); // プロンプトには直近30回分のみ
+            const promptData = analysisResult.slice(-100); // プロンプトには直近100回分を使用
             const prompt = buildPhasePrompt(promptData, analysisStats);
             const estTokens = estimateTokensForPrompt(prompt);
-            tokenEstimate.innerText = `推定プロンプト長: 約 ${estTokens.toLocaleString()} トークン（直近30回分の位相データを使用）`;
+            tokenEstimate.innerText = `推定プロンプト長: 約 ${estTokens.toLocaleString()} トークン（直近100回分の位相データを使用）`;
         }
         
         predictBtn.disabled = false;
