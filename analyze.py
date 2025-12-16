@@ -9,6 +9,7 @@ import re
 import time
 from datetime import datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 import pandas as pd
 import numpy as np
 from scipy import stats
@@ -516,8 +517,10 @@ class NumbersAnalyzer:
         set_top3 = sorted(set_votes.items(), key=lambda x: x[1], reverse=True)[:3]
         mini_top3 = sorted(mini_votes.items(), key=lambda x: x[1], reverse=True)[:3]
         
+        # タイムスタンプはJST（Asia/Tokyo）で記録
+        jst_now = datetime.now(ZoneInfo("Asia/Tokyo"))
         return {
-            'timestamp': datetime.now().isoformat(),
+            'timestamp': jst_now.isoformat(),
             'set_predictions': [
                 {
                     'number': item[0],
