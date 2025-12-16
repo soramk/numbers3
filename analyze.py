@@ -61,47 +61,108 @@ def fetch_latest_result(timeout: int = 10, sleep_sec: float = 1.0) -> Optional[D
             
             # みずほ銀行サイトの場合
             if site_type == "mizuhobank":
+                print(f"[fetch_latest_result] みずほ銀行サイトを解析中...")
                 # テーブルを探す（「ナンバーズ3抽せん数字一覧表」のテーブル）
                 tables = soup.find_all("table")
-                for table in tables:
+                print(f"[fetch_latest_result] テーブル数: {len(tables)}")
+                
+                for table_idx, table in enumerate(tables):
                     rows = table.find_all("tr")
                     if len(rows) < 2:
+                        print(f"[fetch_latest_result] テーブル{table_idx}: 行数が少なすぎます ({len(rows)})")
                         continue
                     
                     # ヘッダー行を確認（「回別」「抽せん日」「抽せん数字」など）
                     header_row = rows[0]
                     header_text = header_row.get_text()
-                    if "抽せん日" in header_text and "抽せん数字" in header_text:
-                        # データ行を処理（2行目以降）
-                        for row in rows[1:]:
+                    print(f"[fetch_latest_result] テーブル{table_idx} ヘッダー: {header_text[:100]}")
+                    
+                    if "抽せん日" in header_text or "抽せん数字" in header_text:
+                        # ヘッダー行の列数を確認
+                        header_cells = header_row.find_all(["td", "th"])
+                        print(f"[fetch_latest_result] ヘッダー列数: {len(header_cells)}")
+                        
+                        # 列のインデックスを特定
+                        date_col_idx = None
+                        num_col_idx = None
+                        for idx, cell in enumerate(header_cells):
+                            cell_text = cell.get_text(strip=True)
+                            if "抽せん日" in cell_text or "日" in cell_text:
+                                date_col_idx = idx
+                            if "抽せん数字" in cell_text or "数字" in cell_text:
+                                num_col_idx = idx
+                        
+                        print(f"[fetch_latest_result] 日付列インデックス: {date_col_idx}, 数字列インデックス: {num_col_idx}")
+                        
+                        # データ行を処理（2行目以降、最新のものから）
+                        for row_idx, row in enumerate(rows[1:], start=1):
                             tds = row.find_all(["td", "th"])
-                            if len(tds) >= 3:
-                                # 回別、抽せん日、抽せん数字の順序を想定
-                                raw_date = tds[1].get_text(strip=True)  # 抽せん日
-                                raw_num = tds[2].get_text(strip=True)  # 抽せん数字
-                                
-                                # 日付をパース
-                                date_match = re.search(r"(\d{4})[年/.-](\d{1,2})[月/.-](\d{1,2})日?", raw_date)
-                                if date_match:
-                                    year, month, day = date_match.groups()
-                                    draw_date = datetime(int(year), int(month), int(day)).strftime("%Y-%m-%d")
+                            if len(tds) < max(date_col_idx or 0, num_col_idx or 0) + 1:
+                                continue
+                            
+                            # 列インデックスが特定できた場合
+                            if date_col_idx is not None and num_col_idx is not None:
+                                raw_date = tds[date_col_idx].get_text(strip=True)
+                                raw_num = tds[num_col_idx].get_text(strip=True)
+                            else:
+                                # フォールバック: 2列目と3列目を試す
+                                if len(tds) >= 3:
+                                    raw_date = tds[1].get_text(strip=True)
+                                    raw_num = tds[2].get_text(strip=True)
+                                elif len(tds) >= 2:
+                                    raw_date = tds[0].get_text(strip=True)
+                                    raw_num = tds[1].get_text(strip=True)
                                 else:
-                                    # 既に YYYY-MM-DD 形式の場合
-                                    try:
-                                        draw_date = datetime.strptime(raw_date[:10], "%Y-%m-%d").strftime("%Y-%m-%d")
-                                    except:
-                                        continue
-                                
-                                # 当選番号を抽出（3桁、スペース区切りの可能性あり）
-                                # 例: "0 0 3" や "003" など
-                                digits = re.findall(r"\d", raw_num)
-                                if len(digits) >= 3:
-                                    num_str = "".join(digits[:3]).zfill(3)
-                                    result = {"date": draw_date, "num": num_str}
-                                    break
+                                    continue
+                            
+                            print(f"[fetch_latest_result] 行{row_idx}: 日付={raw_date}, 数字={raw_num}")
+                            
+                            # 日付をパース
+                            date_match = re.search(r"(\d{4})[年/.-](\d{1,2})[月/.-](\d{1,2})日?", raw_date)
+                            if date_match:
+                                year, month, day = date_match.groups()
+                                draw_date = datetime(int(year), int(month), int(day)).strftime("%Y-%m-%d")
+                            else:
+                                # 既に YYYY-MM-DD 形式の場合
+                                try:
+                                    draw_date = datetime.strptime(raw_date[:10], "%Y-%m-%d").strftime("%Y-%m-%d")
+                                except:
+                                    print(f"[fetch_latest_result] 日付パース失敗: {raw_date}")
+                                    continue
+                            
+                            # 当選番号を抽出（3桁、スペース区切りの可能性あり）
+                            # 例: "0 0 3" や "003" など
+                            digits = re.findall(r"\d", raw_num)
+                            if len(digits) >= 3:
+                                num_str = "".join(digits[:3]).zfill(3)
+                                result = {"date": draw_date, "num": num_str}
+                                print(f"[fetch_latest_result] みずほ銀行から取得成功: {draw_date} - {num_str}")
+                                break
                         
                         if result:
                             break
+                
+                # テーブルが見つからない場合、ページ全体から検索
+                if not result:
+                    print(f"[fetch_latest_result] テーブルから取得できませんでした。ページ全体から検索します...")
+                    page_text = soup.get_text()
+                    # 最新の日付パターンを探す（2025年12月16日など）
+                    date_patterns = re.findall(r"(\d{4})[年/.-](\d{1,2})[月/.-](\d{1,2})日?", page_text)
+                    if date_patterns:
+                        # 最新の日付を取得
+                        latest_date_match = date_patterns[0]
+                        year, month, day = latest_date_match
+                        draw_date = datetime(int(year), int(month), int(day)).strftime("%Y-%m-%d")
+                        
+                        # その日付の近くにある3桁の数字を探す
+                        date_pos = page_text.find(f"{year}年{month}月{day}日")
+                        if date_pos >= 0:
+                            nearby_text = page_text[max(0, date_pos-50):date_pos+200]
+                            num_match = re.search(r"(\d)\s*(\d)\s*(\d)", nearby_text)
+                            if num_match:
+                                num_str = "".join(num_match.groups()).zfill(3)
+                                result = {"date": draw_date, "num": num_str}
+                                print(f"[fetch_latest_result] ページ全体から取得成功: {draw_date} - {num_str}")
             
             # lottery-info.jp の場合
             elif site_type == "lottery-info":
@@ -196,17 +257,22 @@ def fetch_latest_result(timeout: int = 10, sleep_sec: float = 1.0) -> Optional[D
             
             # 結果が見つかった場合
             if result:
-                # 日付の妥当性チェック（今日から過去30日以内）
+                # 日付の妥当性チェック（今日から過去60日以内に緩和）
                 try:
                     date_obj = datetime.strptime(result["date"], "%Y-%m-%d")
-                    days_diff = (datetime.now() - date_obj).days
-                    if 0 <= days_diff <= 30:
+                    now = datetime.now()
+                    days_diff = (now - date_obj).days
+                    print(f"[fetch_latest_result] {site_type} 日付チェック: {result['date']}, 今日: {now.strftime('%Y-%m-%d')}, 差分: {days_diff}日")
+                    
+                    if -1 <= days_diff <= 60:  # 未来1日まで許容（時差の可能性）
                         print(f"[fetch_latest_result] {site_type} から取得成功: {result['date']} - {result['num']}")
                         return result
                     else:
                         print(f"[fetch_latest_result] {site_type} の日付が範囲外です: {result['date']} (差分: {days_diff}日)")
                 except Exception as e:
                     print(f"[fetch_latest_result] {site_type} の日付パースエラー: {e}")
+                    import traceback
+                    print(f"[fetch_latest_result] トレースバック: {traceback.format_exc()}")
             
         except Exception as e:
             print(f"[fetch_latest_result] {site_type} ({url}) からの取得に失敗: {e}")
