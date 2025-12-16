@@ -1,0 +1,73 @@
+name: Daily Prediction Update
+
+on:
+  schedule:
+    # 毎日 20:00 JST (11:00 UTC) に実行
+    - cron: '0 11 * * *'
+  workflow_dispatch:  # 手動実行を許可
+
+jobs:
+  update-prediction:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      
+      - name: Run analysis
+        id: run-analysis
+        run: |
+          python analyze.py
+          echo "analysis_completed=true" >> $GITHUB_OUTPUT
+        continue-on-error: true
+      
+      - name: Check for data file changes
+        id: check-data-changes
+        run: |
+          if [ -n "$(git status --porcelain public/data.json)" ]; then
+            echo "data_changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "data_changed=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Check for prediction file changes
+        id: check-prediction-changes
+        run: |
+          if [ -n "$(git status --porcelain docs/data/latest_prediction.json)" ]; then
+            echo "prediction_changed=true" >> $GITHUB_OUTPUT
+          else
+            echo "prediction_changed=false" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Commit and push data updates
+        if: steps.check-data-changes.outputs.data_changed == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add public/data.json
+          git commit -m "Update data: $(date +'%Y-%m-%d %H:%M:%S JST')" || exit 0
+          git push
+      
+      - name: Commit and push prediction updates
+        if: steps.check-prediction-changes.outputs.prediction_changed == 'true'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add docs/data/latest_prediction.json
+          git commit -m "Update prediction: $(date +'%Y-%m-%d %H:%M:%S JST')" || exit 0
+          git push
+

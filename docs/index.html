@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>ナンバーズ3予測ツール</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-4xl">
+        <!-- ヘッダー -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">
+                ナンバーズ3 <span class="text-blue-600">予測ツール</span>
+            </h1>
+            <p class="text-gray-600">AI分析による次回当選番号予測</p>
+        </header>
+
+        <!-- ローディング表示 -->
+        <div id="loading" class="text-center py-12">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <p class="mt-4 text-gray-600">予測データを読み込み中...</p>
+        </div>
+
+        <!-- エラー表示 -->
+        <div id="error" class="hidden bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+            <p id="errorMessage"></p>
+        </div>
+
+        <!-- メインコンテンツ -->
+        <div id="content" class="hidden">
+            <!-- 最終更新時刻 -->
+            <div class="bg-white rounded-lg shadow-md p-4 mb-6">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <p class="text-sm text-gray-600">最終更新</p>
+                        <p id="lastUpdate" class="text-lg font-semibold text-gray-800"></p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-sm text-gray-600">データ件数</p>
+                        <p id="totalRecords" class="text-lg font-semibold text-gray-800"></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- セット予測 -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+                    <span class="bg-blue-600 text-white rounded-full w-8 h-8 flex items-center justify-center mr-2">S</span>
+                    セット予測（3桁）
+                </h2>
+                <div id="setPredictions" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+            </div>
+
+            <!-- ミニ予測 -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4 flex items-center">
+                    <span class="bg-green-600 text-white rounded-full w-8 h-8 flex items-center justify-center mr-2">M</span>
+                    ミニ予測（下2桁）
+                </h2>
+                <div id="miniPredictions" class="grid grid-cols-1 md:grid-cols-3 gap-4"></div>
+            </div>
+
+            <!-- 位相グラフ -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">位相推移グラフ</h2>
+                <div class="h-64">
+                    <canvas id="phaseChart"></canvas>
+                </div>
+            </div>
+
+            <!-- 予測手法の詳細 -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-2xl font-bold text-gray-800 mb-4">予測手法の詳細</h2>
+                <div id="methodDetails" class="space-y-4"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
+
