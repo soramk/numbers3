@@ -33,7 +33,6 @@ def fetch_latest_result(timeout: int = 10, sleep_sec: float = 1.0) -> Optional[D
     # 複数の情報源を試す（優先順位順）
     urls = [
         ("https://www.mizuhobank.co.jp/takarakuji/check/numbers/numbers3/index.html", "mizuhobank"),
-        ("https://www.lottery-info.jp/#numbers3", "lottery-info"),
         ("https://takarakuji.rakuten.co.jp/backnumber/numbers3/", "rakuten"),
     ]
     
@@ -117,15 +116,29 @@ def fetch_latest_result(timeout: int = 10, sleep_sec: float = 1.0) -> Optional[D
                             
                             print(f"[fetch_latest_result] 行{row_idx}: 日付={raw_date}, 数字={raw_num}")
                             
-                            # 日付をパース
-                            date_match = re.search(r"(\d{4})[年/.-](\d{1,2})[月/.-](\d{1,2})日?", raw_date)
+                            # 日付をパース（「2025年12月16日」形式に対応）
+                            draw_date = None
+                            
+                            # パターン1: 「2025年12月16日」形式
+                            date_match = re.search(r"(\d{4})年(\d{1,2})月(\d{1,2})日", raw_date)
                             if date_match:
                                 year, month, day = date_match.groups()
                                 draw_date = datetime(int(year), int(month), int(day)).strftime("%Y-%m-%d")
-                            else:
-                                # 既に YYYY-MM-DD 形式の場合
+                                print(f"[fetch_latest_result] 日付パース成功（年/月/日形式）: {draw_date}")
+                            
+                            # パターン2: 「2025/12/16」形式
+                            if not draw_date:
+                                date_match = re.search(r"(\d{4})[/.-](\d{1,2})[/.-](\d{1,2})", raw_date)
+                                if date_match:
+                                    year, month, day = date_match.groups()
+                                    draw_date = datetime(int(year), int(month), int(day)).strftime("%Y-%m-%d")
+                                    print(f"[fetch_latest_result] 日付パース成功（スラッシュ形式）: {draw_date}")
+                            
+                            # パターン3: 既に YYYY-MM-DD 形式の場合
+                            if not draw_date:
                                 try:
                                     draw_date = datetime.strptime(raw_date[:10], "%Y-%m-%d").strftime("%Y-%m-%d")
+                                    print(f"[fetch_latest_result] 日付パース成功（ISO形式）: {draw_date}")
                                 except:
                                     print(f"[fetch_latest_result] 日付パース失敗: {raw_date}")
                                     continue
@@ -146,61 +159,37 @@ def fetch_latest_result(timeout: int = 10, sleep_sec: float = 1.0) -> Optional[D
                 if not result:
                     print(f"[fetch_latest_result] テーブルから取得できませんでした。ページ全体から検索します...")
                     page_text = soup.get_text()
-                    # 最新の日付パターンを探す（2025年12月16日など）
-                    date_patterns = re.findall(r"(\d{4})[年/.-](\d{1,2})[月/.-](\d{1,2})日?", page_text)
+                    
+                    # 最新の日付パターンを探す（「2025年12月16日」形式を優先）
+                    date_patterns = []
+                    
+                    # パターン1: 「2025年12月16日」形式
+                    matches = re.finditer(r"(\d{4})年(\d{1,2})月(\d{1,2})日", page_text)
+                    for match in matches:
+                        year, month, day = match.groups()
+                        date_patterns.append((match.start(), int(year), int(month), int(day)))
+                    
+                    # パターン2: 「2025/12/16」形式（フォールバック）
+                    if not date_patterns:
+                        matches = re.finditer(r"(\d{4})[/.-](\d{1,2})[/.-](\d{1,2})", page_text)
+                        for match in matches:
+                            year, month, day = match.groups()
+                            date_patterns.append((match.start(), int(year), int(month), int(day)))
+                    
                     if date_patterns:
-                        # 最新の日付を取得
+                        # 最新の日付を取得（最初に見つかったもの、または最新のもの）
                         latest_date_match = date_patterns[0]
-                        year, month, day = latest_date_match
-                        draw_date = datetime(int(year), int(month), int(day)).strftime("%Y-%m-%d")
+                        year, month, day = latest_date_match[1], latest_date_match[2], latest_date_match[3]
+                        draw_date = datetime(year, month, day).strftime("%Y-%m-%d")
                         
                         # その日付の近くにある3桁の数字を探す
-                        date_pos = page_text.find(f"{year}年{month}月{day}日")
-                        if date_pos >= 0:
-                            nearby_text = page_text[max(0, date_pos-50):date_pos+200]
-                            num_match = re.search(r"(\d)\s*(\d)\s*(\d)", nearby_text)
-                            if num_match:
-                                num_str = "".join(num_match.groups()).zfill(3)
-                                result = {"date": draw_date, "num": num_str}
-                                print(f"[fetch_latest_result] ページ全体から取得成功: {draw_date} - {num_str}")
-            
-            # lottery-info.jp の場合
-            elif site_type == "lottery-info":
-                # 「最新の当選番号 ナンバーズ3」セクションを探す
-                # ページ内のテキストから最新情報を抽出
-                page_text = soup.get_text()
-                
-                # 「第XXXX回 YYYY年MM月DD日」のパターンを探す
-                date_pattern = re.search(r"第\d+回\s+(\d{4})年(\d{1,2})月(\d{1,2})日", page_text)
-                if date_pattern:
-                    year, month, day = date_pattern.groups()
-                    draw_date = datetime(int(year), int(month), int(day)).strftime("%Y-%m-%d")
-                    
-                    # 「当選数字: X X X」のパターンを探す
-                    num_pattern = re.search(r"当選数字[：:]\s*(\d)\s+(\d)\s+(\d)", page_text)
-                    if num_pattern:
-                        num_str = "".join(num_pattern.groups()).zfill(3)
-                        result = {"date": draw_date, "num": num_str}
-                    else:
-                        # テーブルから取得を試みる
-                        tables = soup.find_all("table")
-                        for table in tables:
-                            rows = table.find_all("tr")
-                            for row in rows:
-                                row_text = row.get_text()
-                                if "当選数字" in row_text:
-                                    tds = row.find_all(["td", "th"])
-                                    for td in tds:
-                                        td_text = td.get_text(strip=True)
-                                        digits = re.findall(r"\d", td_text)
-                                        if len(digits) >= 3:
-                                            num_str = "".join(digits[:3]).zfill(3)
-                                            result = {"date": draw_date, "num": num_str}
-                                            break
-                                    if result:
-                                        break
-                                if result:
-                                    break
+                        date_pos = latest_date_match[0]
+                        nearby_text = page_text[max(0, date_pos-50):date_pos+200]
+                        num_match = re.search(r"(\d)\s*(\d)\s*(\d)", nearby_text)
+                        if num_match:
+                            num_str = "".join(num_match.groups()).zfill(3)
+                            result = {"date": draw_date, "num": num_str}
+                            print(f"[fetch_latest_result] ページ全体から取得成功: {draw_date} - {num_str}")
             
             # 楽天宝くじの場合
             elif site_type == "rakuten":
@@ -220,15 +209,31 @@ def fetch_latest_result(timeout: int = 10, sleep_sec: float = 1.0) -> Optional[D
                             raw_date = tds[0].get_text(strip=True)
                             raw_num = tds[1].get_text(strip=True) if len(tds) > 1 else ""
                             
-                            # 日付をパース
-                            date_match = re.search(r"(\d{4})[年/.-](\d{1,2})[月/.-](\d{1,2})日?", raw_date)
+                            # 日付をパース（「2025年12月16日」形式に対応）
+                            draw_date = None
+                            
+                            # パターン1: 「2025年12月16日」形式（みずほ銀行サイトの標準形式）
+                            date_match = re.search(r"(\d{4})年(\d{1,2})月(\d{1,2})日", raw_date)
                             if date_match:
                                 year, month, day = date_match.groups()
                                 draw_date = datetime(int(year), int(month), int(day)).strftime("%Y-%m-%d")
-                            else:
+                                print(f"[fetch_latest_result] 日付パース成功（年/月/日形式）: {draw_date}")
+                            
+                            # パターン2: 「2025/12/16」形式
+                            if not draw_date:
+                                date_match = re.search(r"(\d{4})[/.-](\d{1,2})[/.-](\d{1,2})", raw_date)
+                                if date_match:
+                                    year, month, day = date_match.groups()
+                                    draw_date = datetime(int(year), int(month), int(day)).strftime("%Y-%m-%d")
+                                    print(f"[fetch_latest_result] 日付パース成功（スラッシュ形式）: {draw_date}")
+                            
+                            # パターン3: 既に YYYY-MM-DD 形式の場合
+                            if not draw_date:
                                 try:
                                     draw_date = datetime.strptime(raw_date[:10], "%Y-%m-%d").strftime("%Y-%m-%d")
+                                    print(f"[fetch_latest_result] 日付パース成功（ISO形式）: {draw_date}")
                                 except:
+                                    print(f"[fetch_latest_result] 日付パース失敗: {raw_date}")
                                     continue
                             
                             # 当選番号を抽出
@@ -244,11 +249,23 @@ def fetch_latest_result(timeout: int = 10, sleep_sec: float = 1.0) -> Optional[D
                 # テーブルが見つからない場合、ページ全体から検索
                 if not result:
                     page_text = soup.get_text()
-                    # 日付パターン
-                    date_match = re.search(r"(\d{4})[年/.-](\d{1,2})[月/.-](\d{1,2})日?", page_text)
+                    # 日付パターン（「2025年12月16日」形式を優先）
+                    draw_date = None
+                    
+                    # パターン1: 「2025年12月16日」形式
+                    date_match = re.search(r"(\d{4})年(\d{1,2})月(\d{1,2})日", page_text)
                     if date_match:
                         year, month, day = date_match.groups()
                         draw_date = datetime(int(year), int(month), int(day)).strftime("%Y-%m-%d")
+                    
+                    # パターン2: 「2025/12/16」形式
+                    if not draw_date:
+                        date_match = re.search(r"(\d{4})[/.-](\d{1,2})[/.-](\d{1,2})", page_text)
+                        if date_match:
+                            year, month, day = date_match.groups()
+                            draw_date = datetime(int(year), int(month), int(day)).strftime("%Y-%m-%d")
+                    
+                    if draw_date:
                         # 3桁の数字パターン
                         num_match = re.search(r"(\d)\s*(\d)\s*(\d)", page_text)
                         if num_match:
