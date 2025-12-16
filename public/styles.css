@@ -12,9 +12,15 @@
     --shadow-soft: 0 18px 40px rgba(15, 23, 42, 0.12);
 }
 
+* {
+    box-sizing: border-box;
+}
+
 html {
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
+    width: 100%;
+    position: relative;
 }
 
 body {
@@ -30,12 +36,16 @@ body {
     overflow-x: hidden;
     position: relative;
     width: 100%;
+    max-width: 100vw;
     touch-action: pan-y;
+    -webkit-text-size-adjust: 100%;
 }
 
 .container {
     max-width: 960px;
     margin: 0 auto;
+    width: 100%;
+    position: relative;
 }
 
 header {
@@ -44,12 +54,17 @@ header {
     align-items: center;
     padding-bottom: 20px;
     margin-bottom: 24px;
+    width: 100%;
+    gap: 12px;
 }
 
 h1 {
     margin: 0;
     font-size: 1.6rem;
     letter-spacing: 0.08em;
+    flex: 1;
+    min-width: 0;
+    word-break: break-word;
 }
 
 .accent {
@@ -200,9 +215,12 @@ input {
     color: var(--text-color);
     padding: 8px 10px;
     border-radius: 999px;
-    font-size: 0.85rem;
+    font-size: 16px; /* iOSの自動ズームを防ぐため16px以上 */
     outline: none;
-    min-width: 230px;
+    min-width: 0;
+    width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
 }
 
 input::placeholder {
@@ -252,8 +270,11 @@ select {
     border-radius: 999px;
     border: 1px solid var(--border-color);
     padding: 8px 28px 8px 10px;
-    font-size: 0.82rem;
+    font-size: 16px; /* iOSの自動ズームを防ぐため16px以上 */
     background: #f9fafb;
+    width: 100%;
+    -webkit-appearance: none;
+    appearance: none;
 }
 
 .chart-container {
@@ -295,12 +316,22 @@ select {
 }
 
 @media (max-width: 768px) {
+    html {
+        width: 100%;
+        overflow-x: hidden;
+    }
+    
     body {
         padding: 12px;
+        width: 100%;
+        max-width: 100vw;
+        overflow-x: hidden;
     }
     
     .container {
         max-width: 100%;
+        width: 100%;
+        padding: 0;
     }
     
     header {
@@ -308,24 +339,37 @@ select {
         justify-content: space-between;
         align-items: center;
         gap: 12px;
+        width: 100%;
+        padding-left: 0;
+        padding-right: 0;
     }
     
     h1 {
-        font-size: 1.3rem;
+        font-size: 1.2rem;
+        word-break: break-word;
+        flex: 1;
+        min-width: 0;
     }
     
     .settings-btn {
-        padding: 8px 16px;
+        padding: 8px 14px;
         font-size: 0.85rem;
+        flex-shrink: 0;
     }
     
     .modal-content {
-        width: 95%;
+        width: calc(100% - 20px);
+        max-width: calc(100vw - 20px);
         max-height: 85vh;
+        margin: 10px;
     }
     
     .modal-header {
         padding: 16px 20px;
+    }
+    
+    .modal-header h2 {
+        font-size: 1.1rem;
     }
     
     .modal-body {
@@ -339,10 +383,47 @@ select {
     .card {
         padding: 16px;
         margin-bottom: 16px;
+        width: 100%;
+        max-width: 100%;
+        box-sizing: border-box;
+    }
+    
+    .card h2 {
+        font-size: 1.05rem;
+        word-break: break-word;
+    }
+    
+    .card p {
+        font-size: 0.85rem;
+        word-break: break-word;
     }
     
     .chart-container {
         height: 240px;
+        width: 100%;
+        max-width: 100%;
+    }
+    
+    input {
+        font-size: 16px; /* iOSの自動ズームを防ぐ */
+        width: 100%;
+    }
+    
+    select {
+        font-size: 16px; /* iOSの自動ズームを防ぐ */
+        width: 100%;
+    }
+    
+    button {
+        font-size: 0.9rem;
+        white-space: normal;
+        word-break: break-word;
+    }
+    
+    .primary-btn,
+    .secondary-btn {
+        width: 100%;
+        font-size: 0.95rem;
     }
 }
 

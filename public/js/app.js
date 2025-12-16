@@ -21,6 +21,7 @@ const recentSummaryBody = document.getElementById('recentSummaryBody');
 const historyArea = document.getElementById('historyArea');
 const historyBody = document.getElementById('historyBody');
 const exportHistoryBtn = document.getElementById('exportHistoryBtn');
+const frequencyChartType = document.getElementById('frequencyChartType');
 const frequencyPeriodType = document.getElementById('frequencyPeriodType');
 const frequencyPeriodValue = document.getElementById('frequencyPeriodValue');
 const updateFrequencyChart = document.getElementById('updateFrequencyChart');
@@ -361,7 +362,7 @@ function drawFrequencyChart(periodType = 'all', filterValue = null) {
         return;
     }
 
-    const freqData = engine.getDigitFrequencyByPeriod(periodType, filterValue);
+    const chartType = frequencyChartType ? frequencyChartType.value : 'set';
     const ctx = document.getElementById('frequencyChart');
     
     if (!ctx) return;
@@ -371,7 +372,6 @@ function drawFrequencyChart(periodType = 'all', filterValue = null) {
         frequencyChartInstance.destroy();
     }
 
-    const labels = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
     let periodLabel = '全期間';
     if (periodType === 'year' && filterValue) {
         periodLabel = `${filterValue}年`;
@@ -381,81 +381,160 @@ function drawFrequencyChart(periodType = 'all', filterValue = null) {
         periodLabel = `${parseInt(filterValue, 10)}月（全年）`;
     }
 
-    frequencyChartInstance = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [
-                {
-                    label: '百の位',
-                    data: freqData.digitRateByPos[0].map(v => parseFloat(v)),
-                    backgroundColor: 'rgba(88, 166, 255, 0.6)',
-                    borderColor: 'rgba(88, 166, 255, 1)',
+    if (chartType === 'mini') {
+        // ミニ（下2桁）グラフ
+        const miniData = engine.getMiniFrequencyByPeriod(periodType, filterValue);
+        
+        // 00-99のラベルを生成（10個ずつ表示）
+        const labels = [];
+        const data = [];
+        const counts = [];
+        for (let i = 0; i < 100; i++) {
+            labels.push(String(i).padStart(2, '0'));
+            data.push(parseFloat(miniData.miniRate[i]));
+            counts.push(miniData.miniFreq[i]);
+        }
+
+        frequencyChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: '下2桁出現率',
+                    data: data,
+                    backgroundColor: 'rgba(138, 43, 226, 0.6)',
+                    borderColor: 'rgba(138, 43, 226, 1)',
                     borderWidth: 1
-                },
-                {
-                    label: '十の位',
-                    data: freqData.digitRateByPos[1].map(v => parseFloat(v)),
-                    backgroundColor: 'rgba(35, 134, 54, 0.6)',
-                    borderColor: 'rgba(35, 134, 54, 1)',
-                    borderWidth: 1
-                },
-                {
-                    label: '一の位',
-                    data: freqData.digitRateByPos[2].map(v => parseFloat(v)),
-                    backgroundColor: 'rgba(255, 140, 0, 0.6)',
-                    borderColor: 'rgba(255, 140, 0, 1)',
-                    borderWidth: 1
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                title: {
-                    display: true,
-                    text: `各桁の数字出現率 (${periodLabel}) - データ件数: ${freqData.totalCount}件`,
-                    font: {
-                        size: 16
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: `下2桁（ミニ）出現率 (${periodLabel}) - データ件数: ${miniData.totalCount}件`,
+                        font: {
+                            size: 16
+                        }
+                    },
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const index = context.dataIndex;
+                                const value = context.parsed.y;
+                                const count = counts[index];
+                                return `${labels[index]}: ${value}% (${count}回)`;
+                            }
+                        }
                     }
                 },
-                legend: {
-                    display: true,
-                    position: 'top'
-                },
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-                            const datasetLabel = context.dataset.label || '';
-                            const value = context.parsed.y;
-                            const index = context.dataIndex;
-                            // freqDataはクロージャでアクセス可能
-                            const posIndex = context.datasetIndex; // 0=百, 1=十, 2=一
-                            const count = freqData.digitFreqByPos[posIndex][index];
-                            return `${datasetLabel}: ${value}% (${count}回)`;
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: '出現率 (%)'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: '下2桁'
+                        },
+                        ticks: {
+                            maxRotation: 90,
+                            minRotation: 45
                         }
                     }
                 }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: '出現率 (%)'
+            }
+        });
+    } else {
+        // セット（各桁別）グラフ
+        const freqData = engine.getDigitFrequencyByPeriod(periodType, filterValue);
+        const labels = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
+
+        frequencyChartInstance = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: '百の位',
+                        data: freqData.digitRateByPos[0].map(v => parseFloat(v)),
+                        backgroundColor: 'rgba(88, 166, 255, 0.6)',
+                        borderColor: 'rgba(88, 166, 255, 1)',
+                        borderWidth: 1
                     },
-                    max: 15
-                },
-                x: {
+                    {
+                        label: '十の位',
+                        data: freqData.digitRateByPos[1].map(v => parseFloat(v)),
+                        backgroundColor: 'rgba(35, 134, 54, 0.6)',
+                        borderColor: 'rgba(35, 134, 54, 1)',
+                        borderWidth: 1
+                    },
+                    {
+                        label: '一の位',
+                        data: freqData.digitRateByPos[2].map(v => parseFloat(v)),
+                        backgroundColor: 'rgba(255, 140, 0, 0.6)',
+                        borderColor: 'rgba(255, 140, 0, 1)',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
                     title: {
                         display: true,
-                        text: '数字'
+                        text: `各桁の数字出現率 (${periodLabel}) - データ件数: ${freqData.totalCount}件`,
+                        font: {
+                            size: 16
+                        }
+                    },
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: function(context) {
+                                const datasetLabel = context.dataset.label || '';
+                                const value = context.parsed.y;
+                                const index = context.dataIndex;
+                                // freqDataはクロージャでアクセス可能
+                                const posIndex = context.datasetIndex; // 0=百, 1=十, 2=一
+                                const count = freqData.digitFreqByPos[posIndex][index];
+                                return `${datasetLabel}: ${value}% (${count}回)`;
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: '出現率 (%)'
+                        },
+                        max: 15
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: '数字'
+                        }
                     }
                 }
             }
-        }
-    });
+        });
+    }
 }
 
 // 期間タイプ変更時の処理
@@ -504,6 +583,21 @@ if (frequencyPeriodType) {
                     periodValueSelect.appendChild(option);
                 });
             }
+        }
+    });
+}
+
+// グラフタイプ変更時の処理
+if (frequencyChartType) {
+    frequencyChartType.addEventListener('change', () => {
+        // グラフタイプが変更されたら、現在の期間設定で再描画
+        const periodType = frequencyPeriodType ? frequencyPeriodType.value : 'all';
+        const filterValue = frequencyPeriodValue && frequencyPeriodValue.value 
+            ? frequencyPeriodValue.value 
+            : null;
+        
+        if (periodType === 'all' || filterValue) {
+            drawFrequencyChart(periodType, filterValue);
         }
     });
 }

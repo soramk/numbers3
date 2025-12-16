@@ -225,12 +225,87 @@ export class MathEngine {
             num: String(r.num).padStart(3, '0')
         }));
 
+        // 下2桁（ミニ）の頻度カウント
+        const miniComboCounts = {};
+        this.data.forEach(record => {
+            const numStr = String(record.num).padStart(3, '0');
+            const mini = numStr.substring(1); // 下2桁（十の位と一の位）
+            miniComboCounts[mini] = (miniComboCounts[mini] || 0) + 1;
+        });
+
+        // よく出ている下2桁コンボ上位20件
+        const topMiniCombos = Object.entries(miniComboCounts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 20)
+            .map(([num, count]) => ({ num, count }));
+
+        // 直近10回の下2桁
+        const last10MiniNumbers = this.data.slice(-10).map(r => {
+            const numStr = String(r.num).padStart(3, '0');
+            return {
+                date: r.date,
+                num: numStr.substring(1) // 下2桁
+            };
+        });
+
         return {
             totalCount,
             digitFreqByPos,
             transitionMatrixByPos,
             topCombos,
-            last10Numbers
+            last10Numbers,
+            topMiniCombos,
+            last10MiniNumbers
+        };
+    }
+
+    /**
+     * 下2桁（ミニ）の頻出率を計算する
+     * @param {string} periodType - 'all', 'year', 'year_month', 'month_all' のいずれか
+     * @param {string|null} filterValue - フィルタ値
+     * @returns {Object} 下2桁の出現頻度と出現率（00-99）
+     */
+    getMiniFrequencyByPeriod(periodType = 'all', filterValue = null) {
+        let filteredData = this.data;
+
+        if (periodType === 'year' && filterValue) {
+            filteredData = this.data.filter(record => record.date.startsWith(filterValue));
+        } else if (periodType === 'year_month' && filterValue) {
+            filteredData = this.data.filter(record => record.date.startsWith(filterValue));
+        } else if (periodType === 'month_all' && filterValue) {
+            filteredData = this.data.filter(record => {
+                const month = record.date.substring(5, 7);
+                return month === filterValue;
+            });
+        }
+
+        // 下2桁（00-99）の頻度カウント
+        const miniFreq = Array(100).fill(0); // 00-99
+
+        filteredData.forEach(record => {
+            const numStr = String(record.num).padStart(3, '0');
+            const mini = parseInt(numStr.substring(1), 10); // 下2桁を数値に変換
+            if (!Number.isNaN(mini) && mini >= 0 && mini <= 99) {
+                miniFreq[mini] += 1;
+            }
+        });
+
+        const totalCount = filteredData.length;
+        const miniRate = Array(100).fill(0);
+
+        // 出現率を計算（パーセンテージ）
+        for (let i = 0; i < 100; i++) {
+            miniRate[i] = totalCount > 0 
+                ? (miniFreq[i] / totalCount * 100).toFixed(2)
+                : 0;
+        }
+
+        return {
+            periodType,
+            filterValue,
+            totalCount,
+            miniFreq,
+            miniRate
         };
     }
 

@@ -2,7 +2,9 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>Numbers3 Neural Equation Solver</title>
     <!-- ルートに移動したため、assets を public/ パスに修正 -->
     <link rel="stylesheet" href="public/styles.css">
@@ -34,7 +36,11 @@
 
             <section class="card">
                 <h2>2. AI Inference (Gemini)</h2>
-                <p>逆算された位相パラメータと、全履歴から集計した統計情報（頻度・遷移・3桁コンボなど）をもとに、AIがベイズ統計とコンフォーマル予測の考え方を取り入れて、次回の有力3桁候補を3パターン提示します。</p>
+                <p>逆算された位相パラメータと、全履歴から集計した統計情報（頻度・遷移・3桁コンボなど）をもとに、AIがベイズ統計とコンフォーマル予測の考え方を取り入れて、次回の予測を提示します。</p>
+                <ul style="margin-top: 8px; margin-left: 20px;">
+                    <li><strong>セット予測</strong>：3桁の数字を3パターン提示</li>
+                    <li><strong>ミニ予測</strong>：下2桁（十の位と一の位）を3パターン提示</li>
+                </ul>
                 <button id="predictBtn" class="secondary-btn" disabled>Geminiに予測させる</button>
                 <div id="tokenEstimate" style="font-size:0.8rem; opacity:0.85; margin-top:6px;"></div>
                 
@@ -64,18 +70,24 @@
                 <p>過去のデータから、各桁（百の位、十の位、一の位）ごとの数字の出現頻度をグラフで表示します。全期間・年毎・年＋月・「全年を通した同じ月」で切り替えて確認できます。</p>
                 
                 <div style="margin-bottom: 16px;">
+                    <label for="frequencyChartType" style="display: block; margin-bottom: 8px;">グラフタイプ:</label>
+                    <select id="frequencyChartType" style="padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-color); margin-bottom: 12px; font-size: 16px; width: 100%;">
+                        <option value="set">セット（各桁別）</option>
+                        <option value="mini">ミニ（下2桁）</option>
+                    </select>
+                    
                     <label for="frequencyPeriodType" style="display: block; margin-bottom: 8px;">期間選択:</label>
                     <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
-                        <select id="frequencyPeriodType" style="padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-color);">
+                        <select id="frequencyPeriodType" style="padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 16px; flex: 1; min-width: 0;">
                             <option value="all">全期間</option>
                             <option value="year">年毎</option>
                             <option value="year_month">年＋月</option>
                             <option value="month_all">月毎（全年）</option>
                         </select>
-                        <select id="frequencyPeriodValue" style="padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-color); display: none;">
+                        <select id="frequencyPeriodValue" style="padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-color); display: none; font-size: 16px; flex: 1; min-width: 0;">
                             <option value="">選択してください</option>
                         </select>
-                        <button id="updateFrequencyChart" class="secondary-btn" style="width: auto; padding: 6px 16px;">グラフ更新</button>
+                        <button id="updateFrequencyChart" class="secondary-btn" style="width: auto; padding: 6px 16px; flex-shrink: 0;">グラフ更新</button>
                     </div>
                 </div>
                 
@@ -108,9 +120,9 @@
             <div class="modal-body">
                 <div class="setting-section">
                     <label for="apiKey">Gemini API Key</label>
-                    <div style="display:flex; gap:8px; align-items:center; margin-top:6px;">
-                        <input type="password" id="apiKey" placeholder="Gemini API Keyを入力" style="flex:1; min-width:0;">
-                        <button id="saveKey" class="secondary-btn" style="width:auto; padding:8px 16px;">保存</button>
+                    <div style="display:flex; gap:8px; align-items:center; margin-top:6px; flex-wrap:wrap;">
+                        <input type="password" id="apiKey" placeholder="Gemini API Keyを入力" style="flex:1; min-width:0; font-size:16px;">
+                        <button id="saveKey" class="secondary-btn" style="width:auto; padding:8px 16px; flex-shrink:0;">保存</button>
                     </div>
                     <p style="font-size:0.75rem; color:var(--muted-text); margin-top:4px;">
                         API Keyは<a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio</a>で取得できます。
@@ -120,10 +132,10 @@
                 <div class="setting-section" style="margin-top:20px;">
                     <label for="modelSelect">使用モデル</label>
                     <div style="display:flex; gap:8px; align-items:center; margin-top:6px; flex-wrap:wrap;">
-                        <select id="modelSelect" style="flex:1; min-width:200px;">
+                        <select id="modelSelect" style="flex:1; min-width:0; font-size:16px;">
                             <option value="gemini-2.5-flash">gemini-2.5-flash</option>
                         </select>
-                        <button id="fetchModelsBtn" class="secondary-btn" style="width:auto; padding:8px 16px;">モデル取得</button>
+                        <button id="fetchModelsBtn" class="secondary-btn" style="width:auto; padding:8px 16px; flex-shrink:0;">モデル取得</button>
                     </div>
                     <div id="modelInfo" style="font-size:0.75rem; opacity:0.8; margin-top:6px; color:var(--muted-text);"></div>
                 </div>
