@@ -2,6 +2,9 @@ import { MathEngine } from './math_engine.js';
 import { askGemini, buildPhasePrompt, estimateTokensForPrompt } from './gemini_api.js';
 
 // DOM要素
+const settingsBtn = document.getElementById('settingsBtn');
+const settingsModal = document.getElementById('settingsModal');
+const closeModalBtn = document.getElementById('closeModalBtn');
 const apiKeyInput = document.getElementById('apiKey');
 const saveKeyBtn = document.getElementById('saveKey');
 const analyzeBtn = document.getElementById('analyzeBtn');
@@ -53,12 +56,45 @@ function renderHistory() {
 
 renderHistory();
 
+// モーダルの開閉
+if (settingsBtn) {
+    settingsBtn.addEventListener('click', () => {
+        if (settingsModal) {
+            settingsModal.classList.remove('hidden');
+            // 保存済みのAPIキーを表示
+            if (apiKeyInput) {
+                apiKeyInput.value = localStorage.getItem('gemini_api_key') || '';
+            }
+        }
+    });
+}
+
+if (closeModalBtn) {
+    closeModalBtn.addEventListener('click', () => {
+        if (settingsModal) {
+            settingsModal.classList.add('hidden');
+        }
+    });
+}
+
+// モーダル外をクリックで閉じる
+if (settingsModal) {
+    settingsModal.addEventListener('click', (e) => {
+        if (e.target === settingsModal) {
+            settingsModal.classList.add('hidden');
+        }
+    });
+}
+
 // APIキー管理
-saveKeyBtn.addEventListener('click', () => {
-    localStorage.setItem('gemini_api_key', apiKeyInput.value);
-    alert('API Keyを保存しました');
-});
-apiKeyInput.value = localStorage.getItem('gemini_api_key') || '';
+if (saveKeyBtn) {
+    saveKeyBtn.addEventListener('click', () => {
+        if (apiKeyInput) {
+            localStorage.setItem('gemini_api_key', apiKeyInput.value);
+            alert('API Keyを保存しました');
+        }
+    });
+}
 
 // Geminiモデル一覧を取得してセレクトに反映
 async function fetchModels() {
@@ -119,10 +155,14 @@ if (fetchModelsBtn) {
 }
 
 if (modelSelect) {
-    // 初期値の復元
+    // 初期値の復元（保存済みがあればそれ、なければデフォルトでgemini-2.5-flash）
     const savedModel = localStorage.getItem('gemini_model');
     if (savedModel) {
         modelSelect.value = savedModel;
+    } else {
+        // デフォルトをgemini-2.5-flashに設定
+        modelSelect.value = 'gemini-2.5-flash';
+        localStorage.setItem('gemini_model', 'gemini-2.5-flash');
     }
     modelSelect.addEventListener('change', () => {
         localStorage.setItem('gemini_model', modelSelect.value);
@@ -138,17 +178,17 @@ analyzeBtn.addEventListener('click', async () => {
         
         engine = new MathEngine(data);
         
-        // 3桁すべての位について、直近30回分の最適位相を逆算
-        analysisResult = engine.calculatePhaseTrendAll(30);
+        // 3桁すべての位について、直近100回分の最適位相を逆算
+        analysisResult = engine.calculatePhaseTrendAll(100);
         // 全履歴を使った統計サマリ
         analysisStats = engine.getGlobalStats();
         
         // チャート描画
         drawChart(analysisResult);
 
-        // 直近30回について、3桁のモデル出力と実際の3桁数字を並べて表示
+        // 直近100回について、3桁のモデル出力と実際の3桁数字を並べて表示
         if (recentSummaryBox && recentSummaryBody) {
-            const summary = engine.getRecentEquationSummaryAll(30);
+            const summary = engine.getRecentEquationSummaryAll(100);
             let text = '';
             text += '日付        実際(3桁)  方程式(3桁)   位相(百,十,一)\n';
             text += '---------------------------------------------------\n';
@@ -164,11 +204,12 @@ analyzeBtn.addEventListener('click', async () => {
             recentSummaryBox.classList.remove('hidden');
         }
 
-        // プロンプト長から推定トークン数を計算し表示
+        // プロンプト長から推定トークン数を計算し表示（直近30回分のみをプロンプトに含める）
         if (tokenEstimate && analysisResult && analysisResult.length) {
-            const prompt = buildPhasePrompt(analysisResult, analysisStats);
+            const promptData = analysisResult.slice(-30); // プロンプトには直近30回分のみ
+            const prompt = buildPhasePrompt(promptData, analysisStats);
             const estTokens = estimateTokensForPrompt(prompt);
-            tokenEstimate.innerText = `推定プロンプト長: 約 ${estTokens.toLocaleString()} トークン`;
+            tokenEstimate.innerText = `推定プロンプト長: 約 ${estTokens.toLocaleString()} トークン（直近30回分の位相データを使用）`;
         }
         
         predictBtn.disabled = false;
@@ -190,7 +231,7 @@ predictBtn.addEventListener('click', async () => {
     // 選択中のモデル名
     const modelName = modelSelect && modelSelect.value
         ? modelSelect.value
-        : (localStorage.getItem('gemini_model') || 'gemini-1.5-flash');
+        : (localStorage.getItem('gemini_model') || 'gemini-2.5-flash');
 
     try {
         const response = await askGemini(key, analysisResult, modelName, analysisStats);

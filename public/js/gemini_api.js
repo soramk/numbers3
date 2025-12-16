@@ -79,7 +79,7 @@ export async function askGemini(apiKey, phaseHistory, modelName, globalStats) {
     const selectedModel =
         modelName ||
         localStorage.getItem('gemini_model') ||
-        'gemini-1.5-flash';
+        'gemini-2.5-flash';
 
     const model = genAI.getGenerativeModel({ model: selectedModel });
 

@@ -12,6 +12,11 @@
     --shadow-soft: 0 18px 40px rgba(15, 23, 42, 0.12);
 }
 
+html {
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+}
+
 body {
     margin: 0;
     padding: 24px;
@@ -22,6 +27,10 @@ body {
         radial-gradient(circle at top left, var(--bg-gradient-from), transparent 60%),
         radial-gradient(circle at bottom right, var(--bg-gradient-to), transparent 55%),
         var(--bg-color);
+    overflow-x: hidden;
+    position: relative;
+    width: 100%;
+    touch-action: pan-y;
 }
 
 .container {
@@ -47,12 +56,120 @@ h1 {
     color: var(--accent-color);
 }
 
-.api-box {
-    background: rgba(255, 255, 255, 0.7);
+.settings-btn {
+    background-color: var(--accent-color);
+    color: #ffffff;
+    padding: 10px 20px;
+    border: none;
     border-radius: 999px;
-    padding: 8px 12px;
-    box-shadow: 0 8px 20px rgba(15, 23, 42, 0.12);
-    backdrop-filter: blur(10px);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+    transition: transform 0.1s ease, box-shadow 0.15s ease;
+}
+
+.settings-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
+}
+
+/* モーダル */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(4px);
+}
+
+.modal.hidden {
+    display: none;
+}
+
+.modal-content {
+    background-color: var(--card-bg);
+    border-radius: 18px;
+    padding: 0;
+    max-width: 500px;
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: modalFadeIn 0.2s ease-out;
+}
+
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.95);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.3rem;
+    color: var(--text-color);
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 2rem;
+    color: var(--muted-text);
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.close-btn:hover {
+    background-color: var(--border-color);
+    color: var(--text-color);
+}
+
+.modal-body {
+    padding: 24px;
+}
+
+.setting-section label {
+    display: block;
+    font-weight: 600;
+    color: var(--text-color);
+    margin-bottom: 4px;
+    font-size: 0.9rem;
+}
+
+.setting-section a {
+    color: var(--accent-color);
+    text-decoration: none;
+}
+
+.setting-section a:hover {
+    text-decoration: underline;
 }
 
 .card {
@@ -164,6 +281,69 @@ select {
     color: #e5e7eb;
     font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     font-size: 0.8rem;
+    word-break: break-word;
+    overflow-wrap: break-word;
+}
+
+/* スマホ用: 結果表示エリアをスクロール可能にする */
+.scrollable-result {
+    max-height: 400px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    padding-right: 4px;
+}
+
+@media (max-width: 768px) {
+    body {
+        padding: 12px;
+    }
+    
+    .container {
+        max-width: 100%;
+    }
+    
+    header {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+    }
+    
+    h1 {
+        font-size: 1.3rem;
+    }
+    
+    .settings-btn {
+        padding: 8px 16px;
+        font-size: 0.85rem;
+    }
+    
+    .modal-content {
+        width: 95%;
+        max-height: 85vh;
+    }
+    
+    .modal-header {
+        padding: 16px 20px;
+    }
+    
+    .modal-body {
+        padding: 20px;
+    }
+    
+    .scrollable-result {
+        max-height: 300px;
+    }
+    
+    .card {
+        padding: 16px;
+        margin-bottom: 16px;
+    }
+    
+    .chart-container {
+        height: 240px;
+    }
 }
 
 .method-list {
