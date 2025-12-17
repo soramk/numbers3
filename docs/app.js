@@ -63,24 +63,49 @@ function populateHistorySelect() {
         historySelect.appendChild(latestOption);
     }
     
-    // 履歴を追加
+    // 履歴を追加（時刻も表示）
     predictionHistory.forEach(entry => {
         const option = document.createElement('option');
         option.value = entry.file;
-        const date = new Date(entry.date);
+        
+        // タイムスタンプから日時を取得
+        const timestamp = entry.timestamp || (entry.datetime ? entry.datetime.replace('_', 'T') : entry.date);
+        const date = new Date(timestamp);
+        
         const dateStr = date.toLocaleDateString('ja-JP', {
             year: 'numeric',
             month: '2-digit',
             day: '2-digit'
         });
-        option.textContent = `${dateStr} の予測`;
+        
+        // 時刻情報を取得（entry.timeがある場合はそれを使用、なければタイムスタンプから）
+        let timeStr = '';
+        if (entry.time) {
+            // HHMMSS形式をHH:MM:SSに変換
+            const time = entry.time.match(/.{1,2}/g);
+            if (time && time.length >= 3) {
+                timeStr = `${time[0]}:${time[1]}:${time[2]}`;
+            }
+        } else {
+            timeStr = date.toLocaleTimeString('ja-JP', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
+        
+        // 同じ日付の複数の予測を区別できるように時刻も表示
+        option.textContent = `${dateStr} ${timeStr}`;
+        option.setAttribute('data-date', entry.date || dateStr);
+        option.setAttribute('data-time', entry.time || timeStr);
+        
         historySelect.appendChild(option);
     });
 }
 
 /**
  * 予測データを読み込む
- * @param {string} file - ファイル名（'latest' または 'prediction_YYYY-MM-DD.json'）
+ * @param {string} file - ファイル名（'latest' または 'prediction_YYYY-MM-DD_HHMMSS.json'）
  */
 async function loadPredictionData(file = 'latest') {
     const filePath = file === 'latest' 

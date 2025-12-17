@@ -1214,13 +1214,15 @@ class NumbersAnalyzer:
         
         print(f"予測結果を {output_path} に保存しました")
         
-        # 日付付きファイルで履歴を保存
+        # 日付と時刻付きファイルで履歴を保存（同日に複数回実行可能）
         jst_now = datetime.now(ZoneInfo("Asia/Tokyo"))
         date_str = jst_now.strftime("%Y-%m-%d")
+        time_str = jst_now.strftime("%H%M%S")
+        datetime_str = jst_now.strftime("%Y-%m-%d_%H%M%S")
         history_dir = os.path.dirname(output_path)
-        history_file = os.path.join(history_dir, f"prediction_{date_str}.json")
+        history_file = os.path.join(history_dir, f"prediction_{datetime_str}.json")
         
-        # 日付付きファイルに保存
+        # 日時付きファイルに保存
         with open(history_file, 'w', encoding='utf-8') as f:
             json.dump(prediction, f, ensure_ascii=False, indent=2)
         
@@ -1238,28 +1240,20 @@ class NumbersAnalyzer:
                 print(f"[save_prediction] 履歴リストの読み込みに失敗: {e}")
                 history_list = []
         
-        # 既存のエントリをチェック（同じ日付の場合は更新）
-        existing_index = None
-        for idx, entry in enumerate(history_list):
-            if entry.get('date') == date_str:
-                existing_index = idx
-                break
-        
+        # 新しいエントリを追加（同じ日時でも別エントリとして追加）
         history_entry = {
             'date': date_str,
+            'time': time_str,
+            'datetime': datetime_str,
             'timestamp': jst_now.isoformat(),
-            'file': f"prediction_{date_str}.json",
+            'file': f"prediction_{datetime_str}.json",
             'statistics': prediction.get('statistics', {})
         }
         
-        if existing_index is not None:
-            history_list[existing_index] = history_entry
-            print(f"[save_prediction] 履歴リストを更新しました: {date_str}")
-        else:
-            history_list.append(history_entry)
-            # 日付でソート（新しい順）
-            history_list.sort(key=lambda x: x.get('date', ''), reverse=True)
-            print(f"[save_prediction] 履歴リストに追加しました: {date_str}")
+        history_list.append(history_entry)
+        # タイムスタンプでソート（新しい順）
+        history_list.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
+        print(f"[save_prediction] 履歴リストに追加しました: {datetime_str}")
         
         # 履歴リストを保存
         with open(history_list_path, 'w', encoding='utf-8') as f:
