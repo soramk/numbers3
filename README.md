@@ -10,7 +10,8 @@ GitHub Pagesで運用するナンバーズ3の予測ツールです。GitHub Act
   - 結果を `docs/data/latest_prediction.json` に出力
 
 - **CI/CD**: GitHub Actions (`.github/workflows/daily_update.yml`)
-  - 毎日20:00 JSTに自動実行
+  - 毎日22:00 JSTに自動実行
+  - 最新の当選番号をWebから自動取得してデータを更新
   - 手動実行も可能
 
 - **フロントエンド**: 静的HTML/JS (`docs/index.html`, `docs/app.js`)
@@ -62,15 +63,25 @@ python analyze.py
 
 ```
 numbers3/
-├── analyze.py                    # Python分析スクリプト
+├── analyze.py                    # Python分析スクリプト（Webスクレイピング + 予測分析）
 ├── requirements.txt              # Python依存関係
 ├── public/
-│   └── data.json                # 過去データ
-├── docs/
-│   ├── index.html               # フロントエンドHTML
-│   ├── app.js                   # フロントエンドJS
-│   └── data/
-│       └── latest_prediction.json  # 予測結果（自動生成）
+│   └── data.json                # バックエンド用データ（全履歴）
+├── docs/                        # GitHub Pages用フロントエンド
+│   ├── index.html               # メインページ（予測結果表示）
+│   ├── analyzer.html            # 詳細分析ツール（Gemini版）
+│   ├── app.js                   # メインページ用JS
+│   ├── data/
+│   │   └── latest_prediction.json  # 予測結果（自動生成）
+│   └── public/                  # フロントエンド用静的ファイル
+│       ├── data.json            # フロントエンド用データ
+│       ├── styles.css           # スタイルシート
+│       └── js/                  # JavaScriptファイル
+│           ├── app.js           # 詳細分析ツール用JS
+│           ├── gemini_api.js    # Gemini API連携
+│           └── math_engine.js   # 数学エンジン
+├── tools/                       # ユーティリティ
+│   └── N3抽出ツール.js          # ブックマークレット（データ抽出用）
 └── .github/
     └── workflows/
         └── daily_update.yml     # GitHub Actionsワークフロー

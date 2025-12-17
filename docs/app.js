@@ -5,21 +5,89 @@
 
 let predictionData = null;
 let phaseChart = null;
+let predictionHistory = [];
 
 // ページ読み込み時にデータを取得
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        await loadPredictionData();
+        await loadPredictionHistory();
+        await loadPredictionData('latest');
+        
+        // 履歴選択のイベントリスナーを設定
+        const historySelect = document.getElementById('historySelect');
+        if (historySelect) {
+            historySelect.addEventListener('change', async (e) => {
+                const selectedValue = e.target.value;
+                if (selectedValue === 'latest') {
+                    await loadPredictionData('latest');
+                } else {
+                    await loadPredictionData(selectedValue);
+                }
+            });
+        }
     } catch (error) {
         showError('予測データの読み込みに失敗しました: ' + error.message);
     }
 });
 
 /**
- * 予測データを読み込む
+ * 予測履歴リストを読み込む
  */
-async function loadPredictionData() {
-    const response = await fetch('data/latest_prediction.json');
+async function loadPredictionHistory() {
+    try {
+        const response = await fetch('data/prediction_history.json');
+        if (response.ok) {
+            predictionHistory = await response.json();
+            populateHistorySelect();
+        } else {
+            console.warn('履歴リストが見つかりません。最新の予測のみ表示します。');
+            predictionHistory = [];
+        }
+    } catch (error) {
+        console.warn('履歴リストの読み込みに失敗:', error);
+        predictionHistory = [];
+    }
+}
+
+/**
+ * 履歴選択ドロップダウンを設定
+ */
+function populateHistorySelect() {
+    const historySelect = document.getElementById('historySelect');
+    if (!historySelect) return;
+    
+    // 既存のオプションをクリア（「最新の予測」は残す）
+    const latestOption = historySelect.querySelector('option[value="latest"]');
+    historySelect.innerHTML = '';
+    if (latestOption) {
+        historySelect.appendChild(latestOption);
+    }
+    
+    // 履歴を追加
+    predictionHistory.forEach(entry => {
+        const option = document.createElement('option');
+        option.value = entry.file;
+        const date = new Date(entry.date);
+        const dateStr = date.toLocaleDateString('ja-JP', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        });
+        option.textContent = `${dateStr} の予測`;
+        historySelect.appendChild(option);
+    });
+}
+
+/**
+ * 予測データを読み込む
+ * @param {string} file - ファイル名（'latest' または 'prediction_YYYY-MM-DD.json'）
+ */
+async function loadPredictionData(file = 'latest') {
+    const filePath = file === 'latest' 
+        ? 'data/latest_prediction.json'
+        : `data/${file}`;
+    
+    const response = await fetch(filePath);
     
     if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
