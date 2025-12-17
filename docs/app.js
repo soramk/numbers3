@@ -1208,6 +1208,7 @@ function renderMarkovDetail(method, analysis) {
 function renderBayesianDetail(method, analysis) {
     const patterns = analysis.frequent_patterns || {};
     const trends = analysis.trends || {};
+    const correlations = analysis.correlations || {};
     let html = '<div class="space-y-4">';
     
     // 使用している分析結果を表示
@@ -1221,14 +1222,77 @@ function renderBayesianDetail(method, analysis) {
     
     html += '<h4 class="font-bold text-lg text-gray-800 mb-3">ベイズ更新分析</h4>';
     
-    html += '<div class="bg-white rounded-lg p-3">';
-    html += '<p class="text-sm text-gray-700 mb-2">合計値との相関:</p>';
-    html += `<ul class="text-sm text-gray-600 space-y-1">`;
-    html += `<li>百の位: ${(correlations.hundred_sum * 100).toFixed(2)}%</li>`;
-    html += `<li>十の位: ${(correlations.ten_sum * 100).toFixed(2)}%</li>`;
-    html += `<li>一の位: ${(correlations.one_sum * 100).toFixed(2)}%</li>`;
-    html += `</ul>`;
+    // ベイズ統計の説明
+    html += '<div class="bg-white rounded-lg p-4 mb-4">';
+    html += '<p class="text-sm text-gray-700 mb-3">ベイズ統計では、過去の出現頻度を事前確率として、最新のトレンドを尤度として組み合わせて事後確率を計算します。</p>';
+    html += '<p class="text-sm text-gray-700">ベイズの定理: P(仮説|データ) = P(データ|仮説) × P(仮説) / P(データ)</p>';
     html += '</div>';
+    
+    // 頻出パターン（事前確率の参考）
+    if (patterns.set_top && Object.keys(patterns.set_top).length > 0) {
+        html += '<div class="bg-white rounded-lg p-4 mb-4">';
+        html += '<h5 class="font-semibold text-gray-700 mb-3">事前確率の参考（頻出3桁パターン上位5件）</h5>';
+        html += '<ul class="text-sm text-gray-600 space-y-1">';
+        const top5 = Object.entries(patterns.set_top).slice(0, 5);
+        top5.forEach(([pattern, count]) => {
+            html += `<li><strong>${pattern}</strong>: ${count}回出現（出現確率の参考）</li>`;
+        });
+        html += '</ul>';
+        html += '</div>';
+    }
+    
+    // トレンド分析（尤度の参考）
+    if (trends && Object.keys(trends).length > 0) {
+        html += '<div class="bg-white rounded-lg p-4 mb-4">';
+        html += '<h5 class="font-semibold text-gray-700 mb-3">尤度の参考（最新トレンド）</h5>';
+        
+        for (const [pos, posTrends] of Object.entries(trends)) {
+            const posName = {'hundred': '百の位', 'ten': '十の位', 'one': '一の位'}[pos] || pos;
+            html += `<div class="mb-3">`;
+            html += `<p class="text-sm font-medium text-gray-700 mb-1">${posName}</p>`;
+            
+            if (posTrends.short) {
+                const trendIcon = posTrends.short.trend > 0 ? '📈' : posTrends.short.trend < 0 ? '📉' : '➡️';
+                html += `<p class="text-xs text-gray-600">短期トレンド（直近10回）: ${trendIcon} 平均 ${posTrends.short.mean.toFixed(2)}, 傾き ${posTrends.short.trend > 0 ? '+' : ''}${posTrends.short.trend.toFixed(3)}</p>`;
+            }
+            if (posTrends.mid) {
+                const trendIcon = posTrends.mid.trend > 0 ? '📈' : posTrends.mid.trend < 0 ? '📉' : '➡️';
+                html += `<p class="text-xs text-gray-600">中期トレンド（直近50回）: ${trendIcon} 平均 ${posTrends.mid.mean.toFixed(2)}, 傾き ${posTrends.mid.trend > 0 ? '+' : ''}${posTrends.mid.trend.toFixed(3)}</p>`;
+            }
+            html += `</div>`;
+        }
+        html += '</div>';
+    }
+    
+    // 相関分析（補助情報）
+    if (correlations && Object.keys(correlations).length > 0) {
+        html += '<div class="bg-white rounded-lg p-4 mb-4">';
+        html += '<h5 class="font-semibold text-gray-700 mb-3">補助情報（相関分析）</h5>';
+        
+        if (correlations.hundred_sum !== undefined) {
+            html += '<div class="mb-2">';
+            html += '<p class="text-sm text-gray-700 mb-1">合計値との相関:</p>';
+            html += `<ul class="text-sm text-gray-600 space-y-1 ml-4">`;
+            html += `<li>百の位: ${(correlations.hundred_sum * 100).toFixed(2)}%</li>`;
+            html += `<li>十の位: ${(correlations.ten_sum * 100).toFixed(2)}%</li>`;
+            html += `<li>一の位: ${(correlations.one_sum * 100).toFixed(2)}%</li>`;
+            html += `</ul>`;
+            html += '</div>';
+        }
+        
+        if (correlations.hundred_lag1 !== undefined) {
+            html += '<div class="mb-2">';
+            html += '<p class="text-sm text-gray-700 mb-1">自己相関（前回との相関）:</p>';
+            html += `<ul class="text-sm text-gray-600 space-y-1 ml-4">`;
+            html += `<li>百の位: ${(correlations.hundred_lag1 * 100).toFixed(2)}%</li>`;
+            html += `<li>十の位: ${(correlations.ten_lag1 * 100).toFixed(2)}%</li>`;
+            html += `<li>一の位: ${(correlations.one_lag1 * 100).toFixed(2)}%</li>`;
+            html += `</ul>`;
+            html += '</div>';
+        }
+        
+        html += '</div>';
+    }
     
     html += '</div>';
     return html;
