@@ -34,6 +34,7 @@ const downloadPromptBtn = document.getElementById('downloadPromptBtn');
 let engine = null;
 let analysisResult = null;
 let analysisStats = null;
+let advancedAnalysis = null; // 高度な分析結果を保存
 let predictionHistory = [];
 let frequencyChartInstance = null;
 let currentPrompt = null;
@@ -194,6 +195,19 @@ analyzeBtn.addEventListener('click', async () => {
         // 全履歴を使った統計サマリ
         analysisStats = engine.getGlobalStats();
         
+        // 最新の予測結果から高度な分析データを取得
+        try {
+            const predictionResponse = await fetch('../data/latest_prediction.json');
+            if (predictionResponse.ok) {
+                const predictionData = await predictionResponse.json();
+                advancedAnalysis = predictionData.advanced_analysis || null;
+                console.log('[analyzeBtn] 高度な分析データを読み込みました:', advancedAnalysis ? Object.keys(advancedAnalysis) : 'なし');
+            }
+        } catch (e) {
+            console.warn('[analyzeBtn] 予測結果の読み込みに失敗:', e);
+            advancedAnalysis = null;
+        }
+        
         // チャート描画
         drawChart(analysisResult);
 
@@ -218,10 +232,10 @@ analyzeBtn.addEventListener('click', async () => {
         // プロンプト長から推定トークン数を計算し表示（直近500回分をプロンプトに含める）
         if (tokenEstimate && analysisResult && analysisResult.length) {
             const promptData = analysisResult.slice(-500); // プロンプトには直近500回分を使用
-            const prompt = buildPhasePrompt(promptData, analysisStats);
+            const prompt = buildPhasePrompt(promptData, analysisStats, advancedAnalysis);
             currentPrompt = prompt; // プロンプトを保存
             const estTokens = estimateTokensForPrompt(prompt);
-            tokenEstimate.innerText = `推定プロンプト長: 約 ${estTokens.toLocaleString()} トークン（直近500回分の位相データを使用）`;
+            tokenEstimate.innerText = `推定プロンプト長: 約 ${estTokens.toLocaleString()} トークン（直近500回分の位相データ + 高度な分析結果を使用）`;
             
             // プロンプトエリアを表示
             if (promptArea && promptContent && togglePromptBtn) {
@@ -265,7 +279,7 @@ predictBtn.addEventListener('click', async () => {
         // 500回分のデータを明示的に渡す
         const promptData = analysisResult ? analysisResult.slice(-500) : [];
         console.log(`[predictBtn] プロンプトに渡すデータ件数: ${promptData.length}`);
-        const response = await askGemini(key, promptData, modelName, analysisStats);
+        const response = await askGemini(key, promptData, modelName, analysisStats, advancedAnalysis);
         output.innerText = response;
         if (savePredictionBtn) {
             savePredictionBtn.disabled = false;
