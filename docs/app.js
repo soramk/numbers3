@@ -180,10 +180,20 @@ function renderContent() {
  * 詳細分析結果のボタンイベントを設定
  */
 function setupAnalysisDetailButtons() {
-    document.querySelectorAll('.analysis-detail-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-            const analysisType = e.currentTarget.getAttribute('data-analysis');
-            toggleAnalysisDetail(analysisType, e.currentTarget);
+    const buttons = document.querySelectorAll('.analysis-detail-btn');
+    console.log(`[setupAnalysisDetailButtons] ${buttons.length} 個のボタンが見つかりました`);
+    
+    buttons.forEach(btn => {
+        // 既存のイベントリスナーを削除（重複を防ぐ）
+        const newBtn = btn.cloneNode(true);
+        btn.parentNode.replaceChild(newBtn, btn);
+        
+        newBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const analysisType = newBtn.getAttribute('data-analysis');
+            console.log(`[setupAnalysisDetailButtons] ボタンがクリックされました: ${analysisType}`);
+            toggleAnalysisDetail(analysisType, newBtn);
         });
     });
 }
@@ -195,7 +205,10 @@ function toggleAnalysisDetail(analysisType, btn) {
     const detailDiv = document.getElementById(`detail-${analysisType}`);
     const icon = btn.querySelector('svg');
     
-    if (!detailDiv) return;
+    if (!detailDiv) {
+        console.error(`[toggleAnalysisDetail] detail-${analysisType} が見つかりません`);
+        return;
+    }
     
     const isHidden = detailDiv.classList.contains('hidden');
     
@@ -206,9 +219,11 @@ function toggleAnalysisDetail(analysisType, btn) {
             icon.style.transform = 'rotate(180deg)';
         }
         
-        // 詳細内容を生成（まだ生成されていない場合）
-        if (detailDiv.innerHTML === '') {
-            renderAnalysisDetail(analysisType, detailDiv);
+        // 詳細内容を生成（まだ生成されていない場合、または空の場合）
+        const contentDiv = detailDiv.querySelector('.analysis-detail-content') || detailDiv;
+        if (!contentDiv.innerHTML.trim() || contentDiv.innerHTML === '') {
+            console.log(`[toggleAnalysisDetail] ${analysisType} の詳細をレンダリングします`);
+            renderAnalysisDetail(analysisType, contentDiv);
         }
     } else {
         // 詳細を非表示
@@ -223,29 +238,62 @@ function toggleAnalysisDetail(analysisType, btn) {
  * 詳細分析結果をレンダリング
  */
 function renderAnalysisDetail(analysisType, container) {
-    if (!predictionData || !predictionData.advanced_analysis) {
-        container.innerHTML = '<p class="text-gray-600">詳細データがありません。</p>';
+    console.log(`[renderAnalysisDetail] ${analysisType} をレンダリング開始`);
+    
+    if (!predictionData) {
+        console.error('[renderAnalysisDetail] predictionData がありません');
+        container.innerHTML = '<p class="text-gray-600">予測データが読み込まれていません。</p>';
+        return;
+    }
+    
+    if (!predictionData.advanced_analysis) {
+        console.warn('[renderAnalysisDetail] advanced_analysis がありません');
+        container.innerHTML = '<p class="text-gray-600">詳細分析データがありません。</p>';
         return;
     }
     
     const analysis = predictionData.advanced_analysis;
+    console.log(`[renderAnalysisDetail] advanced_analysis:`, Object.keys(analysis));
     
     switch(analysisType) {
         case 'correlations':
-            renderCorrelationsDetail(analysis.correlations, container);
+            if (!analysis.correlations) {
+                console.warn('[renderAnalysisDetail] correlations データがありません');
+                container.innerHTML = '<p class="text-gray-600">相関分析データがありません。</p>';
+            } else {
+                renderCorrelationsDetail(analysis.correlations, container);
+            }
             break;
         case 'trends':
-            renderTrendsDetail(analysis.trends, container);
+            if (!analysis.trends) {
+                console.warn('[renderAnalysisDetail] trends データがありません');
+                container.innerHTML = '<p class="text-gray-600">トレンド分析データがありません。</p>';
+            } else {
+                renderTrendsDetail(analysis.trends, container);
+            }
             break;
         case 'clustering':
-            renderClusteringDetail(analysis.clustering, container);
+            if (!analysis.clustering) {
+                console.warn('[renderAnalysisDetail] clustering データがありません');
+                container.innerHTML = '<p class="text-gray-600">クラスタリング分析データがありません。</p>';
+            } else {
+                renderClusteringDetail(analysis.clustering, container);
+            }
             break;
         case 'frequency':
-            renderFrequencyDetail(analysis.frequency_analysis, container);
+            if (!analysis.frequency_analysis) {
+                console.warn('[renderAnalysisDetail] frequency_analysis データがありません');
+                container.innerHTML = '<p class="text-gray-600">周波数解析データがありません。</p>';
+            } else {
+                renderFrequencyDetail(analysis.frequency_analysis, container);
+            }
             break;
         default:
+            console.warn(`[renderAnalysisDetail] 未知の分析タイプ: ${analysisType}`);
             container.innerHTML = '<p class="text-gray-600">詳細情報がありません。</p>';
     }
+    
+    console.log(`[renderAnalysisDetail] ${analysisType} のレンダリング完了`);
 }
 
 /**
