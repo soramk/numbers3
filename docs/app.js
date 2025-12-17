@@ -171,6 +171,78 @@ function renderContent() {
     
     // 予測手法の詳細を表示
     setTimeout(() => renderMethodDetails(), 400);
+    
+    // 詳細分析結果のボタンイベントを設定
+    setTimeout(() => setupAnalysisDetailButtons(), 500);
+}
+
+/**
+ * 詳細分析結果のボタンイベントを設定
+ */
+function setupAnalysisDetailButtons() {
+    document.querySelectorAll('.analysis-detail-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const analysisType = e.currentTarget.getAttribute('data-analysis');
+            toggleAnalysisDetail(analysisType, e.currentTarget);
+        });
+    });
+}
+
+/**
+ * 詳細分析結果の表示/非表示
+ */
+function toggleAnalysisDetail(analysisType, btn) {
+    const detailDiv = document.getElementById(`detail-${analysisType}`);
+    const icon = btn.querySelector('svg');
+    
+    if (!detailDiv) return;
+    
+    const isHidden = detailDiv.classList.contains('hidden');
+    
+    if (isHidden) {
+        // 詳細を表示
+        detailDiv.classList.remove('hidden');
+        if (icon) {
+            icon.style.transform = 'rotate(180deg)';
+        }
+        
+        // 詳細内容を生成（まだ生成されていない場合）
+        if (detailDiv.innerHTML === '') {
+            renderAnalysisDetail(analysisType, detailDiv);
+        }
+    } else {
+        // 詳細を非表示
+        detailDiv.classList.add('hidden');
+        if (icon) {
+            icon.style.transform = 'rotate(0deg)';
+        }
+    }
+}
+
+/**
+ * 詳細分析結果をレンダリング
+ */
+function renderAnalysisDetail(analysisType, container) {
+    if (!predictionData || !predictionData.advanced_analysis) {
+        container.innerHTML = '<p class="text-gray-600">詳細データがありません。</p>';
+        return;
+    }
+    
+    const analysis = predictionData.advanced_analysis;
+    
+    switch(analysisType) {
+        case 'correlations':
+            renderCorrelationsDetail(analysis.correlations, container);
+            break;
+        case 'trends':
+            renderTrendsDetail(analysis.trends, container);
+            break;
+        case 'clustering':
+            renderClusteringDetail(analysis.clustering, container);
+            break;
+        default:
+            container.innerHTML = '<p class="text-gray-600">詳細情報がありません。</p>';
+    }
 }
 
 /**
@@ -941,6 +1013,259 @@ function renderPeriodicityChart(canvasId, patterns, labels, labelType, pos) {
     
     // グラフインスタンスを保存
     periodicityCharts[canvasId] = chart;
+}
+
+/**
+ * 相関分析の詳細を表示
+ */
+function renderCorrelationsDetail(correlations, container) {
+    if (!correlations) {
+        container.innerHTML = '<p class="text-gray-600">相関分析データがありません。</p>';
+        return;
+    }
+    
+    let html = '<div class="space-y-4">';
+    
+    // 桁間相関
+    html += '<div class="bg-white rounded-lg p-4">';
+    html += '<h4 class="font-bold text-gray-800 mb-3">桁間相関</h4>';
+    html += '<div class="grid grid-cols-1 md:grid-cols-3 gap-4">';
+    html += `<div class="text-center p-3 bg-blue-50 rounded-lg">`;
+    html += `<p class="text-xs text-gray-600 mb-1">百の位 ↔ 十の位</p>`;
+    html += `<p class="text-xl font-bold text-blue-700">${(correlations.hundred_ten * 100).toFixed(2)}%</p>`;
+    html += `</div>`;
+    html += `<div class="text-center p-3 bg-green-50 rounded-lg">`;
+    html += `<p class="text-xs text-gray-600 mb-1">十の位 ↔ 一の位</p>`;
+    html += `<p class="text-xl font-bold text-green-700">${(correlations.ten_one * 100).toFixed(2)}%</p>`;
+    html += `</div>`;
+    html += `<div class="text-center p-3 bg-purple-50 rounded-lg">`;
+    html += `<p class="text-xs text-gray-600 mb-1">百の位 ↔ 一の位</p>`;
+    html += `<p class="text-xl font-bold text-purple-700">${(correlations.hundred_one * 100).toFixed(2)}%</p>`;
+    html += `</div>`;
+    html += '</div>';
+    html += '</div>';
+    
+    // 自己相関（ラグ分析）
+    html += '<div class="bg-white rounded-lg p-4">';
+    html += '<h4 class="font-bold text-gray-800 mb-3">自己相関（ラグ分析）</h4>';
+    html += '<div class="space-y-3">';
+    
+    for (const pos of ['hundred', 'ten', 'one']) {
+        const posName = {'hundred': '百の位', 'ten': '十の位', 'one': '一の位'}[pos];
+        html += `<div class="border-l-4 border-blue-500 pl-3">`;
+        html += `<p class="font-semibold text-gray-700 mb-2">${posName}</p>`;
+        html += '<div class="grid grid-cols-5 gap-2 text-sm">';
+        for (const lag of [1, 2, 3, 5, 10]) {
+            const key = `${pos}_lag${lag}`;
+            const value = correlations[key] || 0;
+            const colorClass = Math.abs(value) > 0.02 ? 'text-blue-700 font-bold' : 'text-gray-600';
+            html += `<div class="text-center">`;
+            html += `<p class="text-xs text-gray-500">${lag}回前</p>`;
+            html += `<p class="${colorClass}">${(value * 100).toFixed(2)}%</p>`;
+            html += `</div>`;
+        }
+        html += '</div>';
+        html += `</div>`;
+    }
+    
+    html += '</div>';
+    html += '</div>';
+    
+    // 合計値との相関
+    html += '<div class="bg-white rounded-lg p-4">';
+    html += '<h4 class="font-bold text-gray-800 mb-3">合計値との相関</h4>';
+    html += '<div class="grid grid-cols-1 md:grid-cols-3 gap-4">';
+    html += `<div class="text-center p-3 bg-orange-50 rounded-lg">`;
+    html += `<p class="text-xs text-gray-600 mb-1">百の位</p>`;
+    html += `<p class="text-xl font-bold text-orange-700">${(correlations.hundred_sum * 100).toFixed(2)}%</p>`;
+    html += `</div>`;
+    html += `<div class="text-center p-3 bg-orange-50 rounded-lg">`;
+    html += `<p class="text-xs text-gray-600 mb-1">十の位</p>`;
+    html += `<p class="text-xl font-bold text-orange-700">${(correlations.ten_sum * 100).toFixed(2)}%</p>`;
+    html += `</div>`;
+    html += `<div class="text-center p-3 bg-orange-50 rounded-lg">`;
+    html += `<p class="text-xs text-gray-600 mb-1">一の位</p>`;
+    html += `<p class="text-xl font-bold text-orange-700">${(correlations.one_sum * 100).toFixed(2)}%</p>`;
+    html += `</div>`;
+    html += '</div>';
+    html += '</div>';
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+/**
+ * トレンド分析の詳細を表示
+ */
+function renderTrendsDetail(trends, container) {
+    if (!trends) {
+        container.innerHTML = '<p class="text-gray-600">トレンド分析データがありません。</p>';
+        return;
+    }
+    
+    let html = '<div class="space-y-4">';
+    
+    for (const [pos, posTrends] of Object.entries(trends)) {
+        const posName = {'hundred': '百の位', 'ten': '十の位', 'one': '一の位'}[pos] || pos;
+        html += '<div class="bg-white rounded-lg p-4">';
+        html += `<h4 class="font-bold text-gray-800 mb-3">${posName}</h4>`;
+        
+        // グラフ用のキャンバス
+        html += `<div class="h-64 mb-4">`;
+        html += `<canvas id="trend-chart-${pos}"></canvas>`;
+        html += `</div>`;
+        
+        // トレンド情報のテーブル
+        html += '<div class="overflow-x-auto">';
+        html += '<table class="w-full text-sm">';
+        html += '<thead><tr class="bg-gray-100">';
+        html += '<th class="px-4 py-2 text-left">期間</th>';
+        html += '<th class="px-4 py-2 text-center">平均</th>';
+        html += '<th class="px-4 py-2 text-center">傾き</th>';
+        html += '<th class="px-4 py-2 text-center">ボラティリティ</th>';
+        html += '</tr></thead>';
+        html += '<tbody>';
+        
+        for (const [period, data] of Object.entries(posTrends)) {
+            const periodName = {'short': '短期（直近10回）', 'mid': '中期（直近50回）', 'long': '長期（直近200回）'}[period] || period;
+            const trendIcon = data.trend > 0 ? '📈' : data.trend < 0 ? '📉' : '➡️';
+            html += '<tr class="border-b">';
+            html += `<td class="px-4 py-2">${periodName}</td>`;
+            html += `<td class="px-4 py-2 text-center">${data.mean.toFixed(2)}</td>`;
+            html += `<td class="px-4 py-2 text-center">${trendIcon} ${data.trend > 0 ? '+' : ''}${data.trend.toFixed(3)}</td>`;
+            html += `<td class="px-4 py-2 text-center">${data.volatility.toFixed(2)}</td>`;
+            html += '</tr>';
+        }
+        
+        html += '</tbody>';
+        html += '</table>';
+        html += '</div>';
+        html += '</div>';
+        
+        // グラフを描画
+        setTimeout(() => {
+            renderTrendChart(`trend-chart-${pos}`, posTrends);
+        }, 200);
+    }
+    
+    html += '</div>';
+    container.innerHTML = html;
+}
+
+/**
+ * トレンドグラフを描画
+ */
+function renderTrendChart(canvasId, trends) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) return;
+    
+    const ctx = canvas.getContext('2d');
+    
+    const labels = [];
+    const meanData = [];
+    const trendData = [];
+    
+    for (const [period, data] of Object.entries(trends)) {
+        const periodName = {'short': '短期', 'mid': '中期', 'long': '長期'}[period] || period;
+        labels.push(periodName);
+        meanData.push(data.mean);
+        trendData.push(data.trend * 10 + 5); // スケール調整
+    }
+    
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [
+                {
+                    label: '平均値',
+                    data: meanData,
+                    backgroundColor: 'rgba(59, 130, 246, 0.5)',
+                    borderColor: 'rgb(59, 130, 246)',
+                    borderWidth: 2
+                },
+                {
+                    label: 'トレンド（調整済み）',
+                    data: trendData,
+                    type: 'line',
+                    borderColor: 'rgb(16, 185, 129)',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderWidth: 3,
+                    tension: 0.4,
+                    fill: false
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: '値'
+                    }
+                }
+            }
+        }
+    });
+}
+
+/**
+ * クラスタリング分析の詳細を表示
+ */
+function renderClusteringDetail(clustering, container) {
+    if (!clustering || !clustering.cluster_analysis) {
+        container.innerHTML = '<p class="text-gray-600">クラスタリング分析データがありません。</p>';
+        return;
+    }
+    
+    let html = '<div class="space-y-4">';
+    
+    html += '<div class="bg-white rounded-lg p-4">';
+    html += `<p class="text-sm text-gray-700 mb-3">データは <span class="font-bold text-purple-600">${clustering.n_clusters}</span> 個のクラスタに分類されました。</p>`;
+    html += `<p class="text-sm text-gray-700 mb-4">最新データは <span class="font-bold text-blue-600">クラスタ ${clustering.latest_cluster}</span> に属しています。</p>`;
+    html += '</div>';
+    
+    // 各クラスタの特徴
+    html += '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
+    for (const [clusterId, clusterData] of Object.entries(clustering.cluster_analysis)) {
+        html += '<div class="bg-white rounded-lg p-4 border-2 border-purple-200">';
+        html += `<h4 class="font-bold text-gray-800 mb-3">クラスタ ${clusterId}</h4>`;
+        html += `<p class="text-sm text-gray-600 mb-2">データ数: <span class="font-bold">${clusterData.count}</span> 件</p>`;
+        html += '<div class="space-y-2 text-sm">';
+        html += `<p>百の位平均: <span class="font-semibold">${clusterData.hundred_mean.toFixed(2)}</span></p>`;
+        html += `<p>十の位平均: <span class="font-semibold">${clusterData.ten_mean.toFixed(2)}</span></p>`;
+        html += `<p>一の位平均: <span class="font-semibold">${clusterData.one_mean.toFixed(2)}</span></p>`;
+        html += `<p>合計平均: <span class="font-semibold">${clusterData.sum_mean.toFixed(2)}</span></p>`;
+        html += '</div>';
+        
+        // 頻出パターン
+        if (clusterData.most_common_set && Object.keys(clusterData.most_common_set).length > 0) {
+            html += '<div class="mt-3 pt-3 border-t border-gray-200">';
+            html += '<p class="text-xs font-semibold text-gray-600 mb-2">頻出3桁:</p>';
+            html += '<div class="flex flex-wrap gap-2">';
+            const top5 = Object.entries(clusterData.most_common_set).slice(0, 5);
+            top5.forEach(([pattern, count]) => {
+                html += `<span class="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-semibold">${pattern} (${count})</span>`;
+            });
+            html += '</div>';
+            html += '</div>';
+        }
+        
+        html += '</div>';
+    }
+    html += '</div>';
+    
+    html += '</div>';
+    container.innerHTML = html;
 }
 
 /**

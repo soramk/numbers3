@@ -166,6 +166,74 @@
                 </h2>
                 <div id="methodDetails" class="space-y-4"></div>
             </div>
+
+            <!-- 詳細分析結果 -->
+            <div class="glass-card rounded-2xl p-6 md:p-8 fade-in">
+                <h2 class="text-2xl md:text-3xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+                    <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                    詳細分析結果
+                </h2>
+                <div class="space-y-4">
+                    <!-- 相関分析 -->
+                    <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
+                        <button class="analysis-detail-btn w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors" data-analysis="correlations">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold">
+                                    📊
+                                </div>
+                                <div class="text-left">
+                                    <h3 class="font-bold text-gray-800">相関分析</h3>
+                                    <p class="text-xs text-gray-600">桁間相関・自己相関の分析結果</p>
+                                </div>
+                            </div>
+                            <svg class="w-5 h-5 text-gray-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div id="detail-correlations" class="analysis-detail-content hidden mt-4"></div>
+                    </div>
+
+                    <!-- トレンド分析 -->
+                    <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
+                        <button class="analysis-detail-btn w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors" data-analysis="trends">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-white font-bold">
+                                    📈
+                                </div>
+                                <div class="text-left">
+                                    <h3 class="font-bold text-gray-800">トレンド分析</h3>
+                                    <p class="text-xs text-gray-600">短期・中期・長期トレンドの分析結果</p>
+                                </div>
+                            </div>
+                            <svg class="w-5 h-5 text-gray-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div id="detail-trends" class="analysis-detail-content hidden mt-4"></div>
+                    </div>
+
+                    <!-- クラスタリング分析 -->
+                    <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
+                        <button class="analysis-detail-btn w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors" data-analysis="clustering">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
+                                    🎯
+                                </div>
+                                <div class="text-left">
+                                    <h3 class="font-bold text-gray-800">クラスタリング分析</h3>
+                                    <p class="text-xs text-gray-600">パターンのグループ化分析結果</p>
+                                </div>
+                            </div>
+                            <svg class="w-5 h-5 text-gray-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div id="detail-clustering" class="analysis-detail-content hidden mt-4"></div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
