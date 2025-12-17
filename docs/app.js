@@ -677,11 +677,19 @@ function renderMethodDetails() {
             <div class="bg-white/40 backdrop-blur-sm rounded-lg p-3 border border-gray-200 mb-4">
                 <p class="text-sm text-gray-700 leading-relaxed">${method.reason}</p>
             </div>
-            <button class="detail-btn w-full px-4 py-2 ${colorClasses.iconBg} text-white rounded-lg font-semibold hover:opacity-90 transition-all duration-200 shadow-md hover:shadow-lg" data-method="${methodKey}">
-                📊 分析過程を見る
-            </button>
+            <div class="flex gap-2">
+                <button class="detail-btn flex-1 px-4 py-2 ${colorClasses.iconBg} text-white rounded-lg font-semibold hover:opacity-90 transition-all duration-200 shadow-md hover:shadow-lg" data-method="${methodKey}">
+                    📊 分析過程を見る
+                </button>
+                <button class="theory-btn flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg font-semibold hover:opacity-90 transition-all duration-200 shadow-md hover:shadow-lg" data-method="${methodKey}">
+                    📚 学術的説明
+                </button>
+            </div>
             <div id="detail-${methodKey}" class="method-detail hidden mt-4 bg-white/60 backdrop-blur-sm rounded-lg p-4 border-2 ${colorClasses.border}">
                 <div class="method-detail-content"></div>
+            </div>
+            <div id="theory-${methodKey}" class="method-theory hidden mt-4 bg-white/60 backdrop-blur-sm rounded-lg p-4 border-2 border-gray-400">
+                <div class="method-theory-content"></div>
             </div>
         `;
         
@@ -695,6 +703,14 @@ function renderMethodDetails() {
             toggleMethodDetail(methodKey);
         });
     });
+    
+    // 学術的説明ボタンのイベントリスナーを設定
+    document.querySelectorAll('.theory-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const methodKey = e.target.getAttribute('data-method');
+            toggleMethodTheory(methodKey);
+        });
+    });
 }
 
 /**
@@ -702,7 +718,7 @@ function renderMethodDetails() {
  */
 function toggleMethodDetail(methodKey) {
     const detailDiv = document.getElementById(`detail-${methodKey}`);
-    const btn = document.querySelector(`[data-method="${methodKey}"]`);
+    const btn = document.querySelector(`.detail-btn[data-method="${methodKey}"]`);
     
     if (!detailDiv || !btn) return;
     
@@ -723,6 +739,309 @@ function toggleMethodDetail(methodKey) {
         detailDiv.classList.add('hidden');
         btn.textContent = '📊 分析過程を見る';
     }
+}
+
+/**
+ * 予測手法の学術的説明を表示/非表示
+ */
+function toggleMethodTheory(methodKey) {
+    const theoryDiv = document.getElementById(`theory-${methodKey}`);
+    const btn = document.querySelector(`.theory-btn[data-method="${methodKey}"]`);
+    
+    if (!theoryDiv || !btn) return;
+    
+    const isHidden = theoryDiv.classList.contains('hidden');
+    
+    if (isHidden) {
+        // 説明を表示
+        theoryDiv.classList.remove('hidden');
+        btn.textContent = '📚 説明を閉じる';
+        
+        // 説明内容を生成（まだ生成されていない場合）
+        const contentDiv = theoryDiv.querySelector('.method-theory-content');
+        if (contentDiv && contentDiv.innerHTML === '') {
+            renderMethodTheoryContent(methodKey, contentDiv);
+        }
+    } else {
+        // 説明を非表示
+        theoryDiv.classList.add('hidden');
+        btn.textContent = '📚 学術的説明';
+    }
+}
+
+/**
+ * 予測手法の学術的説明をレンダリング
+ */
+function renderMethodTheoryContent(methodKey, container) {
+    let html = '';
+    
+    switch(methodKey) {
+        case 'chaos':
+            html = `
+                <div class="space-y-4">
+                    <h4 class="font-bold text-xl text-gray-800 mb-4">カオス理論（Chaos Theory）</h4>
+                    
+                    <div class="bg-white rounded-lg p-4 mb-4">
+                        <h5 class="font-semibold text-gray-700 mb-2">理論的背景</h5>
+                        <p class="text-sm text-gray-700 leading-relaxed mb-3">
+                            カオス理論は、決定論的システムでありながら長期的な予測が困難な非線形動的システムを研究する数学的分野です。
+                            わずかな初期条件の違いが時間の経過とともに指数関数的に増大する「バタフライ効果」が特徴です。
+                        </p>
+                        <p class="text-sm text-gray-700 leading-relaxed">
+                            ナンバーズ3のような数値データは、複雑な非線形システムとして捉えることができ、
+                            位相空間における軌跡を分析することで、隠れたパターンやトレンドを発見できます。
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg p-4 mb-4">
+                        <h5 class="font-semibold text-gray-700 mb-2">位相空間解析</h5>
+                        <p class="text-sm text-gray-700 leading-relaxed mb-3">
+                            位相空間は、システムの状態を多次元空間内の点として表現する数学的表現です。
+                            各桁の値を座標として使用し、時系列データを位相空間内の軌跡として可視化します。
+                        </p>
+                        <p class="text-sm text-gray-700 leading-relaxed">
+                            この手法では、位相空間内の軌跡の方向性や密度を分析し、
+                            次の状態がどの方向に進む可能性が高いかを予測します。
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg p-4">
+                        <h5 class="font-semibold text-gray-700 mb-2">参考文献</h5>
+                        <ul class="text-xs text-gray-600 space-y-1 list-disc list-inside">
+                            <li>Lorenz, E. N. (1963). "Deterministic Nonperiodic Flow"</li>
+                            <li>Gleick, J. (1987). "Chaos: Making a New Science"</li>
+                            <li>Ott, E. (2002). "Chaos in Dynamical Systems"</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+            break;
+            
+        case 'markov':
+            html = `
+                <div class="space-y-4">
+                    <h4 class="font-bold text-xl text-gray-800 mb-4">マルコフ連鎖（Markov Chain）</h4>
+                    
+                    <div class="bg-white rounded-lg p-4 mb-4">
+                        <h5 class="font-semibold text-gray-700 mb-2">理論的背景</h5>
+                        <p class="text-sm text-gray-700 leading-relaxed mb-3">
+                            マルコフ連鎖は、現在の状態が過去の状態に依存せず、直前の状態のみに依存する確率過程です。
+                            この性質は「マルコフ性」と呼ばれ、状態遷移確率行列によって完全に記述されます。
+                        </p>
+                        <p class="text-sm text-gray-700 leading-relaxed">
+                            ナンバーズ3では、各桁の値が0から9までの10状態を持ち、
+                            前回の値から次の値への遷移確率を学習することで、次回の値を予測します。
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg p-4 mb-4">
+                        <h5 class="font-semibold text-gray-700 mb-2">遷移確率行列</h5>
+                        <p class="text-sm text-gray-700 leading-relaxed mb-3">
+                            遷移確率行列 P は、状態 i から状態 j への遷移確率 P<sub>ij</sub> を要素とする行列です。
+                            この行列は、過去のデータから統計的に推定され、次の状態の確率分布を計算するために使用されます。
+                        </p>
+                        <p class="text-sm text-gray-700 leading-relaxed">
+                            本システムでは、各桁について独立したマルコフ連鎖を構築し、
+                            最も確率の高い組み合わせを予測として出力します。
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg p-4">
+                        <h5 class="font-semibold text-gray-700 mb-2">参考文献</h5>
+                        <ul class="text-xs text-gray-600 space-y-1 list-disc list-inside">
+                            <li>Markov, A. A. (1906). "Extension of the limit theorems of probability theory"</li>
+                            <li>Norris, J. R. (1998). "Markov Chains"</li>
+                            <li>Kemeny, J. G., & Snell, J. L. (1976). "Finite Markov Chains"</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+            break;
+            
+        case 'bayesian':
+            html = `
+                <div class="space-y-4">
+                    <h4 class="font-bold text-xl text-gray-800 mb-4">ベイズ統計（Bayesian Statistics）</h4>
+                    
+                    <div class="bg-white rounded-lg p-4 mb-4">
+                        <h5 class="font-semibold text-gray-700 mb-2">理論的背景</h5>
+                        <p class="text-sm text-gray-700 leading-relaxed mb-3">
+                            ベイズ統計は、ベイズの定理に基づく統計的推論の方法論です。
+                            事前確率（prior）と観測データから得られる尤度（likelihood）を組み合わせて、
+                            事後確率（posterior）を計算します。
+                        </p>
+                        <p class="text-sm text-gray-700 leading-relaxed">
+                            ベイズの定理は以下の式で表されます：
+                            <br><strong>P(仮説|データ) = P(データ|仮説) × P(仮説) / P(データ)</strong>
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg p-4 mb-4">
+                        <h5 class="font-semibold text-gray-700 mb-2">ベイズ更新</h5>
+                        <p class="text-sm text-gray-700 leading-relaxed mb-3">
+                            新しいデータが観測されるたびに、事前確率を事後確率で更新するプロセスを「ベイズ更新」と呼びます。
+                            このプロセスにより、データが増えるにつれて予測の精度が向上します。
+                        </p>
+                        <p class="text-sm text-gray-700 leading-relaxed">
+                            ナンバーズ3の予測では、各桁の値について過去の出現頻度を事前確率として設定し、
+                            最新のトレンドを尤度として組み合わせることで、より正確な予測を実現します。
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg p-4">
+                        <h5 class="font-semibold text-gray-700 mb-2">参考文献</h5>
+                        <ul class="text-xs text-gray-600 space-y-1 list-disc list-inside">
+                            <li>Bayes, T. (1763). "An Essay towards solving a Problem in the Doctrine of Chances"</li>
+                            <li>Gelman, A., et al. (2013). "Bayesian Data Analysis"</li>
+                            <li>Kruschke, J. K. (2014). "Doing Bayesian Data Analysis"</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+            break;
+            
+        case 'periodicity':
+            html = `
+                <div class="space-y-4">
+                    <h4 class="font-bold text-xl text-gray-800 mb-4">周期性分析（Periodicity Analysis）</h4>
+                    
+                    <div class="bg-white rounded-lg p-4 mb-4">
+                        <h5 class="font-semibold text-gray-700 mb-2">理論的背景</h5>
+                        <p class="text-sm text-gray-700 leading-relaxed mb-3">
+                            周期性分析は、時系列データに含まれる周期的なパターンを検出・分析する統計的手法です。
+                            時間的な規則性を発見することで、将来の値を予測するための重要な情報を得られます。
+                        </p>
+                        <p class="text-sm text-gray-700 leading-relaxed">
+                            本システムでは、曜日、月、四半期などの時間的周期に基づいて、
+                            各桁の値の出現パターンを分析します。
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg p-4 mb-4">
+                        <h5 class="font-semibold text-gray-700 mb-2">周期パターンの検出</h5>
+                        <p class="text-sm text-gray-700 leading-relaxed mb-3">
+                            周期性分析では、特定の時間周期（例：毎週月曜日、毎月1日など）における
+                            各桁の値の出現確率を計算します。
+                        </p>
+                        <p class="text-sm text-gray-700 leading-relaxed">
+                            これらの確率分布を比較することで、どの時間帯にどの値が出現しやすいかを特定し、
+                            次回の抽選日がどの周期に該当するかに基づいて予測を行います。
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg p-4">
+                        <h5 class="font-semibold text-gray-700 mb-2">参考文献</h5>
+                        <ul class="text-xs text-gray-600 space-y-1 list-disc list-inside">
+                            <li>Box, G. E. P., & Jenkins, G. M. (1976). "Time Series Analysis"</li>
+                            <li>Hamilton, J. D. (1994). "Time Series Analysis"</li>
+                            <li>Shumway, R. H., & Stoffer, D. S. (2017). "Time Series Analysis and Its Applications"</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+            break;
+            
+        case 'pattern':
+            html = `
+                <div class="space-y-4">
+                    <h4 class="font-bold text-xl text-gray-800 mb-4">頻出パターン分析（Frequent Pattern Analysis）</h4>
+                    
+                    <div class="bg-white rounded-lg p-4 mb-4">
+                        <h5 class="font-semibold text-gray-700 mb-2">理論的背景</h5>
+                        <p class="text-sm text-gray-700 leading-relaxed mb-3">
+                            頻出パターン分析は、データマイニングの分野で発展した手法で、
+                            データセット内で頻繁に出現するパターンや組み合わせを発見することを目的とします。
+                        </p>
+                        <p class="text-sm text-gray-700 leading-relaxed">
+                            ナンバーズ3では、3桁の組み合わせや2桁の組み合わせがどの程度の頻度で出現するかを分析し、
+                            頻出するパターンを特定します。
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg p-4 mb-4">
+                        <h5 class="font-semibold text-gray-700 mb-2">アソシエーションルール</h5>
+                        <p class="text-sm text-gray-700 leading-relaxed mb-3">
+                            頻出パターン分析では、「支持度（support）」と「信頼度（confidence）」という指標を使用します。
+                            支持度はパターンの出現頻度、信頼度はパターン間の関連性の強さを表します。
+                        </p>
+                        <p class="text-sm text-gray-700 leading-relaxed">
+                            本システムでは、過去のデータから頻出する3桁・2桁の組み合わせを抽出し、
+                            これらのパターンが次回も出現する可能性が高いと仮定して予測を行います。
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg p-4">
+                        <h5 class="font-semibold text-gray-700 mb-2">参考文献</h5>
+                        <ul class="text-xs text-gray-600 space-y-1 list-disc list-inside">
+                            <li>Agrawal, R., et al. (1993). "Mining Association Rules between Sets of Items"</li>
+                            <li>Han, J., et al. (2011). "Data Mining: Concepts and Techniques"</li>
+                            <li>Tan, P. N., et al. (2018). "Introduction to Data Mining"</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+            break;
+            
+        case 'random_forest':
+            html = `
+                <div class="space-y-4">
+                    <h4 class="font-bold text-xl text-gray-800 mb-4">ランダムフォレスト（Random Forest）</h4>
+                    
+                    <div class="bg-white rounded-lg p-4 mb-4">
+                        <h5 class="font-semibold text-gray-700 mb-2">理論的背景</h5>
+                        <p class="text-sm text-gray-700 leading-relaxed mb-3">
+                            ランダムフォレストは、Leo Breimanによって2001年に提案された機械学習アルゴリズムです。
+                            複数の決定木（decision tree）を組み合わせたアンサンブル学習手法で、
+                            各決定木の予測を平均化することで、より正確で安定した予測を実現します。
+                        </p>
+                        <p class="text-sm text-gray-700 leading-relaxed">
+                            ランダムフォレストは、バギング（bootstrap aggregating）とランダム特徴選択を組み合わせることで、
+                            過学習を抑制し、汎化性能を向上させます。
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg p-4 mb-4">
+                        <h5 class="font-semibold text-gray-700 mb-2">決定木とアンサンブル学習</h5>
+                        <p class="text-sm text-gray-700 leading-relaxed mb-3">
+                            各決定木は、データのサブセットと特徴量のサブセットを使用して学習されます。
+                            この「ランダム性」により、各木が異なるパターンを学習し、
+                            それらの予測を組み合わせることで、単一の決定木よりも優れた性能を発揮します。
+                        </p>
+                        <p class="text-sm text-gray-700 leading-relaxed">
+                            さらに、ランダムフォレストは特徴量の重要度を計算できるため、
+                            どの特徴量が予測に最も寄与しているかを理解できます。
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg p-4 mb-4">
+                        <h5 class="font-semibold text-gray-700 mb-2">特徴量エンジニアリング</h5>
+                        <p class="text-sm text-gray-700 leading-relaxed mb-3">
+                            本システムでは、移動平均（MA）、指数移動平均（EMA）、RSI（相対力指数）、
+                            MACD（移動平均収束拡散）、ボリンジャーバンドなどの技術指標を特徴量として使用しています。
+                        </p>
+                        <p class="text-sm text-gray-700 leading-relaxed">
+                            これらの特徴量は、金融時系列分析で広く使用されており、
+                            トレンド、ボラティリティ、モメンタムなどの情報を数値化します。
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg p-4">
+                        <h5 class="font-semibold text-gray-700 mb-2">参考文献</h5>
+                        <ul class="text-xs text-gray-600 space-y-1 list-disc list-inside">
+                            <li>Breiman, L. (2001). "Random Forests"</li>
+                            <li>Hastie, T., et al. (2009). "The Elements of Statistical Learning"</li>
+                            <li>James, G., et al. (2021). "An Introduction to Statistical Learning"</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+            break;
+            
+        default:
+            html = '<p class="text-gray-600">学術的説明がありません。</p>';
+    }
+    
+    container.innerHTML = html;
 }
 
 /**
