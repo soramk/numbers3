@@ -377,7 +377,11 @@ function renderMethodPredictions() {
         'bayesian': 'ベイズ統計',
         'periodicity': '周期性分析',
         'pattern': '頻出パターン分析',
-        'random_forest': 'ランダムフォレスト'
+        'random_forest': 'ランダムフォレスト',
+        'xgboost': 'XGBoost',
+        'lightgbm': 'LightGBM',
+        'arima': 'ARIMA',
+        'stacking': 'スタッキング'
     };
     
     const methodIcons = {
@@ -386,7 +390,11 @@ function renderMethodPredictions() {
         'bayesian': '📊',
         'periodicity': '📅',
         'pattern': '🔁',
-        'random_forest': '🌲'
+        'random_forest': '🌲',
+        'xgboost': '🚀',
+        'lightgbm': '💡',
+        'arima': '📈',
+        'stacking': '🎯'
     };
     
     const methodColorClasses = {
@@ -753,7 +761,11 @@ function renderMethodDetails() {
         'bayesian': 'ベイズ統計',
         'periodicity': '周期性分析',
         'pattern': '頻出パターン分析',
-        'random_forest': 'ランダムフォレスト'
+        'random_forest': 'ランダムフォレスト',
+        'xgboost': 'XGBoost',
+        'lightgbm': 'LightGBM',
+        'arima': 'ARIMA',
+        'stacking': 'スタッキング'
     };
 
     const methodIcons = {
@@ -774,6 +786,18 @@ function renderMethodDetails() {
         </svg>`,
         'random_forest': `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+        </svg>`,
+        'xgboost': `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+        </svg>`,
+        'lightgbm': `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+        </svg>`,
+        'arima': `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path>
+        </svg>`,
+        'stacking': `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
         </svg>`
     };
 
@@ -819,6 +843,34 @@ function renderMethodDetails() {
             text: 'text-emerald-700',
             iconBg: 'bg-gradient-to-br from-emerald-500 to-teal-500',
             numberBg: 'bg-emerald-100'
+        },
+        'xgboost': {
+            bg: 'bg-gradient-to-br from-red-50 via-rose-100 to-pink-50',
+            border: 'border-red-400',
+            text: 'text-red-700',
+            iconBg: 'bg-gradient-to-br from-red-500 to-rose-500',
+            numberBg: 'bg-red-100'
+        },
+        'lightgbm': {
+            bg: 'bg-gradient-to-br from-yellow-50 via-amber-100 to-orange-50',
+            border: 'border-yellow-400',
+            text: 'text-yellow-700',
+            iconBg: 'bg-gradient-to-br from-yellow-500 to-amber-500',
+            numberBg: 'bg-yellow-100'
+        },
+        'arima': {
+            bg: 'bg-gradient-to-br from-cyan-50 via-blue-100 to-indigo-50',
+            border: 'border-cyan-400',
+            text: 'text-cyan-700',
+            iconBg: 'bg-gradient-to-br from-cyan-500 to-blue-500',
+            numberBg: 'bg-cyan-100'
+        },
+        'stacking': {
+            bg: 'bg-gradient-to-br from-violet-50 via-purple-100 to-fuchsia-50',
+            border: 'border-violet-400',
+            text: 'text-violet-700',
+            iconBg: 'bg-gradient-to-br from-violet-500 to-purple-500',
+            numberBg: 'bg-violet-100'
         }
     };
 
