@@ -35,39 +35,39 @@ jobs:
           echo "analysis_completed=true" >> $GITHUB_OUTPUT
         continue-on-error: true
       
-      - name: Check for data file changes
-        id: check-data-changes
-        run: |
-          if [ -n "$(git status --porcelain public/data.json)" ]; then
-            echo "data_changed=true" >> $GITHUB_OUTPUT
-          else
-            echo "data_changed=false" >> $GITHUB_OUTPUT
-          fi
-      
-      - name: Check for prediction file changes
-        id: check-prediction-changes
-        run: |
-          if [ -n "$(git status --porcelain docs/data/latest_prediction.json)" ]; then
-            echo "prediction_changed=true" >> $GITHUB_OUTPUT
-          else
-            echo "prediction_changed=false" >> $GITHUB_OUTPUT
-          fi
-      
-      - name: Commit and push data updates
-        if: steps.check-data-changes.outputs.data_changed == 'true'
+      - name: Check for changes
+        id: check-changes
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add public/data.json
-          git commit -m "Update data: $(date +'%Y-%m-%d %H:%M:%S JST')" || exit 0
-          git push
+          
+          # 変更があるファイルをチェック
+          CHANGED_FILES=$(git status --porcelain)
+          
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "変更されたファイルはありません"
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "変更されたファイル:"
+            echo "$CHANGED_FILES"
+          fi
       
-      - name: Commit and push prediction updates
-        if: steps.check-prediction-changes.outputs.prediction_changed == 'true'
+      - name: Commit and push all changes
+        if: steps.check-changes.outputs.has_changes == 'true'
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          git add docs/data/latest_prediction.json
-          git commit -m "Update prediction: $(date +'%Y-%m-%d %H:%M:%S JST')" || exit 0
+          
+          # すべての変更をステージング
+          git add -A
+          
+          # コミットメッセージを作成
+          COMMIT_MSG="Auto update: $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+          
+          # コミット（変更がない場合はスキップ）
+          git commit -m "$COMMIT_MSG" || exit 0
+          
+          # プッシュ
           git push
 
