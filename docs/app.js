@@ -10,21 +10,26 @@ let predictionHistory = [];
 // ページ読み込み時にデータを取得
 document.addEventListener('DOMContentLoaded', async () => {
     try {
-        await loadPredictionHistory();
-        await loadPredictionData('latest');
-        
-        // 履歴選択のイベントリスナーを設定
+        // 履歴選択のイベントリスナーを先に設定
         const historySelect = document.getElementById('historySelect');
         if (historySelect) {
             historySelect.addEventListener('change', async (e) => {
                 const selectedValue = e.target.value;
-                if (selectedValue === 'latest') {
-                    await loadPredictionData('latest');
-                } else {
-                    await loadPredictionData(selectedValue);
+                try {
+                    if (selectedValue === 'latest') {
+                        await loadPredictionData('latest');
+                    } else {
+                        await loadPredictionData(selectedValue);
+                    }
+                } catch (error) {
+                    showError('予測データの読み込みに失敗しました: ' + error.message);
                 }
             });
         }
+        
+        // 履歴リストを読み込んでから最新の予測を読み込む
+        await loadPredictionHistory();
+        await loadPredictionData('latest');
     } catch (error) {
         showError('予測データの読み込みに失敗しました: ' + error.message);
     }
@@ -35,9 +40,11 @@ document.addEventListener('DOMContentLoaded', async () => {
  */
 async function loadPredictionHistory() {
     try {
-        const response = await fetch('data/prediction_history.json');
+        // キャッシュを無効化して最新の履歴を取得
+        const response = await fetch('data/prediction_history.json?' + new Date().getTime());
         if (response.ok) {
             predictionHistory = await response.json();
+            console.log(`[loadPredictionHistory] 履歴を読み込みました: ${predictionHistory.length} 件`);
             populateHistorySelect();
         } else {
             console.warn('履歴リストが見つかりません。最新の予測のみ表示します。');
@@ -69,8 +76,20 @@ function populateHistorySelect() {
         option.value = entry.file;
         
         // タイムスタンプから日時を取得
-        const timestamp = entry.timestamp || (entry.datetime ? entry.datetime.replace('_', 'T') : entry.date);
-        const date = new Date(timestamp);
+        let date;
+        if (entry.timestamp) {
+            date = new Date(entry.timestamp);
+        } else if (entry.datetime) {
+            // datetime形式（YYYY-MM-DD_HHMMSS）をパース
+            const [datePart, timePart] = entry.datetime.split('_');
+            const [year, month, day] = datePart.split('-');
+            const hour = timePart.substring(0, 2);
+            const minute = timePart.substring(2, 4);
+            const second = timePart.substring(4, 6);
+            date = new Date(year, parseInt(month) - 1, day, hour, minute, second);
+        } else {
+            date = new Date(entry.date);
+        }
         
         const dateStr = date.toLocaleDateString('ja-JP', {
             year: 'numeric',
@@ -112,13 +131,16 @@ async function loadPredictionData(file = 'latest') {
         ? 'data/latest_prediction.json'
         : `data/${file}`;
     
-    const response = await fetch(filePath);
+    // キャッシュを無効化して最新のデータを取得
+    const url = filePath + (file === 'latest' ? '?' + new Date().getTime() : '');
+    const response = await fetch(url);
     
     if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        throw new Error(`HTTP ${response.status}: ${response.statusText} - ファイル: ${filePath}`);
     }
     
     predictionData = await response.json();
+    console.log(`[loadPredictionData] データを読み込みました: ${file}`);
     renderContent();
 }
 
