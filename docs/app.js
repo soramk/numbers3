@@ -573,13 +573,217 @@ function renderMethodDetails() {
                     <p class="text-2xl font-black text-gray-800 tracking-wider">${method.mini_prediction}</p>
                 </div>
             </div>
-            <div class="bg-white/40 backdrop-blur-sm rounded-lg p-3 border border-gray-200">
+            <div class="bg-white/40 backdrop-blur-sm rounded-lg p-3 border border-gray-200 mb-4">
                 <p class="text-sm text-gray-700 leading-relaxed">${method.reason}</p>
+            </div>
+            <button class="detail-btn w-full px-4 py-2 ${colorClasses.iconBg} text-white rounded-lg font-semibold hover:opacity-90 transition-all duration-200 shadow-md hover:shadow-lg" data-method="${methodKey}">
+                📊 分析過程を見る
+            </button>
+            <div id="detail-${methodKey}" class="method-detail hidden mt-4 bg-white/60 backdrop-blur-sm rounded-lg p-4 border-2 ${colorClasses.border}">
+                <div class="method-detail-content"></div>
             </div>
         `;
         
         container.appendChild(card);
     });
+    
+    // 詳細ボタンのイベントリスナーを設定
+    document.querySelectorAll('.detail-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const methodKey = e.target.getAttribute('data-method');
+            toggleMethodDetail(methodKey);
+        });
+    });
+}
+
+/**
+ * 予測手法の詳細を表示/非表示
+ */
+function toggleMethodDetail(methodKey) {
+    const detailDiv = document.getElementById(`detail-${methodKey}`);
+    const btn = document.querySelector(`[data-method="${methodKey}"]`);
+    
+    if (!detailDiv || !btn) return;
+    
+    const isHidden = detailDiv.classList.contains('hidden');
+    
+    if (isHidden) {
+        // 詳細を表示
+        detailDiv.classList.remove('hidden');
+        btn.textContent = '📊 分析過程を閉じる';
+        
+        // 詳細内容を生成（まだ生成されていない場合）
+        const contentDiv = detailDiv.querySelector('.method-detail-content');
+        if (contentDiv && contentDiv.innerHTML === '') {
+            renderMethodDetailContent(methodKey, contentDiv);
+        }
+    } else {
+        // 詳細を非表示
+        detailDiv.classList.add('hidden');
+        btn.textContent = '📊 分析過程を見る';
+    }
+}
+
+/**
+ * 予測手法の詳細内容をレンダリング
+ */
+function renderMethodDetailContent(methodKey, container) {
+    if (!predictionData || !predictionData.advanced_analysis) {
+        container.innerHTML = '<p class="text-gray-600">詳細データがありません。</p>';
+        return;
+    }
+    
+    const method = predictionData.methods[methodKey];
+    const analysis = predictionData.advanced_analysis;
+    
+    let html = '';
+    
+    // 手法ごとの詳細情報を表示
+    switch(methodKey) {
+        case 'chaos':
+            html = renderChaosDetail(method, analysis);
+            break;
+        case 'markov':
+            html = renderMarkovDetail(method, analysis);
+            break;
+        case 'bayesian':
+            html = renderBayesianDetail(method, analysis);
+            break;
+        case 'periodicity':
+            html = renderPeriodicityDetail(method, analysis);
+            break;
+        case 'pattern':
+            html = renderPatternDetail(method, analysis);
+            break;
+        default:
+            html = '<p class="text-gray-600">詳細情報がありません。</p>';
+    }
+    
+    container.innerHTML = html;
+}
+
+/**
+ * カオス理論の詳細を表示
+ */
+function renderChaosDetail(method, analysis) {
+    const trends = analysis.trends || {};
+    let html = '<div class="space-y-4">';
+    html += '<h4 class="font-bold text-lg text-gray-800 mb-3">位相トレンド分析</h4>';
+    
+    for (const [pos, posTrends] of Object.entries(trends)) {
+        const posName = {'hundred': '百の位', 'ten': '十の位', 'one': '一の位'}[pos] || pos;
+        html += `<div class="bg-white rounded-lg p-3 mb-2">`;
+        html += `<p class="font-semibold text-gray-700 mb-2">${posName}</p>`;
+        
+        if (posTrends.short) {
+            html += `<div class="text-sm text-gray-600">`;
+            html += `<p>短期トレンド（直近10回）: 平均 ${posTrends.short.mean.toFixed(2)}, 傾き ${posTrends.short.trend > 0 ? '+' : ''}${posTrends.short.trend.toFixed(3)}, ボラティリティ ${posTrends.short.volatility.toFixed(2)}</p>`;
+            html += `</div>`;
+        }
+        if (posTrends.mid) {
+            html += `<div class="text-sm text-gray-600">`;
+            html += `<p>中期トレンド（直近50回）: 平均 ${posTrends.mid.mean.toFixed(2)}, 傾き ${posTrends.mid.trend > 0 ? '+' : ''}${posTrends.mid.trend.toFixed(3)}</p>`;
+            html += `</div>`;
+        }
+        html += `</div>`;
+    }
+    
+    html += '</div>';
+    return html;
+}
+
+/**
+ * マルコフ連鎖の詳細を表示
+ */
+function renderMarkovDetail(method, analysis) {
+    const correlations = analysis.correlations || {};
+    let html = '<div class="space-y-4">';
+    html += '<h4 class="font-bold text-lg text-gray-800 mb-3">遷移確率分析</h4>';
+    
+    html += '<div class="bg-white rounded-lg p-3">';
+    html += '<p class="text-sm text-gray-700 mb-2">自己相関（前回との相関）:</p>';
+    html += `<ul class="text-sm text-gray-600 space-y-1">`;
+    html += `<li>百の位: ${(correlations.hundred_lag1 * 100).toFixed(2)}%</li>`;
+    html += `<li>十の位: ${(correlations.ten_lag1 * 100).toFixed(2)}%</li>`;
+    html += `<li>一の位: ${(correlations.one_lag1 * 100).toFixed(2)}%</li>`;
+    html += `</ul>`;
+    html += '</div>';
+    
+    html += '</div>';
+    return html;
+}
+
+/**
+ * ベイズ統計の詳細を表示
+ */
+function renderBayesianDetail(method, analysis) {
+    const correlations = analysis.correlations || {};
+    let html = '<div class="space-y-4">';
+    html += '<h4 class="font-bold text-lg text-gray-800 mb-3">ベイズ更新分析</h4>';
+    
+    html += '<div class="bg-white rounded-lg p-3">';
+    html += '<p class="text-sm text-gray-700 mb-2">合計値との相関:</p>';
+    html += `<ul class="text-sm text-gray-600 space-y-1">`;
+    html += `<li>百の位: ${(correlations.hundred_sum * 100).toFixed(2)}%</li>`;
+    html += `<li>十の位: ${(correlations.ten_sum * 100).toFixed(2)}%</li>`;
+    html += `<li>一の位: ${(correlations.one_sum * 100).toFixed(2)}%</li>`;
+    html += `</ul>`;
+    html += '</div>';
+    
+    html += '</div>';
+    return html;
+}
+
+/**
+ * 周期性分析の詳細を表示
+ */
+function renderPeriodicityDetail(method, analysis) {
+    let html = '<div class="space-y-4">';
+    html += '<h4 class="font-bold text-lg text-gray-800 mb-3">周期性パターン分析</h4>';
+    
+    html += '<div class="bg-white rounded-lg p-3">';
+    html += '<p class="text-sm text-gray-700 mb-2">現在の日付情報に基づいて、曜日・月次・四半期パターンから予測しています。</p>';
+    html += '<p class="text-xs text-gray-600 mt-2">※ 詳細なパターンデータは分析結果JSONに含まれています。</p>';
+    html += '</div>';
+    
+    html += '</div>';
+    return html;
+}
+
+/**
+ * 頻出パターン分析の詳細を表示
+ */
+function renderPatternDetail(method, analysis) {
+    const patterns = analysis.frequent_patterns || {};
+    let html = '<div class="space-y-4">';
+    html += '<h4 class="font-bold text-lg text-gray-800 mb-3">頻出パターン分析</h4>';
+    
+    if (patterns.set_top) {
+        html += '<div class="bg-white rounded-lg p-3 mb-2">';
+        html += '<p class="text-sm font-semibold text-gray-700 mb-2">頻出3桁コンボ（上位5件）:</p>';
+        html += '<ul class="text-sm text-gray-600 space-y-1">';
+        const top5 = Object.entries(patterns.set_top).slice(0, 5);
+        top5.forEach(([pattern, count]) => {
+            html += `<li>${pattern}: ${count}回</li>`;
+        });
+        html += '</ul>';
+        html += '</div>';
+    }
+    
+    if (patterns.mini_top) {
+        html += '<div class="bg-white rounded-lg p-3">';
+        html += '<p class="text-sm font-semibold text-gray-700 mb-2">頻出2桁コンボ（上位5件）:</p>';
+        html += '<ul class="text-sm text-gray-600 space-y-1">';
+        const top5 = Object.entries(patterns.mini_top).slice(0, 5);
+        top5.forEach(([pattern, count]) => {
+            html += `<li>${pattern}: ${count}回</li>`;
+        });
+        html += '</ul>';
+        html += '</div>';
+    }
+    
+    html += '</div>';
+    return html;
 }
 
 /**
