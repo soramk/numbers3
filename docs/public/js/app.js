@@ -28,6 +28,7 @@ const updateFrequencyChart = document.getElementById('updateFrequencyChart');
 const promptArea = document.getElementById('promptArea');
 const promptContent = document.getElementById('promptContent');
 const togglePromptBtn = document.getElementById('togglePromptBtn');
+const copyPromptBtn = document.getElementById('copyPromptBtn');
 const downloadPromptBtn = document.getElementById('downloadPromptBtn');
 
 let engine = null;
@@ -340,6 +341,63 @@ if (togglePromptBtn) {
             const isHidden = promptContent.style.display === 'none' || promptContent.style.display === '';
             promptContent.style.display = isHidden ? 'block' : 'none';
             togglePromptBtn.textContent = isHidden ? '非表示' : '表示';
+        }
+    });
+}
+
+// プロンプトのコピー
+if (copyPromptBtn) {
+    copyPromptBtn.addEventListener('click', async () => {
+        if (!currentPrompt) {
+            alert('プロンプトが生成されていません。先に「データ解析・逆算開始」を実行してください。');
+            return;
+        }
+        
+        try {
+            // クリップボードAPIを使用してコピー
+            await navigator.clipboard.writeText(currentPrompt);
+            
+            // ボタンのテキストを一時的に変更してフィードバックを提供
+            const originalText = copyPromptBtn.textContent;
+            copyPromptBtn.textContent = '✓ コピー完了！';
+            copyPromptBtn.style.backgroundColor = '#10b981';
+            copyPromptBtn.style.color = '#fff';
+            
+            setTimeout(() => {
+                copyPromptBtn.textContent = originalText;
+                copyPromptBtn.style.backgroundColor = '';
+                copyPromptBtn.style.color = '';
+            }, 2000);
+        } catch (err) {
+            // クリップボードAPIが使えない場合のフォールバック
+            console.error('クリップボードへのコピーに失敗:', err);
+            
+            // テキストエリアを作成してコピー
+            const textarea = document.createElement('textarea');
+            textarea.value = currentPrompt;
+            textarea.style.position = 'fixed';
+            textarea.style.opacity = '0';
+            document.body.appendChild(textarea);
+            textarea.select();
+            
+            try {
+                document.execCommand('copy');
+                const originalText = copyPromptBtn.textContent;
+                copyPromptBtn.textContent = '✓ コピー完了！';
+                copyPromptBtn.style.backgroundColor = '#10b981';
+                copyPromptBtn.style.color = '#fff';
+                
+                setTimeout(() => {
+                    copyPromptBtn.textContent = originalText;
+                    copyPromptBtn.style.backgroundColor = '';
+                    copyPromptBtn.style.color = '';
+                }, 2000);
+            } catch (fallbackErr) {
+                alert('クリップボードへのコピーに失敗しました。プロンプトを手動でコピーしてください。');
+                console.error('フォールバックコピーも失敗:', fallbackErr);
+            } finally {
+                document.body.removeChild(textarea);
+            }
         }
     });
 }
