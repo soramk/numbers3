@@ -484,7 +484,9 @@ function renderMethodDetails() {
     const methodNames = {
         'chaos': 'カオス理論',
         'markov': 'マルコフ連鎖',
-        'bayesian': 'ベイズ統計'
+        'bayesian': 'ベイズ統計',
+        'periodicity': '周期性分析',
+        'pattern': '頻出パターン分析'
     };
 
     const methodIcons = {
@@ -525,8 +527,14 @@ function renderMethodDetails() {
 
     Object.keys(methods).forEach((methodKey, index) => {
         const method = methods[methodKey];
+        if (!method) {
+            console.warn(`[renderMethodDetails] メソッド ${methodKey} が undefined です`);
+            return;
+        }
+        
         const card = document.createElement('div');
         const colorClasses = methodColorClasses[methodKey] || methodColorClasses.chaos;
+        const methodName = methodNames[methodKey] || methodKey;
         
         card.className = `${colorClasses.bg} rounded-2xl p-6 border-2 ${colorClasses.border} shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1`;
         
@@ -539,7 +547,7 @@ function renderMethodDetails() {
                         ${methodIcons[methodKey]}
                     </div>
                     <div>
-                        <h3 class="text-xl font-bold text-gray-800">${methodNames[methodKey]}</h3>
+                        <h3 class="text-xl font-bold text-gray-800">${methodName}</h3>
                         <p class="text-xs text-gray-600 mt-0.5">予測手法 ${index + 1}</p>
                     </div>
                 </div>
