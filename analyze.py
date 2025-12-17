@@ -1403,9 +1403,9 @@ class NumbersAnalyzer:
         best_set = max(set_votes.items(), key=lambda x: x[1])
         best_mini = max(mini_votes.items(), key=lambda x: x[1])
         
-        # トップ3のセット予測
-        set_top3 = sorted(set_votes.items(), key=lambda x: x[1], reverse=True)[:3]
-        mini_top3 = sorted(mini_votes.items(), key=lambda x: x[1], reverse=True)[:3]
+        # トップ5のセット予測
+        set_top5 = sorted(set_votes.items(), key=lambda x: x[1], reverse=True)[:5]
+        mini_top5 = sorted(mini_votes.items(), key=lambda x: x[1], reverse=True)[:5]
         
         # 総重みで正規化
         total_weight = sum(weights.get(pred['method'], 0.65) for pred in predictions_list)
@@ -1454,7 +1454,7 @@ class NumbersAnalyzer:
                     'confidence': round(item[1] / total_weight, 3),
                     'rank': idx + 1
                 }
-                for idx, item in enumerate(set_top3)
+                for idx, item in enumerate(set_top5)
             ],
             'mini_predictions': [
                 {
@@ -1462,7 +1462,7 @@ class NumbersAnalyzer:
                     'confidence': round(item[1] / total_weight, 3),
                     'rank': idx + 1
                 }
-                for idx, item in enumerate(mini_top3)
+                for idx, item in enumerate(mini_top5)
             ],
             'methods': methods_dict,
             'recent_phases': self.get_recent_phases(20),
