@@ -1147,6 +1147,7 @@ class NumbersAnalyzer:
         frequent_patterns = self.extract_frequent_patterns(top_n=10)
         gap_analysis = self.analyze_gaps_detailed()
         anomalies = self.detect_anomalies()
+        periodicity_patterns = self.analyze_periodicity()
         
         # クラスタリング分析（計算コストが高いのでオプション）
         clustering = None
@@ -1192,7 +1193,8 @@ class NumbersAnalyzer:
                 'frequent_patterns': frequent_patterns,
                 'gap_analysis': gap_analysis,
                 'anomalies': anomalies,
-                'clustering': clustering
+                'clustering': clustering,
+                'periodicity': periodicity_patterns
             }
         }
     

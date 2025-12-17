@@ -6,6 +6,7 @@
 let predictionData = null;
 let phaseChart = null;
 let predictionHistory = [];
+let periodicityCharts = {}; // 周期性グラフのインスタンスを保存
 
 // ページ読み込み時にデータを取得
 document.addEventListener('DOMContentLoaded', async () => {
@@ -738,16 +739,208 @@ function renderBayesianDetail(method, analysis) {
  * 周期性分析の詳細を表示
  */
 function renderPeriodicityDetail(method, analysis) {
+    const periodicity = analysis.periodicity || {};
     let html = '<div class="space-y-4">';
     html += '<h4 class="font-bold text-lg text-gray-800 mb-3">周期性パターン分析</h4>';
     
-    html += '<div class="bg-white rounded-lg p-3">';
-    html += '<p class="text-sm text-gray-700 mb-2">現在の日付情報に基づいて、曜日・月次・四半期パターンから予測しています。</p>';
-    html += '<p class="text-xs text-gray-600 mt-2">※ 詳細なパターンデータは分析結果JSONに含まれています。</p>';
-    html += '</div>';
+    // 現在の日付情報を取得
+    const lastDate = predictionData.statistics?.last_date ? new Date(predictionData.statistics.last_date) : new Date();
+    const currentWeekday = lastDate.getDay(); // 0=日曜日, 6=土曜日
+    const currentMonth = lastDate.getMonth() + 1; // 1-12
+    const currentQuarter = Math.floor((currentMonth - 1) / 3) + 1; // 1-4
+    
+    const weekdayNames = ['日', '月', '火', '水', '木', '金', '土'];
+    
+    // 曜日パターンのグラフ
+    if (periodicity.weekday) {
+        html += '<div class="bg-white rounded-lg p-4 mb-4">';
+        html += '<h5 class="font-semibold text-gray-700 mb-3">曜日別出現傾向</h5>';
+        
+        for (const [pos, posPatterns] of Object.entries(periodicity.weekday)) {
+            const posName = {'hundred': '百の位', 'ten': '十の位', 'one': '一の位'}[pos] || pos;
+            html += `<div class="mb-4">`;
+            html += `<p class="text-sm font-medium text-gray-600 mb-2">${posName}</p>`;
+            html += `<div class="h-48">`;
+            html += `<canvas id="periodicity-weekday-${pos}"></canvas>`;
+            html += `</div>`;
+            html += `</div>`;
+            
+            // グラフを描画（少し遅延させてDOMに追加された後に実行）
+            setTimeout(() => {
+                renderPeriodicityChart(`periodicity-weekday-${pos}`, posPatterns, weekdayNames, '曜日', pos);
+            }, 200);
+        }
+        
+        html += '</div>';
+    }
+    
+    // 月次パターンのグラフ
+    if (periodicity.monthly) {
+        html += '<div class="bg-white rounded-lg p-4 mb-4">';
+        html += '<h5 class="font-semibold text-gray-700 mb-3">月別出現傾向</h5>';
+        
+        for (const [pos, posPatterns] of Object.entries(periodicity.monthly)) {
+            const posName = {'hundred': '百の位', 'ten': '十の位', 'one': '一の位'}[pos] || pos;
+            html += `<div class="mb-4">`;
+            html += `<p class="text-sm font-medium text-gray-600 mb-2">${posName}</p>`;
+            html += `<div class="h-48">`;
+            html += `<canvas id="periodicity-monthly-${pos}"></canvas>`;
+            html += `</div>`;
+            html += `</div>`;
+            
+            setTimeout(() => {
+                renderPeriodicityChart(`periodicity-monthly-${pos}`, posPatterns, Array.from({length: 12}, (_, i) => `${i+1}月`), '月', pos);
+            }, 200);
+        }
+        
+        html += '</div>';
+    }
+    
+    // 四半期パターンのグラフ
+    if (periodicity.quarterly) {
+        html += '<div class="bg-white rounded-lg p-4">';
+        html += '<h5 class="font-semibold text-gray-700 mb-3">四半期別出現傾向</h5>';
+        
+        for (const [pos, posPatterns] of Object.entries(periodicity.quarterly)) {
+            const posName = {'hundred': '百の位', 'ten': '十の位', 'one': '一の位'}[pos] || pos;
+            html += `<div class="mb-4">`;
+            html += `<p class="text-sm font-medium text-gray-600 mb-2">${posName}</p>`;
+            html += `<div class="h-48">`;
+            html += `<canvas id="periodicity-quarterly-${pos}"></canvas>`;
+            html += `</div>`;
+            html += `</div>`;
+            
+            setTimeout(() => {
+                renderPeriodicityChart(`periodicity-quarterly-${pos}`, posPatterns, ['Q1', 'Q2', 'Q3', 'Q4'], '四半期', pos);
+            }, 200);
+        }
+        
+        html += '</div>';
+    }
     
     html += '</div>';
     return html;
+}
+
+/**
+ * 周期性パターンのグラフを描画
+ */
+function renderPeriodicityChart(canvasId, patterns, labels, labelType, pos) {
+    const canvas = document.getElementById(canvasId);
+    if (!canvas) {
+        console.warn(`[renderPeriodicityChart] キャンバスが見つかりません: ${canvasId}`);
+        return;
+    }
+    
+    // 既存のグラフを破棄
+    if (periodicityCharts[canvasId]) {
+        periodicityCharts[canvasId].destroy();
+        delete periodicityCharts[canvasId];
+    }
+    
+    const ctx = canvas.getContext('2d');
+    
+    // 各数字（0-9）ごとの出現確率を計算
+    const datasets = [];
+    const colors = [
+        'rgb(99, 102, 241)', 'rgb(16, 185, 129)', 'rgb(251, 146, 60)',
+        'rgb(239, 68, 68)', 'rgb(168, 85, 247)', 'rgb(236, 72, 153)',
+        'rgb(59, 130, 246)', 'rgb(34, 197, 94)', 'rgb(245, 158, 11)',
+        'rgb(139, 92, 246)'
+    ];
+    
+    for (let digit = 0; digit < 10; digit++) {
+        const data = labels.map((label, index) => {
+            // キーの取得方法を修正
+            let periodKey;
+            if (labelType === '曜日') {
+                periodKey = index; // 0-6
+            } else if (labelType === '月') {
+                periodKey = index + 1; // 1-12
+            } else {
+                periodKey = index + 1; // 1-4
+            }
+            
+            const periodData = patterns[periodKey];
+            if (!periodData) return 0;
+            
+            // 数字のキーを確認（文字列または数値の可能性）
+            const prob = periodData[String(digit)] !== undefined ? periodData[String(digit)] : 
+                        periodData[digit] !== undefined ? periodData[digit] : 0;
+            
+            return prob !== undefined && prob !== null ? parseFloat((prob * 100).toFixed(2)) : 0;
+        });
+        
+        datasets.push({
+            label: `数字${digit}`,
+            data: data,
+            borderColor: colors[digit],
+            backgroundColor: colors[digit].replace('rgb', 'rgba').replace(')', ', 0.1)'),
+            borderWidth: 2,
+            tension: 0.4,
+            fill: false,
+            pointRadius: 3,
+            pointHoverRadius: 5
+        });
+    }
+    
+    const chart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: true,
+                    position: 'right',
+                    labels: {
+                        boxWidth: 12,
+                        font: {
+                            size: 10
+                        },
+                        usePointStyle: true
+                    }
+                },
+                tooltip: {
+                    mode: 'index',
+                    intersect: false,
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.dataset.label}: ${context.parsed.y.toFixed(2)}%`;
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 30,
+                    title: {
+                        display: true,
+                        text: '出現確率 (%)'
+                    },
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        }
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: labelType
+                    }
+                }
+            }
+        }
+    });
+    
+    // グラフインスタンスを保存
+    periodicityCharts[canvasId] = chart;
 }
 
 /**
