@@ -232,6 +232,25 @@
                         </button>
                         <div id="detail-clustering" class="analysis-detail-content hidden mt-4"></div>
                     </div>
+
+                    <!-- 周波数解析 -->
+                    <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
+                        <button class="analysis-detail-btn w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors" data-analysis="frequency">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center text-white font-bold">
+                                    🌊
+                                </div>
+                                <div class="text-left">
+                                    <h3 class="font-bold text-gray-800">周波数解析</h3>
+                                    <p class="text-xs text-gray-600">フーリエ変換による周期性の検出</p>
+                                </div>
+                            </div>
+                            <svg class="w-5 h-5 text-gray-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div id="detail-frequency" class="analysis-detail-content hidden mt-4"></div>
+                    </div>
                 </div>
             </div>
         </div>

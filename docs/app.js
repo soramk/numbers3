@@ -240,6 +240,9 @@ function renderAnalysisDetail(analysisType, container) {
         case 'clustering':
             renderClusteringDetail(analysis.clustering, container);
             break;
+        case 'frequency':
+            renderFrequencyDetail(analysis.frequency_analysis, container);
+            break;
         default:
             container.innerHTML = '<p class="text-gray-600">詳細情報がありません。</p>';
     }
@@ -559,7 +562,8 @@ function renderMethodDetails() {
         'markov': 'マルコフ連鎖',
         'bayesian': 'ベイズ統計',
         'periodicity': '周期性分析',
-        'pattern': '頻出パターン分析'
+        'pattern': '頻出パターン分析',
+        'random_forest': 'ランダムフォレスト'
     };
 
     const methodIcons = {
@@ -577,6 +581,9 @@ function renderMethodDetails() {
         </svg>`,
         'pattern': `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path>
+        </svg>`,
+        'random_forest': `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
         </svg>`
     };
 
@@ -601,6 +608,27 @@ function renderMethodDetails() {
             text: 'text-green-700',
             iconBg: 'bg-gradient-to-br from-green-500 to-emerald-500',
             numberBg: 'bg-green-100'
+        },
+        'periodicity': {
+            bg: 'bg-gradient-to-br from-orange-50 via-amber-100 to-yellow-50',
+            border: 'border-orange-400',
+            text: 'text-orange-700',
+            iconBg: 'bg-gradient-to-br from-orange-500 to-amber-500',
+            numberBg: 'bg-orange-100'
+        },
+        'pattern': {
+            bg: 'bg-gradient-to-br from-indigo-50 via-purple-100 to-pink-50',
+            border: 'border-indigo-400',
+            text: 'text-indigo-700',
+            iconBg: 'bg-gradient-to-br from-indigo-500 to-purple-500',
+            numberBg: 'bg-indigo-100'
+        },
+        'random_forest': {
+            bg: 'bg-gradient-to-br from-emerald-50 via-teal-100 to-cyan-50',
+            border: 'border-emerald-400',
+            text: 'text-emerald-700',
+            iconBg: 'bg-gradient-to-br from-emerald-500 to-teal-500',
+            numberBg: 'bg-emerald-100'
         }
     };
 
@@ -727,6 +755,9 @@ function renderMethodDetailContent(methodKey, container) {
             break;
         case 'pattern':
             html = renderPatternDetail(method, analysis);
+            break;
+        case 'random_forest':
+            html = renderRandomForestDetail(method, analysis);
             break;
         default:
             html = '<p class="text-gray-600">詳細情報がありません。</p>';
@@ -1302,6 +1333,114 @@ function renderPatternDetail(method, analysis) {
     
     html += '</div>';
     return html;
+}
+
+/**
+ * ランダムフォレストの詳細を表示
+ */
+function renderRandomForestDetail(method, analysis) {
+    let html = '<div class="space-y-4">';
+    html += '<h4 class="font-bold text-lg text-gray-800 mb-3">ランダムフォレスト分析</h4>';
+    
+    html += '<div class="bg-white rounded-lg p-4 mb-4">';
+    html += '<p class="text-sm text-gray-700 mb-3">ランダムフォレストは、複数の決定木を組み合わせた機械学習モデルです。過去のデータから学習し、特徴量の重要度を評価しながら予測を行います。</p>';
+    html += '</div>';
+    
+    // 特徴量の重要度を表示
+    if (method.feature_importance && method.feature_importance.length > 0) {
+        html += '<div class="bg-white rounded-lg p-4 mb-4">';
+        html += '<h5 class="font-semibold text-gray-700 mb-3">特徴量の重要度（上位10件）</h5>';
+        html += '<div class="space-y-2">';
+        
+        // 重要度をソート
+        const importanceWithIndex = method.feature_importance.map((val, idx) => ({ idx, val }));
+        importanceWithIndex.sort((a, b) => b.val - a.val);
+        
+        importanceWithIndex.slice(0, 10).forEach((item, rank) => {
+            const percentage = (item.val * 100).toFixed(2);
+            html += '<div class="flex items-center gap-3">';
+            html += `<span class="text-xs font-semibold text-gray-600 w-8">${rank + 1}位</span>`;
+            html += '<div class="flex-1 bg-gray-200 rounded-full h-4 relative">';
+            html += `<div class="bg-emerald-500 h-4 rounded-full" style="width: ${percentage}%"></div>`;
+            html += '</div>';
+            html += `<span class="text-xs font-semibold text-gray-700 w-16 text-right">${percentage}%</span>`;
+            html += '</div>';
+        });
+        
+        html += '</div>';
+        html += '</div>';
+    }
+    
+    // 高度な特徴量の説明
+    html += '<div class="bg-white rounded-lg p-4">';
+    html += '<h5 class="font-semibold text-gray-700 mb-3">使用している特徴量</h5>';
+    html += '<ul class="text-sm text-gray-600 space-y-2">';
+    html += '<li>• <strong>過去20回のデータ</strong>: 各桁の値、合計値、範囲</li>';
+    html += '<li>• <strong>移動平均（MA）</strong>: 5回、10回、20回、50回の移動平均</li>';
+    html += '<li>• <strong>指数移動平均（EMA）</strong>: より最近のデータに重みを付けた平均</li>';
+    html += '<li>• <strong>RSI（相対力指数）</strong>: 上昇と下降の強さを測定</li>';
+    html += '<li>• <strong>MACD</strong>: トレンドの変化を検出</li>';
+    html += '<li>• <strong>ボリンジャーバンド</strong>: 統計的な価格帯を表示</li>';
+    html += '</ul>';
+    html += '</div>';
+    
+    html += '</div>';
+    return html;
+}
+
+/**
+ * 周波数解析の詳細を表示
+ */
+function renderFrequencyDetail(frequencyAnalysis, container) {
+    if (!frequencyAnalysis) {
+        container.innerHTML = '<p class="text-gray-600">周波数解析データがありません。</p>';
+        return;
+    }
+    
+    let html = '<div class="space-y-4">';
+    html += '<h4 class="font-bold text-lg text-gray-800 mb-3">フーリエ変換による周波数解析</h4>';
+    
+    html += '<div class="bg-white rounded-lg p-4 mb-4">';
+    html += '<p class="text-sm text-gray-700 mb-3">フーリエ変換により、時系列データを周波数領域に変換し、隠れた周期性やサイクルを検出します。主要な周波数成分は、データに含まれる周期的なパターンを示します。</p>';
+    html += '</div>';
+    
+    for (const [pos, posData] of Object.entries(frequencyAnalysis)) {
+        const posName = {'hundred': '百の位', 'ten': '十の位', 'one': '一の位'}[pos] || pos;
+        
+        html += '<div class="bg-white rounded-lg p-4 mb-4 border-2 border-yellow-200">';
+        html += `<h5 class="font-semibold text-gray-700 mb-3">${posName}</h5>`;
+        
+        if (posData.dominant_frequencies && posData.dominant_frequencies.length > 0) {
+            html += '<div class="mb-3">';
+            html += '<p class="text-xs font-semibold text-gray-600 mb-2">主要な周波数成分（上位5件）:</p>';
+            html += '<div class="space-y-2">';
+            
+            posData.dominant_frequencies.forEach((freq, idx) => {
+                html += '<div class="bg-yellow-50 rounded-lg p-2 border border-yellow-200">';
+                html += `<p class="text-xs text-gray-700"><strong>${idx + 1}位:</strong> 周波数 ${freq.frequency.toFixed(6)}, パワー ${freq.power.toFixed(2)}`;
+                if (freq.period > 0 && freq.period < 1000) {
+                    html += `, 周期 ${freq.period.toFixed(1)}回`;
+                }
+                html += '</p>';
+                html += '</div>';
+            });
+            
+            html += '</div>';
+            html += '</div>';
+        }
+        
+        if (posData.max_power_period > 0 && posData.max_power_period < 1000) {
+            html += '<div class="bg-yellow-100 rounded-lg p-3">';
+            html += `<p class="text-sm text-gray-700"><strong>最大パワー周期:</strong> ${posData.max_power_period.toFixed(1)}回</p>`;
+            html += `<p class="text-xs text-gray-600 mt-1">この周期が最も強い周期性を示しています。</p>`;
+            html += '</div>';
+        }
+        
+        html += '</div>';
+    }
+    
+    html += '</div>';
+    container.innerHTML = html;
 }
 
 /**

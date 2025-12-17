@@ -759,6 +759,225 @@ class NumbersAnalyzer:
             'cluster_centers': kmeans.cluster_centers_.tolist()
         }
     
+    def analyze_frequency_domain(self) -> Dict[str, any]:
+        """
+        フーリエ変換による周波数解析
+        
+        Returns:
+            周波数解析結果の辞書
+        """
+        from scipy.fft import fft, fftfreq
+        
+        frequency_analysis = {}
+        
+        for pos in ['hundred', 'ten', 'one']:
+            data = self.df[pos].values.astype(float)
+            
+            # FFTを実行
+            fft_values = fft(data)
+            frequencies = fftfreq(len(data))
+            
+            # パワースペクトルを計算
+            power_spectrum = np.abs(fft_values) ** 2
+            
+            # 正の周波数のみを取得
+            positive_freq_idx = frequencies > 0
+            positive_freqs = frequencies[positive_freq_idx]
+            positive_power = power_spectrum[positive_freq_idx]
+            
+            # 主要な周波数成分を抽出（上位5つ）
+            if len(positive_power) > 0:
+                top5_idx = np.argsort(positive_power)[-5:][::-1]
+                dominant_freqs = []
+                
+                for idx in top5_idx:
+                    freq = positive_freqs[idx]
+                    power = positive_power[idx]
+                    period = 1 / freq if freq > 0 else 0
+                    
+                    dominant_freqs.append({
+                        'frequency': float(freq),
+                        'power': float(power),
+                        'period': float(period) if period > 0 and period < len(data) else 0
+                    })
+                
+                max_power_idx = np.argmax(positive_power)
+                frequency_analysis[pos] = {
+                    'dominant_frequencies': dominant_freqs,
+                    'max_power_frequency': float(positive_freqs[max_power_idx]),
+                    'max_power_period': float(1 / positive_freqs[max_power_idx]) if positive_freqs[max_power_idx] > 0 else 0,
+                    'total_power': float(np.sum(positive_power))
+                }
+            else:
+                frequency_analysis[pos] = {
+                    'dominant_frequencies': [],
+                    'max_power_frequency': 0.0,
+                    'max_power_period': 0.0,
+                    'total_power': 0.0
+                }
+        
+        return frequency_analysis
+    
+    def create_advanced_features(self) -> pd.DataFrame:
+        """
+        高度な特徴量を作成（移動平均、EMA、RSI、MACD、ボリンジャーバンド）
+        
+        Returns:
+            特徴量が追加されたDataFrame
+        """
+        df = self.df.copy()
+        
+        # 移動平均（MA）
+        for window in [5, 10, 20, 50]:
+            for pos in ['hundred', 'ten', 'one']:
+                df[f'{pos}_ma{window}'] = df[pos].rolling(window=window).mean()
+        
+        # 指数移動平均（EMA）
+        for alpha in [0.1, 0.3, 0.5]:
+            for pos in ['hundred', 'ten', 'one']:
+                df[f'{pos}_ema{alpha}'] = df[pos].ewm(alpha=alpha, adjust=False).mean()
+        
+        # RSI（相対力指数）
+        for pos in ['hundred', 'ten', 'one']:
+            delta = df[pos].diff()
+            gain = (delta.where(delta > 0, 0)).rolling(window=14).mean()
+            loss = (-delta.where(delta < 0, 0)).rolling(window=14).mean()
+            rs = gain / (loss + 1e-10)  # ゼロ除算を防ぐ
+            df[f'{pos}_rsi'] = 100 - (100 / (1 + rs))
+            df[f'{pos}_rsi'] = df[f'{pos}_rsi'].fillna(50)  # NaNを50で埋める
+        
+        # MACD（移動平均収束拡散）
+        for pos in ['hundred', 'ten', 'one']:
+            ema12 = df[pos].ewm(span=12, adjust=False).mean()
+            ema26 = df[pos].ewm(span=26, adjust=False).mean()
+            df[f'{pos}_macd'] = ema12 - ema26
+            df[f'{pos}_macd_signal'] = df[f'{pos}_macd'].ewm(span=9, adjust=False).mean()
+            df[f'{pos}_macd_histogram'] = df[f'{pos}_macd'] - df[f'{pos}_macd_signal']
+        
+        # ボリンジャーバンド
+        for pos in ['hundred', 'ten', 'one']:
+            ma20 = df[pos].rolling(window=20).mean()
+            std20 = df[pos].rolling(window=20).std()
+            df[f'{pos}_bb_upper'] = ma20 + (std20 * 2)
+            df[f'{pos}_bb_lower'] = ma20 - (std20 * 2)
+            df[f'{pos}_bb_width'] = df[f'{pos}_bb_upper'] - df[f'{pos}_bb_lower']
+            df[f'{pos}_bb_position'] = (df[pos] - df[f'{pos}_bb_lower']) / (df[f'{pos}_bb_width'] + 1e-10)
+        
+        return df
+    
+    def predict_with_random_forest(self) -> Dict[str, any]:
+        """
+        ランダムフォレストによる予測
+        
+        Returns:
+            予測結果の辞書
+        """
+        from sklearn.ensemble import RandomForestRegressor
+        
+        # 特徴量を作成（過去N回のデータ）
+        window_size = 20
+        
+        # 高度な特徴量を含むDataFrameを取得
+        df_features = self.create_advanced_features()
+        
+        features = []
+        targets = []
+        
+        for i in range(window_size, len(df_features)):
+            feature = []
+            # 過去window_size回の基本データ
+            for j in range(window_size):
+                idx = i - window_size + j
+                feature.extend([
+                    df_features.iloc[idx]['hundred'],
+                    df_features.iloc[idx]['ten'],
+                    df_features.iloc[idx]['one'],
+                    df_features.iloc[idx]['sum'],
+                    df_features.iloc[idx]['span']
+                ])
+            
+            # 現在の特徴量（移動平均、RSI、MACDなど）
+            if not pd.isna(df_features.iloc[i]['hundred_ma20']):
+                feature.extend([
+                    df_features.iloc[i]['hundred_ma20'],
+                    df_features.iloc[i]['ten_ma20'],
+                    df_features.iloc[i]['one_ma20'],
+                    df_features.iloc[i]['hundred_rsi'],
+                    df_features.iloc[i]['ten_rsi'],
+                    df_features.iloc[i]['one_rsi'],
+                    df_features.iloc[i]['hundred_macd'],
+                    df_features.iloc[i]['ten_macd'],
+                    df_features.iloc[i]['one_macd']
+                ])
+            else:
+                # NaNの場合は0で埋める
+                feature.extend([0.0] * 9)
+            
+            features.append(feature)
+            targets.append([
+                df_features.iloc[i]['hundred'],
+                df_features.iloc[i]['ten'],
+                df_features.iloc[i]['one']
+            ])
+        
+        if len(features) < 10:
+            # データが少なすぎる場合は簡易予測を返す
+            last_hundred = int(self.df.iloc[-1]['hundred'])
+            last_ten = int(self.df.iloc[-1]['ten'])
+            last_one = int(self.df.iloc[-1]['one'])
+            
+            return {
+                'method': 'random_forest',
+                'set_prediction': f"{last_hundred}{last_ten}{last_one}",
+                'mini_prediction': f"{last_ten}{last_one}",
+                'confidence': 0.60,
+                'reason': 'ランダムフォレスト（データ不足のため簡易予測）',
+                'feature_importance': []
+            }
+        
+        features_array = np.array(features)
+        targets_array = np.array(targets)
+        
+        # NaNを0で埋める
+        features_array = np.nan_to_num(features_array, nan=0.0)
+        targets_array = np.nan_to_num(targets_array, nan=0.0)
+        
+        # ランダムフォレストで学習
+        rf = RandomForestRegressor(n_estimators=100, random_state=42, max_depth=10, n_jobs=-1)
+        rf.fit(features_array, targets_array)
+        
+        # 最新データから予測
+        latest_features = features[-1]
+        latest_features_array = np.array(latest_features).reshape(1, -1)
+        latest_features_array = np.nan_to_num(latest_features_array, nan=0.0)
+        
+        predicted = rf.predict(latest_features_array)[0]
+        
+        # 予測値を0-9の範囲に丸める
+        predictions = {}
+        predictions['hundred'] = int(np.round(np.clip(predicted[0], 0, 9)))
+        predictions['ten'] = int(np.round(np.clip(predicted[1], 0, 9)))
+        predictions['one'] = int(np.round(np.clip(predicted[2], 0, 9)))
+        
+        set_pred = f"{predictions['hundred']}{predictions['ten']}{predictions['one']}"
+        mini_pred = f"{predictions['ten']}{predictions['one']}"
+        
+        # 特徴量の重要度を取得
+        feature_importance = rf.feature_importances_.tolist()
+        
+        # 信頼度を計算（特徴量の重要度の分散に基づく）
+        importance_std = np.std(feature_importance)
+        confidence = min(0.75 + importance_std * 2, 0.90)
+        
+        return {
+            'method': 'random_forest',
+            'set_prediction': set_pred,
+            'mini_prediction': mini_pred,
+            'confidence': float(confidence),
+            'reason': 'ランダムフォレストによる予測',
+            'feature_importance': feature_importance[:20]  # 上位20個のみ
+        }
+    
     def calculate_dynamic_confidence(self, method_name: str, prediction: str) -> float:
         """
         動的信頼度計算（過去の精度に基づく）
@@ -778,7 +997,8 @@ class NumbersAnalyzer:
             'markov': 0.70,
             'bayesian': 0.68,
             'periodicity': 0.72,
-            'pattern': 0.68
+            'pattern': 0.68,
+            'random_forest': 0.75
         }
         
         base = base_confidence.get(method_name, 0.65)
@@ -1104,6 +1324,13 @@ class NumbersAnalyzer:
         periodicity_pred = self.predict_with_periodicity()
         pattern_pred = self.predict_with_patterns()
         
+        # ランダムフォレストによる予測（計算コストが高いのでエラーハンドリング）
+        random_forest_pred = None
+        try:
+            random_forest_pred = self.predict_with_random_forest()
+        except Exception as e:
+            print(f"[ensemble_predict] ランダムフォレスト予測をスキップ: {e}")
+        
         # 各手法の予測を集計
         set_votes = {}
         mini_votes = {}
@@ -1114,10 +1341,15 @@ class NumbersAnalyzer:
             'markov': 0.70,
             'bayesian': 0.68,
             'periodicity': 0.72,
-            'pattern': 0.68
+            'pattern': 0.68,
+            'random_forest': 0.75
         }
         
-        for pred in [chaos_pred, markov_pred, bayesian_pred, periodicity_pred, pattern_pred]:
+        predictions_list = [chaos_pred, markov_pred, bayesian_pred, periodicity_pred, pattern_pred]
+        if random_forest_pred:
+            predictions_list.append(random_forest_pred)
+        
+        for pred in predictions_list:
             set_num = pred['set_prediction']
             mini_num = pred['mini_prediction']
             confidence = pred['confidence']
@@ -1136,7 +1368,7 @@ class NumbersAnalyzer:
         mini_top3 = sorted(mini_votes.items(), key=lambda x: x[1], reverse=True)[:3]
         
         # 総重みで正規化
-        total_weight = sum(weights.values())
+        total_weight = sum(weights.get(pred['method'], 0.65) for pred in predictions_list)
         
         # タイムスタンプはJST（Asia/Tokyo）で記録
         jst_now = datetime.now(ZoneInfo("Asia/Tokyo"))
@@ -1149,12 +1381,30 @@ class NumbersAnalyzer:
         anomalies = self.detect_anomalies()
         periodicity_patterns = self.analyze_periodicity()
         
+        # フーリエ変換による周波数解析（計算コストが高いのでオプション）
+        frequency_analysis = None
+        try:
+            frequency_analysis = self.analyze_frequency_domain()
+        except Exception as e:
+            print(f"[ensemble_predict] 周波数解析をスキップ: {e}")
+        
         # クラスタリング分析（計算コストが高いのでオプション）
         clustering = None
         try:
             clustering = self.cluster_patterns(n_clusters=5)
         except Exception as e:
             print(f"[ensemble_predict] クラスタリング分析をスキップ: {e}")
+        
+        # methods辞書を構築
+        methods_dict = {
+            'chaos': chaos_pred,
+            'markov': markov_pred,
+            'bayesian': bayesian_pred,
+            'periodicity': periodicity_pred,
+            'pattern': pattern_pred
+        }
+        if random_forest_pred:
+            methods_dict['random_forest'] = random_forest_pred
         
         return {
             'timestamp': jst_now.isoformat(),
@@ -1174,13 +1424,7 @@ class NumbersAnalyzer:
                 }
                 for idx, item in enumerate(mini_top3)
             ],
-            'methods': {
-                'chaos': chaos_pred,
-                'markov': markov_pred,
-                'bayesian': bayesian_pred,
-                'periodicity': periodicity_pred,
-                'pattern': pattern_pred
-            },
+            'methods': methods_dict,
             'recent_phases': self.get_recent_phases(20),
             'statistics': {
                 'total_records': len(self.df),
@@ -1194,7 +1438,8 @@ class NumbersAnalyzer:
                 'gap_analysis': gap_analysis,
                 'anomalies': anomalies,
                 'clustering': clustering,
-                'periodicity': periodicity_patterns
+                'periodicity': periodicity_patterns,
+                'frequency_analysis': frequency_analysis
             }
         }
     
