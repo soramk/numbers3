@@ -965,9 +965,36 @@ class NumbersAnalyzer:
         # 特徴量の重要度を取得
         feature_importance = rf.feature_importances_.tolist()
         
+        # 特徴量名を生成
+        feature_names = []
+        # 過去20回の基本データ（各回で5つの特徴量: hundred, ten, one, sum, span）
+        for j in range(window_size):
+            feature_names.extend([
+                f'past_{j}_hundred',
+                f'past_{j}_ten',
+                f'past_{j}_one',
+                f'past_{j}_sum',
+                f'past_{j}_span'
+            ])
+        # 高度な特徴量
+        feature_names.extend([
+            'hundred_ma20', 'ten_ma20', 'one_ma20',
+            'hundred_rsi', 'ten_rsi', 'one_rsi',
+            'hundred_macd', 'ten_macd', 'one_macd'
+        ])
+        
+        # 特徴量の重要度と名前をペアにしてソート
+        feature_importance_with_names = list(zip(feature_names, feature_importance))
+        feature_importance_with_names.sort(key=lambda x: x[1], reverse=True)
+        
         # 信頼度を計算（特徴量の重要度の分散に基づく）
         importance_std = np.std(feature_importance)
         confidence = min(0.75 + importance_std * 2, 0.90)
+        
+        # 統計情報を計算
+        total_features = len(feature_importance)
+        top10_importance = sum([imp for _, imp in feature_importance_with_names[:10]])
+        top20_importance = sum([imp for _, imp in feature_importance_with_names[:20]])
         
         return {
             'method': 'random_forest',
@@ -975,7 +1002,20 @@ class NumbersAnalyzer:
             'mini_prediction': mini_pred,
             'confidence': float(confidence),
             'reason': 'ランダムフォレストによる予測',
-            'feature_importance': feature_importance[:20]  # 上位20個のみ
+            'feature_importance': feature_importance,  # 全特徴量の重要度
+            'feature_names': feature_names,  # 特徴量名
+            'feature_importance_ranked': [
+                {'name': name, 'importance': float(imp)} 
+                for name, imp in feature_importance_with_names
+            ],  # 重要度順にソートされた特徴量
+            'statistics': {
+                'total_features': total_features,
+                'top10_importance_sum': float(top10_importance),
+                'top20_importance_sum': float(top20_importance),
+                'max_importance': float(max(feature_importance)),
+                'min_importance': float(min(feature_importance)),
+                'mean_importance': float(np.mean(feature_importance))
+            }
         }
     
     def calculate_dynamic_confidence(self, method_name: str, prediction: str) -> float:

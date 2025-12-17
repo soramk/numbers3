@@ -1139,6 +1139,15 @@ function renderMethodDetailContent(methodKey, container) {
 function renderChaosDetail(method, analysis) {
     const trends = analysis.trends || {};
     let html = '<div class="space-y-4">';
+    
+    // 使用している分析結果を表示
+    html += '<div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">';
+    html += '<h5 class="font-semibold text-blue-800 mb-2">📊 使用している分析結果</h5>';
+    html += '<ul class="text-sm text-blue-700 space-y-1 list-disc list-inside">';
+    html += '<li><strong>トレンド分析</strong>: 位相空間における短期・中期・長期トレンドを分析</li>';
+    html += '</ul>';
+    html += '</div>';
+    
     html += '<h4 class="font-bold text-lg text-gray-800 mb-3">位相トレンド分析</h4>';
     
     for (const [pos, posTrends] of Object.entries(trends)) {
@@ -1169,6 +1178,15 @@ function renderChaosDetail(method, analysis) {
 function renderMarkovDetail(method, analysis) {
     const correlations = analysis.correlations || {};
     let html = '<div class="space-y-4">';
+    
+    // 使用している分析結果を表示
+    html += '<div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">';
+    html += '<h5 class="font-semibold text-blue-800 mb-2">📊 使用している分析結果</h5>';
+    html += '<ul class="text-sm text-blue-700 space-y-1 list-disc list-inside">';
+    html += '<li><strong>相関分析</strong>: 桁間相関と自己相関を分析し、遷移確率の補正に使用</li>';
+    html += '</ul>';
+    html += '</div>';
+    
     html += '<h4 class="font-bold text-lg text-gray-800 mb-3">遷移確率分析</h4>';
     
     html += '<div class="bg-white rounded-lg p-3">';
@@ -1188,8 +1206,19 @@ function renderMarkovDetail(method, analysis) {
  * ベイズ統計の詳細を表示
  */
 function renderBayesianDetail(method, analysis) {
-    const correlations = analysis.correlations || {};
+    const patterns = analysis.frequent_patterns || {};
+    const trends = analysis.trends || {};
     let html = '<div class="space-y-4">';
+    
+    // 使用している分析結果を表示
+    html += '<div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">';
+    html += '<h5 class="font-semibold text-blue-800 mb-2">📊 使用している分析結果</h5>';
+    html += '<ul class="text-sm text-blue-700 space-y-1 list-disc list-inside">';
+    html += '<li><strong>頻出パターン分析</strong>: 過去の出現頻度を事前確率として使用</li>';
+    html += '<li><strong>トレンド分析</strong>: 最新のトレンドを尤度として組み合わせ</li>';
+    html += '</ul>';
+    html += '</div>';
+    
     html += '<h4 class="font-bold text-lg text-gray-800 mb-3">ベイズ更新分析</h4>';
     
     html += '<div class="bg-white rounded-lg p-3">';
@@ -1210,7 +1239,20 @@ function renderBayesianDetail(method, analysis) {
  */
 function renderPeriodicityDetail(method, analysis) {
     const periodicity = analysis.periodicity || {};
+    const frequency = analysis.frequency_analysis || {};
     let html = '<div class="space-y-4">';
+    
+    // 使用している分析結果を表示
+    html += '<div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">';
+    html += '<h5 class="font-semibold text-blue-800 mb-2">📊 使用している分析結果</h5>';
+    html += '<ul class="text-sm text-blue-700 space-y-1 list-disc list-inside">';
+    html += '<li><strong>周期性分析</strong>: 曜日・月次・四半期パターンを直接使用</li>';
+    if (frequency && Object.keys(frequency).length > 0) {
+        html += '<li><strong>周波数解析</strong>: フーリエ変換による周期性の検証に使用</li>';
+    }
+    html += '</ul>';
+    html += '</div>';
+    
     html += '<h4 class="font-bold text-lg text-gray-800 mb-3">周期性パターン分析</h4>';
     
     // 現在の日付情報を取得
@@ -1671,7 +1713,18 @@ function renderClusteringDetail(clustering, container) {
  */
 function renderPatternDetail(method, analysis) {
     const patterns = analysis.frequent_patterns || {};
+    const correlations = analysis.correlations || {};
     let html = '<div class="space-y-4">';
+    
+    // 使用している分析結果を表示
+    html += '<div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">';
+    html += '<h5 class="font-semibold text-blue-800 mb-2">📊 使用している分析結果</h5>';
+    html += '<ul class="text-sm text-blue-700 space-y-1 list-disc list-inside">';
+    html += '<li><strong>頻出パターン分析</strong>: 3桁・2桁の頻出組み合わせを直接使用</li>';
+    html += '<li><strong>相関分析</strong>: 桁間相関を考慮したパターン選択</li>';
+    html += '</ul>';
+    html += '</div>';
+    
     html += '<h4 class="font-bold text-lg text-gray-800 mb-3">頻出パターン分析</h4>';
     
     if (patterns.set_top) {
@@ -1707,19 +1760,67 @@ function renderPatternDetail(method, analysis) {
  */
 function renderRandomForestDetail(method, analysis) {
     let html = '<div class="space-y-4">';
+    
+    // 使用している分析結果を表示
+    html += '<div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">';
+    html += '<h5 class="font-semibold text-blue-800 mb-2">📊 使用している分析結果</h5>';
+    html += '<ul class="text-sm text-blue-700 space-y-1 list-disc list-inside">';
+    html += '<li><strong>トレンド分析</strong>: 移動平均（MA）、指数移動平均（EMA）として特徴量に使用</li>';
+    html += '<li><strong>相関分析</strong>: RSI、MACDなどの技術指標として特徴量に使用</li>';
+    html += '<li><strong>クラスタリング分析</strong>: パターンのグループ化情報を特徴量に使用</li>';
+    html += '<li><strong>周波数解析</strong>: 周期性情報を特徴量に使用</li>';
+    html += '</ul>';
+    html += '</div>';
+    
     html += '<h4 class="font-bold text-lg text-gray-800 mb-3">ランダムフォレスト分析</h4>';
     
     html += '<div class="bg-white rounded-lg p-4 mb-4">';
     html += '<p class="text-sm text-gray-700 mb-3">ランダムフォレストは、複数の決定木を組み合わせた機械学習モデルです。過去のデータから学習し、特徴量の重要度を評価しながら予測を行います。</p>';
     html += '</div>';
     
+    // 統計情報を表示
+    if (method.statistics) {
+        html += '<div class="bg-white rounded-lg p-4 mb-4">';
+        html += '<h5 class="font-semibold text-gray-700 mb-3">特徴量統計</h5>';
+        html += '<div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">';
+        html += `<div><span class="text-gray-600">総特徴量数:</span> <span class="font-bold">${method.statistics.total_features}</span></div>`;
+        html += `<div><span class="text-gray-600">最大重要度:</span> <span class="font-bold">${method.statistics.max_importance.toFixed(4)}</span></div>`;
+        html += `<div><span class="text-gray-600">平均重要度:</span> <span class="font-bold">${method.statistics.mean_importance.toFixed(4)}</span></div>`;
+        html += `<div><span class="text-gray-600">上位10位合計:</span> <span class="font-bold">${(method.statistics.top10_importance_sum * 100).toFixed(1)}%</span></div>`;
+        html += `<div><span class="text-gray-600">上位20位合計:</span> <span class="font-bold">${(method.statistics.top20_importance_sum * 100).toFixed(1)}%</span></div>`;
+        html += '</div>';
+        html += '</div>';
+    }
+    
     // 特徴量の重要度を表示
-    if (method.feature_importance && method.feature_importance.length > 0) {
+    if (method.feature_importance_ranked && method.feature_importance_ranked.length > 0) {
+        html += '<div class="bg-white rounded-lg p-4 mb-4">';
+        html += '<h5 class="font-semibold text-gray-700 mb-3">特徴量の重要度（上位20件）</h5>';
+        html += '<div class="space-y-2 max-h-96 overflow-y-auto">';
+        
+        method.feature_importance_ranked.slice(0, 20).forEach((item, rank) => {
+            const percentage = (item.importance * 100).toFixed(2);
+            const maxImportance = method.feature_importance_ranked[0].importance;
+            const widthPercent = (item.importance / maxImportance * 100).toFixed(1);
+            
+            html += '<div class="flex items-center gap-3 p-2 hover:bg-gray-50 rounded">';
+            html += `<span class="text-xs font-semibold text-gray-600 w-8">${rank + 1}位</span>`;
+            html += `<span class="text-xs text-gray-700 flex-1 truncate" title="${item.name}">${item.name}</span>`;
+            html += '<div class="flex-1 bg-gray-200 rounded-full h-4 relative max-w-xs">';
+            html += `<div class="bg-emerald-500 h-4 rounded-full" style="width: ${widthPercent}%"></div>`;
+            html += '</div>';
+            html += `<span class="text-xs font-semibold text-gray-700 w-16 text-right">${percentage}%</span>`;
+            html += '</div>';
+        });
+        
+        html += '</div>';
+        html += '</div>';
+    } else if (method.feature_importance && method.feature_importance.length > 0) {
+        // 後方互換性のため、feature_importance_rankedがない場合は従来の方法を使用
         html += '<div class="bg-white rounded-lg p-4 mb-4">';
         html += '<h5 class="font-semibold text-gray-700 mb-3">特徴量の重要度（上位10件）</h5>';
         html += '<div class="space-y-2">';
         
-        // 重要度をソート
         const importanceWithIndex = method.feature_importance.map((val, idx) => ({ idx, val }));
         importanceWithIndex.sort((a, b) => b.val - a.val);
         
