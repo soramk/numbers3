@@ -105,22 +105,24 @@ function renderContent() {
 
     // ローディングを非表示
     document.getElementById('loading').classList.add('hidden');
-    document.getElementById('content').classList.remove('hidden');
+    const contentDiv = document.getElementById('content');
+    contentDiv.classList.remove('hidden');
+    contentDiv.classList.add('fade-in');
 
     // 基本情報を表示
     renderBasicInfo();
     
-    // セット予測を表示
-    renderSetPredictions();
+    // セット予測を表示（少し遅延させてアニメーション効果）
+    setTimeout(() => renderSetPredictions(), 100);
     
     // ミニ予測を表示
-    renderMiniPredictions();
+    setTimeout(() => renderMiniPredictions(), 200);
     
     // 位相グラフを描画
-    renderPhaseChart();
+    setTimeout(() => renderPhaseChart(), 300);
     
     // 予測手法の詳細を表示
-    renderMethodDetails();
+    setTimeout(() => renderMethodDetails(), 400);
 }
 
 /**
@@ -150,7 +152,16 @@ function renderSetPredictions() {
 
     predictionData.set_predictions.forEach((pred, index) => {
         const card = createPredictionCard(pred, index + 1, 'blue');
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
         container.appendChild(card);
+        
+        // アニメーションで表示
+        setTimeout(() => {
+            card.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
     });
 }
 
@@ -163,7 +174,16 @@ function renderMiniPredictions() {
 
     predictionData.mini_predictions.forEach((pred, index) => {
         const card = createPredictionCard(pred, index + 1, 'green');
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(20px)';
         container.appendChild(card);
+        
+        // アニメーションで表示
+        setTimeout(() => {
+            card.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
     });
 }
 
@@ -173,41 +193,64 @@ function renderMiniPredictions() {
 function createPredictionCard(prediction, rank, color) {
     const card = document.createElement('div');
     
-    // カラーマッピング
+    // カラーマッピング（より洗練されたグラデーション）
     const colorMap = {
         'blue': {
-            bg: 'bg-gradient-to-br from-blue-50 to-blue-100',
-            border: 'border-blue-300',
-            borderT: 'border-blue-200',
-            bar: 'bg-blue-600'
+            bg: 'bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-500',
+            bgLight: 'bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50',
+            border: 'border-blue-400',
+            bar: 'bg-gradient-to-r from-blue-500 to-indigo-600',
+            shadow: 'shadow-blue-200',
+            rankBg: 'bg-blue-100'
         },
         'green': {
-            bg: 'bg-gradient-to-br from-green-50 to-green-100',
-            border: 'border-green-300',
-            borderT: 'border-green-200',
-            bar: 'bg-green-600'
+            bg: 'bg-gradient-to-br from-green-500 via-emerald-500 to-teal-500',
+            bgLight: 'bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50',
+            border: 'border-green-400',
+            bar: 'bg-gradient-to-r from-green-500 to-emerald-600',
+            shadow: 'shadow-green-200',
+            rankBg: 'bg-green-100'
         }
     };
     
     const colors = colorMap[color] || colorMap.blue;
-    card.className = `${colors.bg} rounded-lg p-4 border-2 ${colors.border}`;
+    card.className = `prediction-card ${colors.bgLight} rounded-2xl p-6 border-2 ${colors.border} shadow-lg ${colors.shadow} hover:shadow-2xl`;
     
     const confidencePercent = (prediction.confidence * 100).toFixed(1);
-    const confidenceColor = prediction.confidence >= 0.7 ? 'text-green-600' : 
-                           prediction.confidence >= 0.6 ? 'text-yellow-600' : 'text-orange-600';
+    const confidenceColor = prediction.confidence >= 0.7 ? 'text-emerald-600' : 
+                           prediction.confidence >= 0.6 ? 'text-yellow-500' : 'text-orange-500';
+    
+    // ランクバッジのスタイル
+    const rankBadgeStyle = rank === 1 ? 'bg-gradient-to-r from-yellow-400 to-orange-400 text-white' :
+                          rank === 2 ? 'bg-gradient-to-r from-gray-300 to-gray-400 text-white' :
+                          'bg-gradient-to-r from-orange-300 to-orange-400 text-white';
     
     card.innerHTML = `
-        <div class="flex items-center justify-between mb-2">
-            <span class="text-sm font-semibold text-gray-600">第${rank}候補</span>
-            <span class="text-xs px-2 py-1 bg-white rounded-full text-gray-600">信頼度</span>
+        <div class="flex items-center justify-between mb-4">
+            <span class="px-3 py-1 ${rankBadgeStyle} rounded-full text-xs font-bold shadow-md">第${rank}候補</span>
+            <div class="flex items-center gap-1.5 px-3 py-1 bg-white/80 backdrop-blur-sm rounded-full">
+                <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                </svg>
+                <span class="text-xs font-semibold text-gray-700">信頼度</span>
+            </div>
         </div>
-        <div class="text-4xl font-bold text-gray-800 mb-2 text-center">${prediction.number}</div>
-        <div class="text-center">
-            <span class="text-2xl font-bold ${confidenceColor}">${confidencePercent}%</span>
+        <div class="text-center mb-4">
+            <div class="inline-block relative">
+                <div class="absolute inset-0 ${colors.bg} opacity-20 blur-xl rounded-full"></div>
+                <div class="relative text-5xl md:text-6xl font-black text-gray-800 tracking-wider">${prediction.number}</div>
+            </div>
         </div>
-        <div class="mt-3 pt-3 ${colors.borderT} border-t">
-            <div class="w-full bg-gray-200 rounded-full h-2">
-                <div class="${colors.bar} h-2 rounded-full" style="width: ${confidencePercent}%"></div>
+        <div class="text-center mb-4">
+            <span class="text-3xl font-bold ${confidenceColor}">${confidencePercent}%</span>
+        </div>
+        <div class="mt-4 pt-4 border-t-2 border-gray-200">
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-xs font-medium text-gray-600">信頼度</span>
+                <span class="text-xs font-bold ${confidenceColor}">${confidencePercent}%</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-3 overflow-hidden shadow-inner">
+                <div class="${colors.bar} h-3 rounded-full transition-all duration-1000 ease-out shadow-sm" style="width: ${confidencePercent}%"></div>
             </div>
         </div>
     `;
@@ -241,53 +284,141 @@ function renderPhaseChart() {
                 {
                     label: '百の位',
                     data: phases.hundred,
-                    borderColor: 'rgb(59, 130, 246)',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    tension: 0.4
+                    borderColor: 'rgb(99, 102, 241)',
+                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                    borderWidth: 3,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: 'rgb(99, 102, 241)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    tension: 0.4,
+                    fill: true
                 },
                 {
                     label: '十の位',
                     data: phases.ten,
-                    borderColor: 'rgb(34, 197, 94)',
-                    backgroundColor: 'rgba(34, 197, 94, 0.1)',
-                    tension: 0.4
+                    borderColor: 'rgb(16, 185, 129)',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderWidth: 3,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: 'rgb(16, 185, 129)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    tension: 0.4,
+                    fill: true
                 },
                 {
                     label: '一の位',
                     data: phases.one,
                     borderColor: 'rgb(251, 146, 60)',
                     backgroundColor: 'rgba(251, 146, 60, 0.1)',
-                    tension: 0.4
+                    borderWidth: 3,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: 'rgb(251, 146, 60)',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2,
+                    tension: 0.4,
+                    fill: true
                 }
             ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            },
             plugins: {
                 legend: {
                     position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        padding: 15,
+                        font: {
+                            size: 13,
+                            weight: '600'
+                        }
+                    }
                 },
                 title: {
                     display: true,
                     text: '直近20回の位相推移',
                     font: {
-                        size: 16
+                        size: 18,
+                        weight: 'bold'
+                    },
+                    color: '#374151',
+                    padding: {
+                        bottom: 20
                     }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    padding: 12,
+                    titleFont: {
+                        size: 14,
+                        weight: 'bold'
+                    },
+                    bodyFont: {
+                        size: 13
+                    },
+                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                    borderWidth: 1,
+                    cornerRadius: 8,
+                    displayColors: true
                 }
             },
             scales: {
                 y: {
                     beginAtZero: true,
+                    grid: {
+                        color: 'rgba(0, 0, 0, 0.05)',
+                        drawBorder: false
+                    },
+                    ticks: {
+                        font: {
+                            size: 11
+                        },
+                        color: '#6B7280'
+                    },
                     title: {
                         display: true,
-                        text: '位相値'
+                        text: '位相値',
+                        font: {
+                            size: 13,
+                            weight: '600'
+                        },
+                        color: '#374151',
+                        padding: {
+                            bottom: 10
+                        }
                     }
                 },
                 x: {
+                    grid: {
+                        display: false
+                    },
+                    ticks: {
+                        font: {
+                            size: 11
+                        },
+                        color: '#6B7280'
+                    },
                     title: {
                         display: true,
-                        text: '回数'
+                        text: '回数',
+                        font: {
+                            size: 13,
+                            weight: '600'
+                        },
+                        color: '#374151',
+                        padding: {
+                            top: 10
+                        }
                     }
                 }
             }
@@ -309,55 +440,81 @@ function renderMethodDetails() {
         'bayesian': 'ベイズ統計'
     };
 
-    const methodColors = {
-        'chaos': 'purple',
-        'markov': 'blue',
-        'bayesian': 'green'
+    const methodIcons = {
+        'chaos': `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+        </svg>`,
+        'markov': `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+        </svg>`,
+        'bayesian': `<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+        </svg>`
     };
 
     const methodColorClasses = {
         'chaos': {
-            bg: 'bg-gradient-to-r from-purple-50 to-purple-100',
-            border: 'border-purple-500',
-            text: 'text-purple-600'
+            bg: 'bg-gradient-to-br from-purple-50 via-purple-100 to-pink-50',
+            border: 'border-purple-400',
+            text: 'text-purple-700',
+            iconBg: 'bg-gradient-to-br from-purple-500 to-pink-500',
+            numberBg: 'bg-purple-100'
         },
         'markov': {
-            bg: 'bg-gradient-to-r from-blue-50 to-blue-100',
-            border: 'border-blue-500',
-            text: 'text-blue-600'
+            bg: 'bg-gradient-to-br from-blue-50 via-blue-100 to-cyan-50',
+            border: 'border-blue-400',
+            text: 'text-blue-700',
+            iconBg: 'bg-gradient-to-br from-blue-500 to-cyan-500',
+            numberBg: 'bg-blue-100'
         },
         'bayesian': {
-            bg: 'bg-gradient-to-r from-green-50 to-green-100',
-            border: 'border-green-500',
-            text: 'text-green-600'
+            bg: 'bg-gradient-to-br from-green-50 via-emerald-100 to-teal-50',
+            border: 'border-green-400',
+            text: 'text-green-700',
+            iconBg: 'bg-gradient-to-br from-green-500 to-emerald-500',
+            numberBg: 'bg-green-100'
         }
     };
 
-    Object.keys(methods).forEach(methodKey => {
+    Object.keys(methods).forEach((methodKey, index) => {
         const method = methods[methodKey];
         const card = document.createElement('div');
         const colorClasses = methodColorClasses[methodKey] || methodColorClasses.chaos;
         
-        card.className = `${colorClasses.bg} rounded-lg p-4 border-l-4 ${colorClasses.border}`;
+        card.className = `${colorClasses.bg} rounded-2xl p-6 border-2 ${colorClasses.border} shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1`;
         
         const confidencePercent = (method.confidence * 100).toFixed(1);
         
         card.innerHTML = `
-            <div class="flex items-center justify-between mb-2">
-                <h3 class="text-lg font-bold text-gray-800">${methodNames[methodKey]}</h3>
-                <span class="text-sm font-semibold ${colorClasses.text}">信頼度: ${confidencePercent}%</span>
-            </div>
-            <div class="grid grid-cols-2 gap-4 mb-2">
-                <div>
-                    <p class="text-sm text-gray-600">セット予測</p>
-                    <p class="text-xl font-bold text-gray-800">${method.set_prediction}</p>
+            <div class="flex items-start justify-between mb-4">
+                <div class="flex items-center gap-3">
+                    <div class="${colorClasses.iconBg} p-3 rounded-xl text-white shadow-lg">
+                        ${methodIcons[methodKey]}
+                    </div>
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-800">${methodNames[methodKey]}</h3>
+                        <p class="text-xs text-gray-600 mt-0.5">予測手法 ${index + 1}</p>
+                    </div>
                 </div>
-                <div>
-                    <p class="text-sm text-gray-600">ミニ予測</p>
-                    <p class="text-xl font-bold text-gray-800">${method.mini_prediction}</p>
+                <div class="text-right">
+                    <div class="px-3 py-1.5 ${colorClasses.numberBg} rounded-lg">
+                        <span class="text-sm font-bold ${colorClasses.text}">${confidencePercent}%</span>
+                    </div>
                 </div>
             </div>
-            <p class="text-sm text-gray-600 mt-2">${method.reason}</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
+                    <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">セット予測</p>
+                    <p class="text-2xl font-black text-gray-800 tracking-wider">${method.set_prediction}</p>
+                </div>
+                <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
+                    <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">ミニ予測</p>
+                    <p class="text-2xl font-black text-gray-800 tracking-wider">${method.mini_prediction}</p>
+                </div>
+            </div>
+            <div class="bg-white/40 backdrop-blur-sm rounded-lg p-3 border border-gray-200">
+                <p class="text-sm text-gray-700 leading-relaxed">${method.reason}</p>
+            </div>
         `;
         
         container.appendChild(card);
