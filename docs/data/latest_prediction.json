@@ -1,35 +1,35 @@
 {
-  "timestamp": "2025-12-17T01:16:21.463808+09:00",
+  "timestamp": "2025-12-17T22:46:04.071776+09:00",
   "set_predictions": [
     {
-      "number": "230",
+      "number": "379",
       "confidence": 0.233,
       "rank": 1
     },
     {
-      "number": "876",
+      "number": "836",
       "confidence": 0.227,
       "rank": 2
     },
     {
-      "number": "217",
+      "number": "439",
       "confidence": 0.217,
       "rank": 3
     }
   ],
   "mini_predictions": [
     {
-      "number": "30",
+      "number": "79",
       "confidence": 0.233,
       "rank": 1
     },
     {
-      "number": "76",
+      "number": "36",
       "confidence": 0.227,
       "rank": 2
     },
     {
-      "number": "17",
+      "number": "39",
       "confidence": 0.217,
       "rank": 3
     }
@@ -37,29 +37,28 @@
   "methods": {
     "chaos": {
       "method": "chaos",
-      "set_prediction": "217",
-      "mini_prediction": "17",
+      "set_prediction": "439",
+      "mini_prediction": "39",
       "confidence": 0.65,
       "reason": "位相の線形トレンドから予測"
     },
     "markov": {
       "method": "markov",
-      "set_prediction": "230",
-      "mini_prediction": "30",
+      "set_prediction": "379",
+      "mini_prediction": "79",
       "confidence": 0.7,
       "reason": "マルコフ遷移確率から予測"
     },
     "bayesian": {
       "method": "bayesian",
-      "set_prediction": "876",
-      "mini_prediction": "76",
+      "set_prediction": "836",
+      "mini_prediction": "36",
       "confidence": 0.68,
       "reason": "ベイズ統計による事後確率から予測"
     }
   },
   "recent_phases": {
     "hundred": [
-      4.568437358446471,
       2.2338652902043012,
       2.398749953649728,
       1.4825124900260656,
@@ -78,10 +77,10 @@
       5.188782097649216,
       1.940637235984422,
       4.339379059228396,
-      2.398751967068213
+      2.398751967068213,
+      1.4825106926734744
     ],
     "ten": [
-      3.7346898671863076,
       4.797496846106924,
       4.056245435855046,
       5.513206839499628,
@@ -100,10 +99,10 @@
       1.940637235984422,
       1.7115625991791261,
       4.797496726571211,
-      2.398751967068213
+      2.398751967068213,
+      3.51986945486548
     ],
     "one": [
-      2.3987523345537265,
       2.2338652902043012,
       1.4825124900260656,
       2.398749953649728,
@@ -122,12 +121,13 @@
       3.8812588768617795,
       1.4825103152877772,
       4.797496726571211,
-      3.8755502095812684
+      3.8755502095812684,
+      4.797496846106924
     ]
   },
   "statistics": {
-    "total_records": 6879,
-    "last_date": "2025-12-16",
-    "last_number": "003"
+    "total_records": 6880,
+    "last_date": "2025-12-17",
+    "last_number": "249"
   }
 }
