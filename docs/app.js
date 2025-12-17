@@ -1279,6 +1279,235 @@ function renderMethodTheoryContent(methodKey, container) {
             `;
             break;
             
+        case 'xgboost':
+            html = `
+                <div class="space-y-4">
+                    <h4 class="font-bold text-xl text-gray-800 mb-4">XGBoost（Extreme Gradient Boosting）</h4>
+                    
+                    <div class="bg-white rounded-lg p-4 mb-4">
+                        <h5 class="font-semibold text-gray-700 mb-2">理論的背景</h5>
+                        <p class="text-sm text-gray-700 leading-relaxed mb-3">
+                            XGBoostは、Chen & Guestrinによって2016年に提案された勾配ブースティングアルゴリズムです。
+                            弱学習器（通常は決定木）を順次追加し、前のモデルの誤差を修正することで、
+                            段階的に予測精度を向上させるアンサンブル学習手法です。
+                        </p>
+                        <p class="text-sm text-gray-700 leading-relaxed">
+                            XGBoostは、正則化項を追加することで過学習を抑制し、
+                            並列処理と近似アルゴリズムにより高速な学習を実現します。
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg p-4 mb-4">
+                        <h5 class="font-semibold text-gray-700 mb-2">勾配ブースティング</h5>
+                        <p class="text-sm text-gray-700 leading-relaxed mb-3">
+                            勾配ブースティングは、損失関数の勾配（gradient）に基づいて新しいモデルを追加します。
+                            各ステップで、前のモデルの予測誤差を最小化する方向に新しいモデルを学習することで、
+                            全体の予測精度を向上させます。
+                        </p>
+                        <p class="text-sm text-gray-700 leading-relaxed">
+                            XGBoostは、この勾配ブースティングの原理を拡張し、
+                            正則化（L1、L2）と木の複雑さの制御により、汎化性能を向上させています。
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg p-4 mb-4">
+                        <h5 class="font-semibold text-gray-700 mb-2">特徴量の重要度</h5>
+                        <p class="text-sm text-gray-700 leading-relaxed mb-3">
+                            XGBoostは、各特徴量が予測にどれだけ寄与しているかを定量化できます。
+                            特徴量の重要度は、その特徴量が分割に使用された回数と、
+                            その分割による損失の減少量に基づいて計算されます。
+                        </p>
+                        <p class="text-sm text-gray-700 leading-relaxed">
+                            本システムでは、この特徴量重要度を分析することで、
+                            どの技術指標や過去のデータが予測に最も影響を与えているかを理解できます。
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg p-4">
+                        <h5 class="font-semibold text-gray-700 mb-2">参考文献</h5>
+                        <ul class="text-xs text-gray-600 space-y-1 list-disc list-inside">
+                            <li>Chen, T., & Guestrin, C. (2016). "XGBoost: A Scalable Tree Boosting System"</li>
+                            <li>Friedman, J. H. (2001). "Greedy Function Approximation: A Gradient Boosting Machine"</li>
+                            <li>Hastie, T., et al. (2009). "The Elements of Statistical Learning"</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+            break;
+            
+        case 'lightgbm':
+            html = `
+                <div class="space-y-4">
+                    <h4 class="font-bold text-xl text-gray-800 mb-4">LightGBM（Light Gradient Boosting Machine）</h4>
+                    
+                    <div class="bg-white rounded-lg p-4 mb-4">
+                        <h5 class="font-semibold text-gray-700 mb-2">理論的背景</h5>
+                        <p class="text-sm text-gray-700 leading-relaxed mb-3">
+                            LightGBMは、Microsoftによって2017年に開発された勾配ブースティングフレームワークです。
+                            XGBoostと同様に勾配ブースティングの原理に基づいていますが、
+                            「Gradient-based One-Side Sampling（GOSS）」と「Exclusive Feature Bundling（EFB）」という
+                            革新的な技術により、より高速で効率的な学習を実現します。
+                        </p>
+                        <p class="text-sm text-gray-700 leading-relaxed">
+                            LightGBMは、大規模データセットでも高速に学習でき、
+                            メモリ使用量も少ないため、実用的な機械学習システムで広く使用されています。
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg p-4 mb-4">
+                        <h5 class="font-semibold text-gray-700 mb-2">GOSSとEFB</h5>
+                        <p class="text-sm text-gray-700 leading-relaxed mb-3">
+                            GOSS（Gradient-based One-Side Sampling）は、勾配の大きいデータポイントを優先的に使用し、
+                            勾配の小さいデータポイントをランダムサンプリングすることで、学習速度を向上させます。
+                        </p>
+                        <p class="text-sm text-gray-700 leading-relaxed">
+                            EFB（Exclusive Feature Bundling）は、互いに排他的な特徴量を束ねることで、
+                            特徴量の数を削減し、メモリ使用量と計算時間を削減します。
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg p-4 mb-4">
+                        <h5 class="font-semibold text-gray-700 mb-2">Leaf-wise成長</h5>
+                        <p class="text-sm text-gray-700 leading-relaxed mb-3">
+                            LightGBMは、従来のレベルワイズ（level-wise）成長ではなく、
+                            リーフワイズ（leaf-wise）成長を使用します。
+                            これは、損失を最も減少させる葉を優先的に分割することで、
+                            より効率的な木の構築を可能にします。
+                        </p>
+                        <p class="text-sm text-gray-700 leading-relaxed">
+                            この成長戦略により、同じ深さの木でも、より高い予測精度を達成できます。
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg p-4">
+                        <h5 class="font-semibold text-gray-700 mb-2">参考文献</h5>
+                        <ul class="text-xs text-gray-600 space-y-1 list-disc list-inside">
+                            <li>Ke, G., et al. (2017). "LightGBM: A Highly Efficient Gradient Boosting Decision Tree"</li>
+                            <li>Friedman, J. H. (2001). "Greedy Function Approximation: A Gradient Boosting Machine"</li>
+                            <li>Chen, T., & Guestrin, C. (2016). "XGBoost: A Scalable Tree Boosting System"</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+            break;
+            
+        case 'arima':
+            html = `
+                <div class="space-y-4">
+                    <h4 class="font-bold text-xl text-gray-800 mb-4">ARIMA（AutoRegressive Integrated Moving Average）</h4>
+                    
+                    <div class="bg-white rounded-lg p-4 mb-4">
+                        <h5 class="font-semibold text-gray-700 mb-2">理論的背景</h5>
+                        <p class="text-sm text-gray-700 leading-relaxed mb-3">
+                            ARIMAモデルは、George BoxとGwilym Jenkinsによって1970年代に開発された
+                            時系列予測のための統計的手法です。
+                            ARIMAは、自己回帰（AR）、和分（I）、移動平均（MA）の3つの要素を組み合わせたモデルです。
+                        </p>
+                        <p class="text-sm text-gray-700 leading-relaxed">
+                            ARIMAモデルは、時系列データのトレンド、季節性、自己相関を考慮し、
+                            統計的に確立された手法として、経済学、金融、気象学など多くの分野で使用されています。
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg p-4 mb-4">
+                        <h5 class="font-semibold text-gray-700 mb-2">ARIMA(p,d,q)パラメータ</h5>
+                        <p class="text-sm text-gray-700 leading-relaxed mb-3">
+                            ARIMA(p,d,q)モデルは、3つのパラメータで定義されます：
+                        </p>
+                        <ul class="text-sm text-gray-700 space-y-2 list-disc list-inside mb-3">
+                            <li><strong>p（AR項）</strong>: 過去の値の数。自己回帰の次数を表します。</li>
+                            <li><strong>d（I項）</strong>: 差分の次数。時系列を定常化するために必要な差分の回数です。</li>
+                            <li><strong>q（MA項）</strong>: 過去の誤差項の数。移動平均の次数を表します。</li>
+                        </ul>
+                        <p class="text-sm text-gray-700 leading-relaxed">
+                            本システムでは、ARIMA(2,1,2)モデルを使用しています。
+                            これは、過去2回の値と過去2回の誤差項を使用し、1回の差分を適用することを意味します。
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg p-4 mb-4">
+                        <h5 class="font-semibold text-gray-700 mb-2">定常性と差分</h5>
+                        <p class="text-sm text-gray-700 leading-relaxed mb-3">
+                            ARIMAモデルは、定常時系列（平均と分散が時間に依存しない）を前提としています。
+                            時系列が定常でない場合、差分（differencing）を適用して定常化します。
+                        </p>
+                        <p class="text-sm text-gray-700 leading-relaxed">
+                            差分は、連続する値の差を計算することで、トレンドを除去し、
+                            時系列を定常化するための重要な手法です。
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg p-4">
+                        <h5 class="font-semibold text-gray-700 mb-2">参考文献</h5>
+                        <ul class="text-xs text-gray-600 space-y-1 list-disc list-inside">
+                            <li>Box, G. E. P., & Jenkins, G. M. (1976). "Time Series Analysis: Forecasting and Control"</li>
+                            <li>Hamilton, J. D. (1994). "Time Series Analysis"</li>
+                            <li>Hyndman, R. J., & Athanasopoulos, G. (2021). "Forecasting: principles and practice"</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+            break;
+            
+        case 'stacking':
+            html = `
+                <div class="space-y-4">
+                    <h4 class="font-bold text-xl text-gray-800 mb-4">スタッキング（Stacking Ensemble Learning）</h4>
+                    
+                    <div class="bg-white rounded-lg p-4 mb-4">
+                        <h5 class="font-semibold text-gray-700 mb-2">理論的背景</h5>
+                        <p class="text-sm text-gray-700 leading-relaxed mb-3">
+                            スタッキングは、David Wolpertによって1992年に提案されたアンサンブル学習手法です。
+                            複数の異なる予測モデル（ベースモデル）の予測結果を、
+                            別のモデル（メタモデル）に入力することで、最終的な予測を行います。
+                        </p>
+                        <p class="text-sm text-gray-700 leading-relaxed">
+                            スタッキングは、各ベースモデルの長所を活かし、
+                            メタモデルが最適な組み合わせ方を学習することで、
+                            単一のモデルよりも高い予測精度を達成できます。
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg p-4 mb-4">
+                        <h5 class="font-semibold text-gray-700 mb-2">2層構造</h5>
+                        <p class="text-sm text-gray-700 leading-relaxed mb-3">
+                            スタッキングは、2層構造を持ちます：
+                        </p>
+                        <ul class="text-sm text-gray-700 space-y-2 list-disc list-inside mb-3">
+                            <li><strong>第1層（ベースモデル）</strong>: 複数の異なる学習アルゴリズム（ランダムフォレスト、XGBoost、LightGBMなど）が、元のデータから学習します。</li>
+                            <li><strong>第2層（メタモデル）</strong>: ベースモデルの予測結果を入力として受け取り、最終的な予測を行います。</li>
+                        </ul>
+                        <p class="text-sm text-gray-700 leading-relaxed">
+                            本システムでは、ランダムフォレスト、XGBoost、LightGBMをベースモデルとして使用し、
+                            Ridge回帰をメタモデルとして使用しています。
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg p-4 mb-4">
+                        <h5 class="font-semibold text-gray-700 mb-2">クロスバリデーション</h5>
+                        <p class="text-sm text-gray-700 leading-relaxed mb-3">
+                            スタッキングでは、過学習を防ぐために、クロスバリデーションを使用して
+                            ベースモデルの予測を生成します。
+                            これにより、メタモデルは、学習データに直接依存しない予測を使用できます。
+                        </p>
+                        <p class="text-sm text-gray-700 leading-relaxed">
+                            本システムでは、3-foldクロスバリデーションを使用しており、
+                            データを3つの部分に分割し、各フォールドで異なるモデルを学習します。
+                        </p>
+                    </div>
+                    
+                    <div class="bg-white rounded-lg p-4">
+                        <h5 class="font-semibold text-gray-700 mb-2">参考文献</h5>
+                        <ul class="text-xs text-gray-600 space-y-1 list-disc list-inside">
+                            <li>Wolpert, D. H. (1992). "Stacked Generalization"</li>
+                            <li>Breiman, L. (1996). "Stacked Regressions"</li>
+                            <li>Zhou, Z. H. (2012). "Ensemble Methods: Foundations and Algorithms"</li>
+                        </ul>
+                    </div>
+                </div>
+            `;
+            break;
+            
         default:
             html = '<p class="text-gray-600">学術的説明がありません。</p>';
     }
@@ -1319,6 +1548,18 @@ function renderMethodDetailContent(methodKey, container) {
             break;
         case 'random_forest':
             html = renderRandomForestDetail(method, analysis);
+            break;
+        case 'xgboost':
+            html = renderXGBoostDetail(method, analysis);
+            break;
+        case 'lightgbm':
+            html = renderLightGBMDetail(method, analysis);
+            break;
+        case 'arima':
+            html = renderARIMADetail(method, analysis);
+            break;
+        case 'stacking':
+            html = renderStackingDetail(method, analysis);
             break;
         default:
             html = '<p class="text-gray-600">詳細情報がありません。</p>';
@@ -2108,6 +2349,265 @@ function renderRandomForestDetail(method, analysis) {
     html += '<li>• <strong>MACD</strong>: トレンドの変化を検出</li>';
     html += '<li>• <strong>ボリンジャーバンド</strong>: 統計的な価格帯を表示</li>';
     html += '</ul>';
+    html += '</div>';
+    
+    html += '</div>';
+    return html;
+}
+
+/**
+ * XGBoostの詳細を表示
+ */
+function renderXGBoostDetail(method, analysis) {
+    let html = '<div class="space-y-4">';
+    
+    // 使用している分析結果を表示
+    html += '<div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">';
+    html += '<h5 class="font-semibold text-blue-800 mb-2">📊 使用している分析結果</h5>';
+    html += '<ul class="text-sm text-blue-700 space-y-1 list-disc list-inside">';
+    html += '<li><strong>トレンド分析</strong>: 移動平均（MA）、指数移動平均（EMA）として特徴量に使用</li>';
+    html += '<li><strong>相関分析</strong>: RSI、MACDなどの技術指標として特徴量に使用</li>';
+    html += '<li><strong>クラスタリング分析</strong>: パターンのグループ化情報を特徴量に使用</li>';
+    html += '<li><strong>周波数解析</strong>: 周期性情報を特徴量に使用</li>';
+    html += '</ul>';
+    html += '</div>';
+    
+    html += '<h4 class="font-bold text-lg text-gray-800 mb-3">XGBoost分析</h4>';
+    
+    html += '<div class="bg-white rounded-lg p-4 mb-4">';
+    html += '<p class="text-sm text-gray-700 mb-3">XGBoostは、勾配ブースティングによる高精度な機械学習モデルです。各桁を個別に予測し、特徴量の重要度を評価しながら予測を行います。</p>';
+    html += '</div>';
+    
+    // 特徴量の重要度を表示
+    if (method.feature_importance && method.feature_importance.length > 0) {
+        html += '<div class="bg-white rounded-lg p-4 mb-4">';
+        html += '<h5 class="font-semibold text-gray-700 mb-3">特徴量の重要度（上位10件）</h5>';
+        html += '<div class="space-y-2">';
+        
+        const importanceWithIndex = method.feature_importance.map((val, idx) => ({ idx, val }));
+        importanceWithIndex.sort((a, b) => b.val - a.val);
+        
+        importanceWithIndex.slice(0, 10).forEach((item, rank) => {
+            const percentage = (item.val * 100).toFixed(2);
+            const maxImportance = importanceWithIndex[0].val;
+            const widthPercent = (item.val / maxImportance * 100).toFixed(1);
+            
+            html += '<div class="flex items-center gap-3 p-2 hover:bg-gray-50 rounded">';
+            html += `<span class="text-xs font-semibold text-gray-600 w-8">${rank + 1}位</span>`;
+            html += '<div class="flex-1 bg-gray-200 rounded-full h-4 relative max-w-xs">';
+            html += `<div class="bg-red-500 h-4 rounded-full" style="width: ${widthPercent}%"></div>`;
+            html += '</div>';
+            html += `<span class="text-xs font-semibold text-gray-700 w-16 text-right">${percentage}%</span>`;
+            html += '</div>';
+        });
+        
+        html += '</div>';
+        html += '</div>';
+    }
+    
+    // 予測の説明
+    html += '<div class="bg-white rounded-lg p-4">';
+    html += '<h5 class="font-semibold text-gray-700 mb-3">予測プロセス</h5>';
+    html += '<ol class="text-sm text-gray-600 space-y-2 list-decimal list-inside">';
+    html += '<li>過去20回のデータと高度な特徴量（MA、EMA、RSI、MACDなど）を準備</li>';
+    html += '<li>各桁（百の位、十の位、一の位）に対して個別にXGBoostモデルを学習</li>';
+    html += '<li>勾配ブースティングにより、段階的に予測精度を向上</li>';
+    html += '<li>特徴量の重要度を計算し、予測に寄与する要因を分析</li>';
+    html += '<li>最新データから各桁の値を予測し、3桁の数字を生成</li>';
+    html += '</ol>';
+    html += '</div>';
+    
+    html += '</div>';
+    return html;
+}
+
+/**
+ * LightGBMの詳細を表示
+ */
+function renderLightGBMDetail(method, analysis) {
+    let html = '<div class="space-y-4">';
+    
+    // 使用している分析結果を表示
+    html += '<div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">';
+    html += '<h5 class="font-semibold text-blue-800 mb-2">📊 使用している分析結果</h5>';
+    html += '<ul class="text-sm text-blue-700 space-y-1 list-disc list-inside">';
+    html += '<li><strong>トレンド分析</strong>: 移動平均（MA）、指数移動平均（EMA）として特徴量に使用</li>';
+    html += '<li><strong>相関分析</strong>: RSI、MACDなどの技術指標として特徴量に使用</li>';
+    html += '<li><strong>クラスタリング分析</strong>: パターンのグループ化情報を特徴量に使用</li>';
+    html += '<li><strong>周波数解析</strong>: 周期性情報を特徴量に使用</li>';
+    html += '</ul>';
+    html += '</div>';
+    
+    html += '<h4 class="font-bold text-lg text-gray-800 mb-3">LightGBM分析</h4>';
+    
+    html += '<div class="bg-white rounded-lg p-4 mb-4">';
+    html += '<p class="text-sm text-gray-700 mb-3">LightGBMは、高速で効率的な勾配ブースティングモデルです。GOSSとEFB技術により、大規模データでも高速に学習し、高い予測精度を実現します。</p>';
+    html += '</div>';
+    
+    // 特徴量の重要度を表示
+    if (method.feature_importance && method.feature_importance.length > 0) {
+        html += '<div class="bg-white rounded-lg p-4 mb-4">';
+        html += '<h5 class="font-semibold text-gray-700 mb-3">特徴量の重要度（上位10件）</h5>';
+        html += '<div class="space-y-2">';
+        
+        const importanceWithIndex = method.feature_importance.map((val, idx) => ({ idx, val }));
+        importanceWithIndex.sort((a, b) => b.val - a.val);
+        
+        importanceWithIndex.slice(0, 10).forEach((item, rank) => {
+            const percentage = (item.val * 100).toFixed(2);
+            const maxImportance = importanceWithIndex[0].val;
+            const widthPercent = (item.val / maxImportance * 100).toFixed(1);
+            
+            html += '<div class="flex items-center gap-3 p-2 hover:bg-gray-50 rounded">';
+            html += `<span class="text-xs font-semibold text-gray-600 w-8">${rank + 1}位</span>`;
+            html += '<div class="flex-1 bg-gray-200 rounded-full h-4 relative max-w-xs">';
+            html += `<div class="bg-yellow-500 h-4 rounded-full" style="width: ${widthPercent}%"></div>`;
+            html += '</div>';
+            html += `<span class="text-xs font-semibold text-gray-700 w-16 text-right">${percentage}%</span>`;
+            html += '</div>';
+        });
+        
+        html += '</div>';
+        html += '</div>';
+    }
+    
+    // 予測の説明
+    html += '<div class="bg-white rounded-lg p-4">';
+    html += '<h5 class="font-semibold text-gray-700 mb-3">予測プロセス</h5>';
+    html += '<ol class="text-sm text-gray-600 space-y-2 list-decimal list-inside">';
+    html += '<li>過去20回のデータと高度な特徴量を準備</li>';
+    html += '<li>GOSS（勾配ベースサンプリング）により効率的にデータをサンプリング</li>';
+    html += '<li>各桁に対して個別にLightGBMモデルを学習（リーフワイズ成長）</li>';
+    html += '<li>EFB（排他的特徴量バンドリング）により特徴量を最適化</li>';
+    html += '<li>最新データから各桁の値を予測し、3桁の数字を生成</li>';
+    html += '</ol>';
+    html += '</div>';
+    
+    html += '</div>';
+    return html;
+}
+
+/**
+ * ARIMAの詳細を表示
+ */
+function renderARIMADetail(method, analysis) {
+    const trends = analysis.trends || {};
+    let html = '<div class="space-y-4">';
+    
+    // 使用している分析結果を表示
+    html += '<div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">';
+    html += '<h5 class="font-semibold text-blue-800 mb-2">📊 使用している分析結果</h5>';
+    html += '<ul class="text-sm text-blue-700 space-y-1 list-disc list-inside">';
+    html += '<li><strong>トレンド分析</strong>: 時系列のトレンド情報をARIMAモデルに反映</li>';
+    html += '<li><strong>自己相関</strong>: 過去の値との相関をAR項として使用</li>';
+    html += '<li><strong>移動平均</strong>: 過去の誤差項をMA項として使用</li>';
+    html += '</ul>';
+    html += '</div>';
+    
+    html += '<h4 class="font-bold text-lg text-gray-800 mb-3">ARIMA分析</h4>';
+    
+    html += '<div class="bg-white rounded-lg p-4 mb-4">';
+    html += '<p class="text-sm text-gray-700 mb-3">ARIMA(2,1,2)モデルは、統計的に確立された時系列予測手法です。自己回帰（AR）、和分（I）、移動平均（MA）の3つの要素を組み合わせて予測を行います。</p>';
+    html += '</div>';
+    
+    // ARIMAパラメータの説明
+    html += '<div class="bg-white rounded-lg p-4 mb-4">';
+    html += '<h5 class="font-semibold text-gray-700 mb-3">ARIMA(2,1,2)パラメータ</h5>';
+    html += '<div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">';
+    html += '<div class="bg-cyan-50 p-3 rounded-lg">';
+    html += '<div class="font-semibold text-cyan-800 mb-1">AR項 (p=2)</div>';
+    html += '<div class="text-gray-700">過去2回の値を使用</div>';
+    html += '</div>';
+    html += '<div class="bg-cyan-50 p-3 rounded-lg">';
+    html += '<div class="font-semibold text-cyan-800 mb-1">I項 (d=1)</div>';
+    html += '<div class="text-gray-700">1回の差分を適用</div>';
+    html += '</div>';
+    html += '<div class="bg-cyan-50 p-3 rounded-lg">';
+    html += '<div class="font-semibold text-cyan-800 mb-1">MA項 (q=2)</div>';
+    html += '<div class="text-gray-700">過去2回の誤差項を使用</div>';
+    html += '</div>';
+    html += '</div>';
+    html += '</div>';
+    
+    // 予測の説明
+    html += '<div class="bg-white rounded-lg p-4">';
+    html += '<h5 class="font-semibold text-gray-700 mb-3">予測プロセス</h5>';
+    html += '<ol class="text-sm text-gray-600 space-y-2 list-decimal list-inside">';
+    html += '<li>各桁の時系列データを取得</li>';
+    html += '<li>時系列が定常かどうかを確認（定常でない場合は差分を適用）</li>';
+    html += '<li>ARIMA(2,1,2)モデルを各桁に対して学習</li>';
+    html += '<li>過去の値と誤差項から次の値を予測</li>';
+    html += '<li>予測値を0-9の範囲に丸めて、3桁の数字を生成</li>';
+    html += '</ol>';
+    html += '</div>';
+    
+    html += '</div>';
+    return html;
+}
+
+/**
+ * スタッキングの詳細を表示
+ */
+function renderStackingDetail(method, analysis) {
+    let html = '<div class="space-y-4">';
+    
+    // 使用している分析結果を表示
+    html += '<div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">';
+    html += '<h5 class="font-semibold text-blue-800 mb-2">📊 使用している分析結果</h5>';
+    html += '<ul class="text-sm text-blue-700 space-y-1 list-disc list-inside">';
+    html += '<li><strong>トレンド分析</strong>: 移動平均（MA）、指数移動平均（EMA）として特徴量に使用</li>';
+    html += '<li><strong>相関分析</strong>: RSI、MACDなどの技術指標として特徴量に使用</li>';
+    html += '<li><strong>クラスタリング分析</strong>: パターンのグループ化情報を特徴量に使用</li>';
+    html += '<li><strong>周波数解析</strong>: 周期性情報を特徴量に使用</li>';
+    html += '<li><strong>複数の機械学習モデル</strong>: ランダムフォレスト、XGBoost、LightGBMの予測を統合</li>';
+    html += '</ul>';
+    html += '</div>';
+    
+    html += '<h4 class="font-bold text-lg text-gray-800 mb-3">スタッキング分析</h4>';
+    
+    html += '<div class="bg-white rounded-lg p-4 mb-4">';
+    html += '<p class="text-sm text-gray-700 mb-3">スタッキングは、複数の異なる機械学習モデルの予測を、メタモデル（Ridge回帰）で統合するアンサンブル学習手法です。各ベースモデルの長所を活かし、より高い予測精度を実現します。</p>';
+    html += '</div>';
+    
+    // ベースモデルの説明
+    html += '<div class="bg-white rounded-lg p-4 mb-4">';
+    html += '<h5 class="font-semibold text-gray-700 mb-3">ベースモデル</h5>';
+    html += '<div class="space-y-2 text-sm">';
+    html += '<div class="flex items-center gap-2 p-2 bg-gray-50 rounded">';
+    html += '<span class="font-semibold text-gray-700">🌲 ランダムフォレスト</span>';
+    html += '<span class="text-gray-600">- 複数の決定木を組み合わせたアンサンブル</span>';
+    html += '</div>';
+    html += '<div class="flex items-center gap-2 p-2 bg-gray-50 rounded">';
+    html += '<span class="font-semibold text-gray-700">🚀 XGBoost</span>';
+    html += '<span class="text-gray-600">- 勾配ブースティング（利用可能な場合）</span>';
+    html += '</div>';
+    html += '<div class="flex items-center gap-2 p-2 bg-gray-50 rounded">';
+    html += '<span class="font-semibold text-gray-700">💡 LightGBM</span>';
+    html += '<span class="text-gray-600">- 高速勾配ブースティング（利用可能な場合）</span>';
+    html += '</div>';
+    html += '</div>';
+    html += '</div>';
+    
+    // メタモデルの説明
+    html += '<div class="bg-white rounded-lg p-4 mb-4">';
+    html += '<h5 class="font-semibold text-gray-700 mb-3">メタモデル</h5>';
+    html += '<div class="bg-violet-50 p-3 rounded-lg">';
+    html += '<div class="font-semibold text-violet-800 mb-1">🎯 Ridge回帰（RidgeCV）</div>';
+    html += '<div class="text-sm text-gray-700">ベースモデルの予測結果を入力として受け取り、最終的な予測を行います。正則化により過学習を抑制します。</div>';
+    html += '</div>';
+    html += '</div>';
+    
+    // 予測の説明
+    html += '<div class="bg-white rounded-lg p-4">';
+    html += '<h5 class="font-semibold text-gray-700 mb-3">予測プロセス</h5>';
+    html += '<ol class="text-sm text-gray-600 space-y-2 list-decimal list-inside">';
+    html += '<li>過去20回のデータと高度な特徴量を準備</li>';
+    html += '<li>3-foldクロスバリデーションを使用して、各ベースモデルを学習</li>';
+    html += '<li>各ベースモデルが各桁の値を予測</li>';
+    html += '<li>ベースモデルの予測結果をメタモデル（Ridge回帰）に入力</li>';
+    html += '<li>メタモデルが最適な組み合わせ方を学習し、最終的な予測を生成</li>';
+    html += '<li>予測値を0-9の範囲に丸めて、3桁の数字を生成</li>';
+    html += '</ol>';
     html += '</div>';
     
     html += '</div>';
