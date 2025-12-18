@@ -167,7 +167,10 @@ function renderContent() {
     setTimeout(() => renderMiniPredictions(), 200);
     
     // 位相グラフを描画
-    setTimeout(() => renderPhaseChart(), 300);
+    setTimeout(() => {
+        renderPhaseChart('all');
+        setupPhaseChartTabs();
+    }, 300);
     
     // 予測手法の詳細を表示（予測結果も含む）
     setTimeout(() => renderMethodDetails(), 400);
@@ -435,69 +438,151 @@ function createPredictionCard(prediction, rank, color) {
 /**
  * 位相グラフを描画
  */
-function renderPhaseChart() {
-    const ctx = document.getElementById('phaseChart').getContext('2d');
+// 位相グラフの表示位置（デフォルトは全て）
+let currentPhaseView = 'all';
+
+function renderPhaseChart(viewPos = 'all') {
+    const ctx = document.getElementById('phaseChart');
+    if (!ctx) return;
+    
+    const ctx2d = ctx.getContext('2d');
     const phases = predictionData.recent_phases;
     
     if (!phases || Object.keys(phases).length === 0) {
         return;
     }
 
-    const labels = Array.from({ length: phases.hundred.length }, (_, i) => `回${i + 1}`);
+    // データ数を制限（最大100件、それ以上は間引き）
+    const maxDataPoints = 100;
+    let dataLength = phases.hundred.length;
+    let step = 1;
+    let labels = [];
+    
+    if (dataLength > maxDataPoints) {
+        step = Math.ceil(dataLength / maxDataPoints);
+        labels = Array.from({ length: Math.ceil(dataLength / step) }, (_, i) => {
+            const idx = i * step;
+            return idx < dataLength ? `回${idx + 1}` : '';
+        }).filter(l => l);
+    } else {
+        labels = Array.from({ length: dataLength }, (_, i) => `回${i + 1}`);
+    }
+    
+    // データを間引き
+    const getSampledData = (data) => {
+        if (dataLength <= maxDataPoints) return data;
+        const sampled = [];
+        for (let i = 0; i < data.length; i += step) {
+            sampled.push(data[i]);
+        }
+        return sampled;
+    };
     
     // 既存のチャートを破棄
     if (phaseChart) {
         phaseChart.destroy();
     }
 
-    phaseChart = new Chart(ctx, {
+    // 表示するデータセットを決定
+    const datasets = [];
+    
+    if (viewPos === 'all') {
+        // 全て表示（透明度を上げて見やすく）
+        datasets.push(
+            {
+                label: '百の位',
+                data: getSampledData(phases.hundred),
+                borderColor: 'rgb(99, 102, 241)',
+                backgroundColor: 'rgba(99, 102, 241, 0.05)',
+                borderWidth: 2.5,
+                pointRadius: 3,
+                pointHoverRadius: 5,
+                pointBackgroundColor: 'rgb(99, 102, 241)',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 1.5,
+                tension: 0.3,
+                fill: false
+            },
+            {
+                label: '十の位',
+                data: getSampledData(phases.ten),
+                borderColor: 'rgb(16, 185, 129)',
+                backgroundColor: 'rgba(16, 185, 129, 0.05)',
+                borderWidth: 2.5,
+                pointRadius: 3,
+                pointHoverRadius: 5,
+                pointBackgroundColor: 'rgb(16, 185, 129)',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 1.5,
+                tension: 0.3,
+                fill: false
+            },
+            {
+                label: '一の位',
+                data: getSampledData(phases.one),
+                borderColor: 'rgb(251, 146, 60)',
+                backgroundColor: 'rgba(251, 146, 60, 0.05)',
+                borderWidth: 2.5,
+                pointRadius: 3,
+                pointHoverRadius: 5,
+                pointBackgroundColor: 'rgb(251, 146, 60)',
+                pointBorderColor: '#fff',
+                pointBorderWidth: 1.5,
+                tension: 0.3,
+                fill: false
+            }
+        );
+    } else {
+        // 個別表示
+        const configs = {
+            'hundred': {
+                label: '百の位',
+                color: 'rgb(99, 102, 241)',
+                bgColor: 'rgba(99, 102, 241, 0.1)',
+                data: phases.hundred
+            },
+            'ten': {
+                label: '十の位',
+                color: 'rgb(16, 185, 129)',
+                bgColor: 'rgba(16, 185, 129, 0.1)',
+                data: phases.ten
+            },
+            'one': {
+                label: '一の位',
+                color: 'rgb(251, 146, 60)',
+                bgColor: 'rgba(251, 146, 60, 0.1)',
+                data: phases.one
+            }
+        };
+        
+        const config = configs[viewPos];
+        if (config) {
+            datasets.push({
+                label: config.label,
+                data: getSampledData(config.data),
+                borderColor: config.color,
+                backgroundColor: config.bgColor,
+                borderWidth: 3,
+                pointRadius: 4,
+                pointHoverRadius: 7,
+                pointBackgroundColor: config.color,
+                pointBorderColor: '#fff',
+                pointBorderWidth: 2,
+                tension: 0.4,
+                fill: true
+            });
+        }
+    }
+
+    // Chart.jsのズームプラグインが利用可能かチェック
+    const zoomPlugin = window.Chart && window.Chart.register ? 
+        (window.chartjsZoom || {}) : null;
+    
+    phaseChart = new Chart(ctx2d, {
         type: 'line',
         data: {
             labels: labels,
-            datasets: [
-                {
-                    label: '百の位',
-                    data: phases.hundred,
-                    borderColor: 'rgb(99, 102, 241)',
-                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                    borderWidth: 3,
-                    pointRadius: 4,
-                    pointHoverRadius: 6,
-                    pointBackgroundColor: 'rgb(99, 102, 241)',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                    tension: 0.4,
-                    fill: true
-                },
-                {
-                    label: '十の位',
-                    data: phases.ten,
-                    borderColor: 'rgb(16, 185, 129)',
-                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                    borderWidth: 3,
-                    pointRadius: 4,
-                    pointHoverRadius: 6,
-                    pointBackgroundColor: 'rgb(16, 185, 129)',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                    tension: 0.4,
-                    fill: true
-                },
-                {
-                    label: '一の位',
-                    data: phases.one,
-                    borderColor: 'rgb(251, 146, 60)',
-                    backgroundColor: 'rgba(251, 146, 60, 0.1)',
-                    borderWidth: 3,
-                    pointRadius: 4,
-                    pointHoverRadius: 6,
-                    pointBackgroundColor: 'rgb(251, 146, 60)',
-                    pointBorderColor: '#fff',
-                    pointBorderWidth: 2,
-                    tension: 0.4,
-                    fill: true
-                }
-            ]
+            datasets: datasets
         },
         options: {
             responsive: true,
@@ -513,14 +598,16 @@ function renderPhaseChart() {
                         usePointStyle: true,
                         padding: 15,
                         font: {
-                            size: 13,
+                            size: 14,
                             weight: '600'
-                        }
+                        },
+                        boxWidth: 12,
+                        boxHeight: 12
                     }
                 },
                 title: {
                     display: true,
-                    text: '直近20回の位相推移',
+                    text: viewPos === 'all' ? '全桁の位相推移' : `${datasets[0]?.label || ''}の位相推移`,
                     font: {
                         size: 18,
                         weight: 'bold'
@@ -531,7 +618,7 @@ function renderPhaseChart() {
                     }
                 },
                 tooltip: {
-                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                    backgroundColor: 'rgba(0, 0, 0, 0.85)',
                     padding: 12,
                     titleFont: {
                         size: 14,
@@ -540,30 +627,37 @@ function renderPhaseChart() {
                     bodyFont: {
                         size: 13
                     },
-                    borderColor: 'rgba(255, 255, 255, 0.1)',
+                    borderColor: 'rgba(255, 255, 255, 0.2)',
                     borderWidth: 1,
                     cornerRadius: 8,
-                    displayColors: true
+                    displayColors: true,
+                    callbacks: {
+                        label: function(context) {
+                            return `${context.dataset.label}: ${context.parsed.y.toFixed(3)}`;
+                        }
+                    }
                 }
             },
             scales: {
                 y: {
-                    beginAtZero: true,
+                    beginAtZero: false,
                     grid: {
-                        color: 'rgba(0, 0, 0, 0.05)',
-                        drawBorder: false
+                        color: 'rgba(0, 0, 0, 0.08)',
+                        drawBorder: false,
+                        lineWidth: 1
                     },
                     ticks: {
                         font: {
-                            size: 11
+                            size: 12
                         },
-                        color: '#6B7280'
+                        color: '#6B7280',
+                        padding: 8
                     },
                     title: {
                         display: true,
                         text: '位相値',
                         font: {
-                            size: 13,
+                            size: 14,
                             weight: '600'
                         },
                         color: '#374151',
@@ -574,19 +668,24 @@ function renderPhaseChart() {
                 },
                 x: {
                     grid: {
-                        display: false
+                        display: true,
+                        color: 'rgba(0, 0, 0, 0.05)',
+                        drawBorder: false
                     },
                     ticks: {
                         font: {
                             size: 11
                         },
-                        color: '#6B7280'
+                        color: '#6B7280',
+                        maxRotation: 45,
+                        minRotation: 0,
+                        maxTicksLimit: viewPos === 'all' ? 20 : 30
                     },
                     title: {
                         display: true,
                         text: '回数',
                         font: {
-                            size: 13,
+                            size: 14,
                             weight: '600'
                         },
                         color: '#374151',
@@ -597,6 +696,32 @@ function renderPhaseChart() {
                 }
             }
         }
+    });
+    
+    currentPhaseView = viewPos;
+}
+
+/**
+ * 位相グラフのタブ切り替え
+ */
+function setupPhaseChartTabs() {
+    const tabs = document.querySelectorAll('.phase-tab-btn');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', (e) => {
+            e.preventDefault();
+            const pos = tab.getAttribute('data-pos');
+            
+            // アクティブ状態を更新
+            tabs.forEach(t => {
+                t.classList.remove('active', 'border-indigo-600', 'text-indigo-600');
+                t.classList.add('text-gray-600');
+            });
+            tab.classList.add('active', 'border-indigo-600', 'text-indigo-600');
+            tab.classList.remove('text-gray-600');
+            
+            // グラフを再描画
+            renderPhaseChart(pos);
+        });
     });
 }
 

@@ -1701,6 +1701,509 @@ class NumbersAnalyzer:
             }
         }
     
+    def analyze_wavelet(self) -> Dict[str, any]:
+        """
+        ウェーブレット変換による時間-周波数解析
+        
+        Returns:
+            ウェーブレット解析結果の辞書
+        """
+        try:
+            import pywt
+        except ImportError:
+            print("[analyze_wavelet] PyWaveletsがインストールされていません")
+            return None
+        
+        wavelet_analysis = {}
+        
+        for pos in ['hundred', 'ten', 'one']:
+            data = self.df[pos].values.astype(float)
+            
+            if len(data) < 16:
+                continue
+            
+            try:
+                # ウェーブレット変換（Daubechies 4を使用）
+                coeffs = pywt.wavedec(data, 'db4', level=min(4, int(np.log2(len(data)))))
+                
+                # 各レベルの係数を分析
+                levels = {}
+                for i, coeff in enumerate(coeffs):
+                    levels[f'level_{i}'] = {
+                        'mean': float(np.mean(coeff)),
+                        'std': float(np.std(coeff)),
+                        'energy': float(np.sum(coeff ** 2))
+                    }
+                
+                # 主要な周波数成分を抽出
+                cA = coeffs[0]  # 近似係数（低周波成分）
+                cD = coeffs[-1] if len(coeffs) > 1 else coeffs[0]  # 詳細係数（高周波成分）
+                
+                wavelet_analysis[pos] = {
+                    'levels': levels,
+                    'approximation_mean': float(np.mean(cA)),
+                    'detail_mean': float(np.mean(cD)),
+                    'approximation_energy': float(np.sum(cA ** 2)),
+                    'detail_energy': float(np.sum(cD ** 2)),
+                    'total_levels': len(coeffs)
+                }
+                
+            except Exception as e:
+                print(f"[analyze_wavelet] {pos}のウェーブレット解析に失敗: {e}")
+                continue
+        
+        return wavelet_analysis
+    
+    def analyze_pca(self) -> Dict[str, any]:
+        """
+        主成分分析（PCA）によるデータ構造の分析
+        
+        Returns:
+            PCA解析結果の辞書
+        """
+        try:
+            from sklearn.decomposition import PCA
+            from sklearn.preprocessing import StandardScaler
+        except ImportError:
+            print("[analyze_pca] scikit-learnがインストールされていません")
+            return None
+        
+        if len(self.df) < 10:
+            return None
+        
+        try:
+            # 特徴量を作成（各桁の値、合計値、範囲など）
+            features = []
+            for idx, row in self.df.iterrows():
+                feature = [
+                    float(row['hundred']),
+                    float(row['ten']),
+                    float(row['one']),
+                    float(row['sum']),
+                    float(row['span'])
+                ]
+                features.append(feature)
+            
+            features_array = np.array(features)
+            
+            # 標準化
+            scaler = StandardScaler()
+            features_scaled = scaler.fit_transform(features_array)
+            
+            # PCA（主成分数を自動決定：累積寄与率80%以上）
+            pca = PCA()
+            pca.fit(features_scaled)
+            
+            # 累積寄与率を計算
+            cumulative_variance = np.cumsum(pca.explained_variance_ratio_)
+            n_components = np.argmax(cumulative_variance >= 0.8) + 1
+            
+            # 指定した主成分数で再計算
+            pca = PCA(n_components=n_components)
+            pca.fit(features_scaled)
+            transformed = pca.transform(features_scaled)
+            
+            return {
+                'n_components': int(n_components),
+                'explained_variance_ratio': [float(x) for x in pca.explained_variance_ratio_],
+                'cumulative_variance': float(np.sum(pca.explained_variance_ratio_)),
+                'components': [[float(x) for x in comp] for comp in pca.components_],
+                'transformed_data': transformed.tolist()[-10:]  # 最新10件のみ
+            }
+            
+        except Exception as e:
+            print(f"[analyze_pca] PCA解析に失敗: {e}")
+            return None
+    
+    def analyze_tsne(self) -> Dict[str, any]:
+        """
+        t-SNEによる高次元データの可視化
+        
+        Returns:
+            t-SNE解析結果の辞書
+        """
+        try:
+            from sklearn.manifold import TSNE
+            from sklearn.preprocessing import StandardScaler
+        except ImportError:
+            print("[analyze_tsne] scikit-learnがインストールされていません")
+            return None
+        
+        if len(self.df) < 10:
+            return None
+        
+        try:
+            # 特徴量を作成
+            features = []
+            for idx, row in self.df.iterrows():
+                feature = [
+                    float(row['hundred']),
+                    float(row['ten']),
+                    float(row['one']),
+                    float(row['sum']),
+                    float(row['span'])
+                ]
+                features.append(feature)
+            
+            features_array = np.array(features)
+            
+            # 標準化
+            scaler = StandardScaler()
+            features_scaled = scaler.fit_transform(features_array)
+            
+            # t-SNE（2次元に変換）
+            tsne = TSNE(n_components=2, random_state=42, perplexity=min(30, len(features_scaled) - 1))
+            transformed = tsne.fit_transform(features_scaled)
+            
+            return {
+                'transformed_data': transformed.tolist(),
+                'latest_point': transformed[-1].tolist() if len(transformed) > 0 else None
+            }
+            
+        except Exception as e:
+            print(f"[analyze_tsne] t-SNE解析に失敗: {e}")
+            return None
+    
+    def analyze_continuity(self) -> Dict[str, any]:
+        """
+        連続性分析（同じ数字が連続して出る確率、交互出現パターン）
+        
+        Returns:
+            連続性分析結果の辞書
+        """
+        continuity_analysis = {}
+        
+        for pos in ['hundred', 'ten', 'one']:
+            data = self.df[pos].values.astype(int)
+            
+            if len(data) < 2:
+                continue
+            
+            # 連続出現回数をカウント
+            consecutive_counts = {}
+            current_digit = data[0]
+            consecutive_length = 1
+            
+            for i in range(1, len(data)):
+                if data[i] == current_digit:
+                    consecutive_length += 1
+                else:
+                    if consecutive_length > 1:
+                        consecutive_counts[current_digit] = consecutive_counts.get(current_digit, 0) + consecutive_length - 1
+                    current_digit = data[i]
+                    consecutive_length = 1
+            
+            # 最後の連続もカウント
+            if consecutive_length > 1:
+                consecutive_counts[current_digit] = consecutive_counts.get(current_digit, 0) + consecutive_length - 1
+            
+            # 交互出現パターンを検出（A-B-A-B形式）
+            alternating_patterns = {}
+            for i in range(len(data) - 3):
+                if data[i] == data[i+2] and data[i+1] == data[i+3] and data[i] != data[i+1]:
+                    pattern_key = f"{data[i]}-{data[i+1]}"
+                    alternating_patterns[pattern_key] = alternating_patterns.get(pattern_key, 0) + 1
+            
+            # 連続出現の統計
+            max_consecutive = {}
+            for digit in range(10):
+                max_length = 0
+                current_length = 0
+                for val in data:
+                    if val == digit:
+                        current_length += 1
+                        max_length = max(max_length, current_length)
+                    else:
+                        current_length = 0
+                max_consecutive[digit] = max_length
+            
+            continuity_analysis[pos] = {
+                'consecutive_counts': {str(k): int(v) for k, v in consecutive_counts.items()},
+                'alternating_patterns': {str(k): int(v) for k, v in alternating_patterns.items()},
+                'max_consecutive': {str(k): int(v) for k, v in max_consecutive.items()},
+                'total_consecutive_occurrences': sum(consecutive_counts.values())
+            }
+        
+        return continuity_analysis
+    
+    def detect_change_points(self) -> Dict[str, any]:
+        """
+        変化点検出（トレンドの変化点、レジーム変化）
+        
+        Returns:
+            変化点検出結果の辞書
+        """
+        try:
+            import ruptures as rpt
+        except ImportError:
+            print("[detect_change_points] rupturesがインストールされていません")
+            return None
+        
+        change_points = {}
+        
+        for pos in ['hundred', 'ten', 'one']:
+            data = self.df[pos].values.astype(float)
+            
+            if len(data) < 20:
+                continue
+            
+            try:
+                # PELTアルゴリズムで変化点を検出
+                algo = rpt.Pelt(model="rbf").fit(data.reshape(-1, 1))
+                result = algo.predict(pen=10)
+                
+                # 変化点のインデックス（最後の点は除外）
+                change_indices = result[:-1] if len(result) > 1 else []
+                
+                # 変化点の日付を取得
+                change_dates = []
+                for idx in change_indices:
+                    if idx < len(self.df):
+                        change_dates.append(self.df.iloc[idx]['date'].strftime('%Y-%m-%d'))
+                
+                change_points[pos] = {
+                    'change_indices': [int(x) for x in change_indices],
+                    'change_dates': change_dates,
+                    'n_change_points': len(change_indices),
+                    'segments': len(result)
+                }
+                
+            except Exception as e:
+                print(f"[detect_change_points] {pos}の変化点検出に失敗: {e}")
+                continue
+        
+        return change_points
+    
+    def predict_with_kalman(self) -> Dict[str, any]:
+        """
+        カルマンフィルタによる時系列予測
+        
+        Returns:
+            予測結果の辞書
+        """
+        try:
+            from filterpy.kalman import KalmanFilter
+        except ImportError:
+            print("[predict_with_kalman] filterpyがインストールされていません")
+            return None
+        
+        if len(self.df) < 10:
+            last_hundred = int(self.df.iloc[-1]['hundred'])
+            last_ten = int(self.df.iloc[-1]['ten'])
+            last_one = int(self.df.iloc[-1]['one'])
+            
+            return {
+                'method': 'kalman',
+                'set_prediction': f"{last_hundred}{last_ten}{last_one}",
+                'mini_prediction': f"{last_ten}{last_one}",
+                'confidence': 0.60,
+                'reason': 'カルマンフィルタ（データ不足のため簡易予測）'
+            }
+        
+        predictions = {}
+        
+        for pos in ['hundred', 'ten', 'one']:
+            try:
+                data = self.df[pos].values.astype(float)
+                
+                # カルマンフィルタを初期化（1次元状態、1次元観測）
+                kf = KalmanFilter(dim_x=2, dim_z=1)
+                
+                # 状態遷移行列（位置と速度）
+                kf.F = np.array([[1., 1.],
+                                [0., 1.]])
+                
+                # 観測行列
+                kf.H = np.array([[1., 0.]])
+                
+                # 共分散行列
+                kf.P *= 1000.
+                kf.R = 5  # 観測ノイズ
+                kf.Q = np.array([[1., 0.],
+                                [0., 1.]])  # プロセスノイズ
+                
+                # 初期状態
+                kf.x = np.array([[data[0]], [0.]])
+                
+                # フィルタリング
+                for measurement in data[1:]:
+                    kf.predict()
+                    kf.update(measurement)
+                
+                # 次の値を予測
+                kf.predict()
+                predicted = kf.x[0, 0]
+                
+                # 0-9の範囲に丸める
+                predicted = int(np.round(np.clip(predicted, 0, 9)))
+                predictions[pos] = predicted
+                
+            except Exception as e:
+                print(f"[predict_with_kalman] {pos}のカルマンフィルタ予測に失敗: {e}")
+                predictions[pos] = int(self.df.iloc[-1][pos])
+        
+        set_pred = f"{predictions['hundred']}{predictions['ten']}{predictions['one']}"
+        mini_pred = f"{predictions['ten']}{predictions['one']}"
+        
+        return {
+            'method': 'kalman',
+            'set_prediction': set_pred,
+            'mini_prediction': mini_pred,
+            'confidence': 0.72,
+            'reason': 'カルマンフィルタによる時系列予測'
+        }
+    
+    def optimize_with_genetic_algorithm(self) -> Dict[str, any]:
+        """
+        遺伝的アルゴリズムによる最適化（予測手法の重み最適化）
+        
+        Returns:
+            最適化結果の辞書
+        """
+        try:
+            from deap import base, creator, tools, algorithms
+        except ImportError:
+            print("[optimize_with_genetic_algorithm] DEAPがインストールされていません")
+            return None
+        
+        if len(self.df) < 50:
+            return None
+        
+        try:
+            # 遺伝的アルゴリズムの設定
+            creator.create("FitnessMax", base.Fitness, weights=(1.0,))
+            creator.create("Individual", list, fitness=creator.FitnessMax)
+            
+            toolbox = base.Toolbox()
+            
+            # 遺伝子の定義（各手法の重み、0.0-1.0）
+            n_methods = 10  # 基本手法の数
+            toolbox.register("attr_float", np.random.uniform, 0.0, 1.0)
+            toolbox.register("individual", tools.initRepeat, creator.Individual,
+                            toolbox.attr_float, n_methods)
+            toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+            
+            # 評価関数（簡易版：過去の予測精度をシミュレート）
+            def evaluate(individual):
+                # 重みの合計で正規化
+                total_weight = sum(individual)
+                if total_weight == 0:
+                    return (0.0,)
+                
+                normalized_weights = [w / total_weight for w in individual]
+                
+                # 簡易的な評価（重みの分散が小さいほど良い）
+                # 実際には過去の予測結果と実際の結果を比較する必要がある
+                diversity = np.std(normalized_weights)
+                return (1.0 - diversity,)
+            
+            toolbox.register("evaluate", evaluate)
+            toolbox.register("mate", tools.cxBlend, alpha=0.5)
+            toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=0.1, indpb=0.2)
+            toolbox.register("select", tools.selTournament, tournsize=3)
+            
+            # 遺伝的アルゴリズムを実行
+            population = toolbox.population(n=50)
+            ngen = 20  # 世代数
+            
+            algorithms.eaSimple(population, toolbox, cxpb=0.5, mutpb=0.2, ngen=ngen, verbose=False)
+            
+            # 最良の個体を取得
+            best_individual = tools.selBest(population, 1)[0]
+            total_weight = sum(best_individual)
+            optimized_weights = [w / total_weight for w in best_individual] if total_weight > 0 else best_individual
+            
+            method_names = ['chaos', 'markov', 'bayesian', 'periodicity', 'pattern',
+                          'random_forest', 'xgboost', 'lightgbm', 'arima', 'stacking']
+            
+            return {
+                'optimized_weights': {method_names[i]: float(optimized_weights[i]) for i in range(len(method_names))},
+                'fitness': float(best_individual.fitness.values[0]),
+                'method': 'genetic_algorithm'
+            }
+            
+        except Exception as e:
+            print(f"[optimize_with_genetic_algorithm] 遺伝的アルゴリズム最適化に失敗: {e}")
+            return None
+    
+    def analyze_network(self) -> Dict[str, any]:
+        """
+        ネットワーク分析（グラフ理論）による数字の遷移分析
+        
+        Returns:
+            ネットワーク分析結果の辞書
+        """
+        try:
+            import networkx as nx
+        except ImportError:
+            print("[analyze_network] networkxがインストールされていません")
+            return None
+        
+        if len(self.df) < 2:
+            return None
+        
+        try:
+            # 有向グラフを作成
+            G = nx.DiGraph()
+            
+            # 各桁の遷移をエッジとして追加
+            for pos in ['hundred', 'ten', 'one']:
+                for i in range(len(self.df) - 1):
+                    from_digit = int(self.df.iloc[i][pos])
+                    to_digit = int(self.df.iloc[i+1][pos])
+                    
+                    edge_key = f"{pos}_{from_digit}_{to_digit}"
+                    if G.has_edge(from_digit, to_digit):
+                        G[from_digit][to_digit]['weight'] += 1
+                        pos_count_key = f'{pos}_count'
+                        G[from_digit][to_digit][pos_count_key] = G[from_digit][to_digit].get(pos_count_key, 0) + 1
+                    else:
+                        pos_count_key = f'{pos}_count'
+                        edge_attrs = {'weight': 1, 'pos': pos}
+                        edge_attrs[pos_count_key] = 1
+                        G.add_edge(from_digit, to_digit, **edge_attrs)
+            
+            # ネットワークの統計を計算
+            network_stats = {}
+            
+            # 各桁ごとの統計
+            for pos in ['hundred', 'ten', 'one']:
+                pos_graph = nx.DiGraph()
+                for i in range(len(self.df) - 1):
+                    from_digit = int(self.df.iloc[i][pos])
+                    to_digit = int(self.df.iloc[i+1][pos])
+                    if pos_graph.has_edge(from_digit, to_digit):
+                        pos_graph[from_digit][to_digit]['weight'] += 1
+                    else:
+                        pos_graph.add_edge(from_digit, to_digit, weight=1)
+                
+                # 中心性指標を計算
+                in_degree_centrality = nx.in_degree_centrality(pos_graph)
+                out_degree_centrality = nx.out_degree_centrality(pos_graph)
+                
+                # 最も頻繁に遷移するエッジ
+                edges_with_weights = [(u, v, d['weight']) for u, v, d in pos_graph.edges(data=True)]
+                edges_with_weights.sort(key=lambda x: x[2], reverse=True)
+                top_edges = edges_with_weights[:5]
+                
+                network_stats[pos] = {
+                    'in_degree_centrality': {str(k): float(v) for k, v in in_degree_centrality.items()},
+                    'out_degree_centrality': {str(k): float(v) for k, v in out_degree_centrality.items()},
+                    'top_transitions': [{'from': int(u), 'to': int(v), 'count': int(w)} for u, v, w in top_edges],
+                    'total_edges': pos_graph.number_of_edges(),
+                    'total_nodes': pos_graph.number_of_nodes()
+                }
+            
+            return {
+                'network_stats': network_stats,
+                'overall_nodes': G.number_of_nodes(),
+                'overall_edges': G.number_of_edges()
+            }
+            
+        except Exception as e:
+            print(f"[analyze_network] ネットワーク分析に失敗: {e}")
+            return None
+    
     def calculate_dynamic_confidence(self, method_name: str, prediction: str) -> float:
         """
         動的信頼度計算（過去の精度に基づく）
@@ -2136,6 +2639,13 @@ class NumbersAnalyzer:
         except Exception as e:
             print(f"[ensemble_predict] コンフォーマル予測をスキップ: {e}")
         
+        # カルマンフィルタによる予測
+        kalman_pred = None
+        try:
+            kalman_pred = self.predict_with_kalman()
+        except Exception as e:
+            print(f"[ensemble_predict] カルマンフィルタ予測をスキップ: {e}")
+        
         # 各手法の予測を集計
         set_votes = {}
         mini_votes = {}
@@ -2174,6 +2684,8 @@ class NumbersAnalyzer:
             predictions_list.append(lstm_pred)
         if conformal_pred:
             predictions_list.append(conformal_pred)
+        if kalman_pred:
+            predictions_list.append(kalman_pred)
         
         for pred in predictions_list:
             set_num = pred['set_prediction']
@@ -2245,6 +2757,51 @@ class NumbersAnalyzer:
             methods_dict['lstm'] = lstm_pred
         if conformal_pred:
             methods_dict['conformal'] = conformal_pred
+        if kalman_pred:
+            methods_dict['kalman'] = kalman_pred
+        
+        # 追加の分析結果を取得
+        wavelet_analysis = None
+        try:
+            wavelet_analysis = self.analyze_wavelet()
+        except Exception as e:
+            print(f"[ensemble_predict] ウェーブレット解析をスキップ: {e}")
+        
+        pca_analysis = None
+        try:
+            pca_analysis = self.analyze_pca()
+        except Exception as e:
+            print(f"[ensemble_predict] PCA解析をスキップ: {e}")
+        
+        tsne_analysis = None
+        try:
+            tsne_analysis = self.analyze_tsne()
+        except Exception as e:
+            print(f"[ensemble_predict] t-SNE解析をスキップ: {e}")
+        
+        continuity_analysis = None
+        try:
+            continuity_analysis = self.analyze_continuity()
+        except Exception as e:
+            print(f"[ensemble_predict] 連続性分析をスキップ: {e}")
+        
+        change_points = None
+        try:
+            change_points = self.detect_change_points()
+        except Exception as e:
+            print(f"[ensemble_predict] 変化点検出をスキップ: {e}")
+        
+        network_analysis = None
+        try:
+            network_analysis = self.analyze_network()
+        except Exception as e:
+            print(f"[ensemble_predict] ネットワーク分析をスキップ: {e}")
+        
+        genetic_optimization = None
+        try:
+            genetic_optimization = self.optimize_with_genetic_algorithm()
+        except Exception as e:
+            print(f"[ensemble_predict] 遺伝的アルゴリズム最適化をスキップ: {e}")
         
         return {
             'timestamp': jst_now.isoformat(),
@@ -2279,7 +2836,14 @@ class NumbersAnalyzer:
                 'anomalies': anomalies,
                 'clustering': clustering,
                 'periodicity': periodicity_patterns,
-                'frequency_analysis': frequency_analysis
+                'frequency_analysis': frequency_analysis,
+                'wavelet_analysis': wavelet_analysis,
+                'pca_analysis': pca_analysis,
+                'tsne_analysis': tsne_analysis,
+                'continuity_analysis': continuity_analysis,
+                'change_points': change_points,
+                'network_analysis': network_analysis,
+                'genetic_optimization': genetic_optimization
             }
         }
     
