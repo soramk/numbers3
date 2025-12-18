@@ -166,13 +166,10 @@ function renderContent() {
     // ミニ予測を表示
     setTimeout(() => renderMiniPredictions(), 200);
     
-    // 各分析手法の予測結果を表示
-    setTimeout(() => renderMethodPredictions(), 300);
-    
     // 位相グラフを描画
     setTimeout(() => renderPhaseChart(), 300);
     
-    // 予測手法の詳細を表示
+    // 予測手法の詳細を表示（予測結果も含む）
     setTimeout(() => renderMethodDetails(), 400);
     
     // 詳細分析結果のボタンイベントを設定
@@ -361,150 +358,6 @@ function renderMiniPredictions() {
     });
 }
 
-/**
- * 各分析手法の予測結果を表示
- */
-function renderMethodPredictions() {
-    const container = document.getElementById('methodPredictions');
-    if (!container) return;
-    
-    container.innerHTML = '';
-    
-    const methods = predictionData.methods || {};
-    const methodNames = {
-        'chaos': 'カオス理論',
-        'markov': 'マルコフ連鎖',
-        'bayesian': 'ベイズ統計',
-        'periodicity': '周期性分析',
-        'pattern': '頻出パターン分析',
-        'random_forest': 'ランダムフォレスト',
-        'xgboost': 'XGBoost',
-        'lightgbm': 'LightGBM',
-        'arima': 'ARIMA',
-        'stacking': 'スタッキング'
-    };
-    
-    const methodIcons = {
-        'chaos': '⚡',
-        'markov': '🔄',
-        'bayesian': '📊',
-        'periodicity': '📅',
-        'pattern': '🔁',
-        'random_forest': '🌲',
-        'xgboost': '🚀',
-        'lightgbm': '💡',
-        'arima': '📈',
-        'stacking': '🎯'
-    };
-    
-    const methodColorClasses = {
-        'chaos': {
-            bg: 'bg-gradient-to-br from-purple-50 via-purple-100 to-pink-50',
-            border: 'border-purple-400',
-            text: 'text-purple-700',
-            iconBg: 'bg-gradient-to-br from-purple-500 to-pink-500',
-            numberBg: 'bg-purple-100'
-        },
-        'markov': {
-            bg: 'bg-gradient-to-br from-blue-50 via-blue-100 to-cyan-50',
-            border: 'border-blue-400',
-            text: 'text-blue-700',
-            iconBg: 'bg-gradient-to-br from-blue-500 to-cyan-500',
-            numberBg: 'bg-blue-100'
-        },
-        'bayesian': {
-            bg: 'bg-gradient-to-br from-green-50 via-emerald-100 to-teal-50',
-            border: 'border-green-400',
-            text: 'text-green-700',
-            iconBg: 'bg-gradient-to-br from-green-500 to-emerald-500',
-            numberBg: 'bg-green-100'
-        },
-        'periodicity': {
-            bg: 'bg-gradient-to-br from-orange-50 via-amber-100 to-yellow-50',
-            border: 'border-orange-400',
-            text: 'text-orange-700',
-            iconBg: 'bg-gradient-to-br from-orange-500 to-amber-500',
-            numberBg: 'bg-orange-100'
-        },
-        'pattern': {
-            bg: 'bg-gradient-to-br from-indigo-50 via-purple-100 to-pink-50',
-            border: 'border-indigo-400',
-            text: 'text-indigo-700',
-            iconBg: 'bg-gradient-to-br from-indigo-500 to-purple-500',
-            numberBg: 'bg-indigo-100'
-        },
-        'random_forest': {
-            bg: 'bg-gradient-to-br from-emerald-50 via-teal-100 to-cyan-50',
-            border: 'border-emerald-400',
-            text: 'text-emerald-700',
-            iconBg: 'bg-gradient-to-br from-emerald-500 to-teal-500',
-            numberBg: 'bg-emerald-100'
-        }
-    };
-    
-    Object.keys(methods).forEach((methodKey, index) => {
-        const method = methods[methodKey];
-        if (!method) return;
-        
-        const methodName = methodNames[methodKey] || methodKey;
-        const icon = methodIcons[methodKey] || '📊';
-        const colors = methodColorClasses[methodKey] || methodColorClasses.chaos;
-        
-        const methodCard = document.createElement('div');
-        methodCard.className = `${colors.bg} rounded-xl p-5 border-2 ${colors.border} shadow-md`;
-        methodCard.style.opacity = '0';
-        methodCard.style.transform = 'translateY(20px)';
-        
-        const confidencePercent = (method.confidence * 100).toFixed(1);
-        const confidenceColor = method.confidence >= 0.7 ? 'text-emerald-600' : 
-                               method.confidence >= 0.6 ? 'text-yellow-500' : 'text-orange-500';
-        
-        methodCard.innerHTML = `
-            <div class="flex items-center gap-3 mb-4">
-                <div class="${colors.iconBg} p-2 rounded-lg text-white text-xl shadow-md">
-                    ${icon}
-                </div>
-                <div class="flex-1">
-                    <h3 class="text-lg font-bold ${colors.text}">${methodName}</h3>
-                    <p class="text-xs text-gray-600 mt-0.5">${method.reason || ''}</p>
-                </div>
-                <div class="text-right">
-                    <div class="px-3 py-1 ${colors.numberBg} rounded-lg">
-                        <span class="text-sm font-bold ${colors.text}">${confidencePercent}%</span>
-                    </div>
-                </div>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="bg-white/60 backdrop-blur-sm rounded-lg p-4 border border-gray-200">
-                    <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">セット予測</p>
-                    <p class="text-3xl font-black text-gray-800 tracking-wider">${method.set_prediction}</p>
-                </div>
-                <div class="bg-white/60 backdrop-blur-sm rounded-lg p-4 border border-gray-200">
-                    <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">ミニ予測</p>
-                    <p class="text-3xl font-black text-gray-800 tracking-wider">${method.mini_prediction}</p>
-                </div>
-            </div>
-            <div class="mt-4 pt-4 border-t border-gray-200">
-                <div class="flex items-center justify-between mb-1">
-                    <span class="text-xs font-medium text-gray-600">信頼度</span>
-                    <span class="text-xs font-bold ${confidenceColor}">${confidencePercent}%</span>
-                </div>
-                <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                    <div class="${colors.iconBg} h-2 rounded-full transition-all duration-1000 ease-out" style="width: ${confidencePercent}%"></div>
-                </div>
-            </div>
-        `;
-        
-        container.appendChild(methodCard);
-        
-        // アニメーションで表示
-        setTimeout(() => {
-            methodCard.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
-            methodCard.style.opacity = '1';
-            methodCard.style.transform = 'translateY(0)';
-        }, index * 100);
-    });
-}
 
 /**
  * 予測カードを作成
@@ -889,6 +742,9 @@ function renderMethodDetails() {
         
         const confidencePercent = (method.confidence * 100).toFixed(1);
         
+        // データ利用件数のバッジを取得
+        const dataUsageBadge = getMethodDataUsageBadgeHtml(methodKey);
+        
         card.innerHTML = `
             <div class="flex items-start justify-between mb-4">
                 <div class="flex items-center gap-3">
@@ -906,6 +762,7 @@ function renderMethodDetails() {
                     </div>
                 </div>
             </div>
+            ${dataUsageBadge}
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                 <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
                     <p class="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">セット予測</p>
@@ -1520,7 +1377,7 @@ function renderMethodTheoryContent(methodKey, container) {
  * セット予測・ミニ予測と似たスタイルで表示
  */
 function getMethodDataUsageBadgeHtml(methodKey) {
-    if (!window.predictionData || !predictionData.statistics) return '';
+    if (!predictionData || !predictionData.statistics) return '';
 
     const totalRecords = predictionData.statistics.total_records || 0;
     const recentPhasesCount = (predictionData.recent_phases || []).length || 0;
