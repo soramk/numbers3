@@ -1516,6 +1516,54 @@ function renderMethodTheoryContent(methodKey, container) {
 }
 
 /**
+ * 各手法で利用しているデータ件数のバッジHTMLを生成
+ * セット予測・ミニ予測と似たスタイルで表示
+ */
+function getMethodDataUsageBadgeHtml(methodKey) {
+    if (!window.predictionData || !predictionData.statistics) return '';
+
+    const totalRecords = predictionData.statistics.total_records || 0;
+    const recentPhasesCount = (predictionData.recent_phases || []).length || 0;
+
+    let usedText = '';
+    switch (methodKey) {
+        case 'chaos':
+            usedText = `全履歴 ${totalRecords.toLocaleString()}件（位相解析は直近 ${recentPhasesCount || 20}件）`;
+            break;
+        case 'markov':
+        case 'bayesian':
+        case 'periodicity':
+        case 'pattern':
+            usedText = `全履歴 ${totalRecords.toLocaleString()}件`;
+            break;
+        case 'random_forest':
+        case 'xgboost':
+        case 'lightgbm':
+        case 'arima':
+        case 'stacking':
+            usedText = `全履歴 ${totalRecords.toLocaleString()}件（特徴量に直近20回を利用）`;
+            break;
+        default:
+            usedText = `${totalRecords.toLocaleString()}件`;
+    }
+
+    return `
+        <div class="flex items-center justify-end mb-3">
+            <div class="flex items-center gap-1.5 px-3 py-1 bg-white/80 backdrop-blur-sm rounded-full shadow-sm border border-gray-200">
+                <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 7c0-1.657 3.134-3 7-3s7 1.343 7 3-3.134 3-7 3-7-1.343-7-3z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 7v10c0 1.657 3.134 3 7 3s7-1.343 7-3V7" />
+                </svg>
+                <span class="text-xs font-semibold text-gray-700">利用データ数</span>
+                <span class="text-xs font-bold text-indigo-600">${usedText}</span>
+            </div>
+        </div>
+    `;
+}
+
+/**
  * 予測手法の詳細内容をレンダリング
  */
 function renderMethodDetailContent(methodKey, container) {
@@ -1575,6 +1623,9 @@ function renderChaosDetail(method, analysis) {
     const trends = analysis.trends || {};
     let html = '<div class="space-y-4">';
     
+    // 利用データ数
+    html += getMethodDataUsageBadgeHtml('chaos');
+
     // 使用している分析結果を表示
     html += '<div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">';
     html += '<h5 class="font-semibold text-blue-800 mb-2">📊 使用している分析結果</h5>';
@@ -1614,6 +1665,9 @@ function renderMarkovDetail(method, analysis) {
     const correlations = analysis.correlations || {};
     let html = '<div class="space-y-4">';
     
+    // 利用データ数
+    html += getMethodDataUsageBadgeHtml('markov');
+
     // 使用している分析結果を表示
     html += '<div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">';
     html += '<h5 class="font-semibold text-blue-800 mb-2">📊 使用している分析結果</h5>';
@@ -1645,6 +1699,9 @@ function renderBayesianDetail(method, analysis) {
     const trends = analysis.trends || {};
     const correlations = analysis.correlations || {};
     let html = '<div class="space-y-4">';
+
+    // 利用データ数
+    html += getMethodDataUsageBadgeHtml('bayesian');
     
     // 使用している分析結果を表示
     html += '<div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">';
@@ -1740,6 +1797,9 @@ function renderPeriodicityDetail(method, analysis) {
     const periodicity = analysis.periodicity || {};
     const frequency = analysis.frequency_analysis || {};
     let html = '<div class="space-y-4">';
+
+    // 利用データ数
+    html += getMethodDataUsageBadgeHtml('periodicity');
     
     // 使用している分析結果を表示
     html += '<div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">';
@@ -2214,6 +2274,9 @@ function renderPatternDetail(method, analysis) {
     const patterns = analysis.frequent_patterns || {};
     const correlations = analysis.correlations || {};
     let html = '<div class="space-y-4">';
+
+    // 利用データ数
+    html += getMethodDataUsageBadgeHtml('pattern');
     
     // 使用している分析結果を表示
     html += '<div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">';
@@ -2259,6 +2322,9 @@ function renderPatternDetail(method, analysis) {
  */
 function renderRandomForestDetail(method, analysis) {
     let html = '<div class="space-y-4">';
+
+    // 利用データ数
+    html += getMethodDataUsageBadgeHtml('random_forest');
     
     // 使用している分析結果を表示
     html += '<div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">';
@@ -2361,6 +2427,9 @@ function renderRandomForestDetail(method, analysis) {
 function renderXGBoostDetail(method, analysis) {
     let html = '<div class="space-y-4">';
     
+    // 利用データ数
+    html += getMethodDataUsageBadgeHtml('xgboost');
+    
     // 使用している分析結果を表示
     html += '<div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">';
     html += '<h5 class="font-semibold text-blue-800 mb-2">📊 使用している分析結果</h5>';
@@ -2426,6 +2495,9 @@ function renderXGBoostDetail(method, analysis) {
  */
 function renderLightGBMDetail(method, analysis) {
     let html = '<div class="space-y-4">';
+    
+    // 利用データ数
+    html += getMethodDataUsageBadgeHtml('lightgbm');
     
     // 使用している分析結果を表示
     html += '<div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">';
@@ -2494,6 +2566,9 @@ function renderARIMADetail(method, analysis) {
     const trends = analysis.trends || {};
     let html = '<div class="space-y-4">';
     
+    // 利用データ数
+    html += getMethodDataUsageBadgeHtml('arima');
+    
     // 使用している分析結果を表示
     html += '<div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">';
     html += '<h5 class="font-semibold text-blue-800 mb-2">📊 使用している分析結果</h5>';
@@ -2550,6 +2625,9 @@ function renderARIMADetail(method, analysis) {
  */
 function renderStackingDetail(method, analysis) {
     let html = '<div class="space-y-4">';
+    
+    // 利用データ数
+    html += getMethodDataUsageBadgeHtml('stacking');
     
     // 使用している分析結果を表示
     html += '<div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">';
