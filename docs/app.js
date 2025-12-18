@@ -459,14 +459,8 @@ function createPredictionCard(prediction, rank, color) {
                           'bg-gradient-to-r from-purple-300 to-purple-400 text-white';
     
     card.innerHTML = `
-        <div class="flex items-center justify-between mb-4">
+        <div class="flex items-center justify-center mb-4">
             <span class="px-3 py-1 ${rankBadgeStyle} rounded-full text-xs font-bold shadow-md">第${rank}候補</span>
-            <div class="flex items-center gap-1.5 px-3 py-1 bg-white/80 backdrop-blur-sm rounded-full">
-                <svg class="w-4 h-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                <span class="text-xs font-semibold text-gray-700">信頼度</span>
-            </div>
         </div>
         <div class="text-center mb-4">
             <div class="inline-block relative">
