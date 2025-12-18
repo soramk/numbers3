@@ -343,20 +343,31 @@ class NumbersAnalyzer:
         self.df['sum'] = self.df['hundred'] + self.df['ten'] + self.df['one']
         self.df['span'] = self.df[['hundred', 'ten', 'one']].max(axis=1) - self.df[['hundred', 'ten', 'one']].min(axis=1)
     
-    def update_data(self) -> bool:
+    def update_data(self) -> Dict[str, any]:
         """
         Webから最新データを取得してデータファイルを更新する
         public/data.json と docs/public/data.json の両方に追記する
         
         Returns:
-            bool: データが更新された場合 True、更新されなかった場合 False
+            dict: {
+                'updated': bool,  # データが更新されたかどうか
+                'new_records_count': int,  # 新しく追加されたレコード数
+                'previous_count': int,  # 更新前のデータ件数
+                'current_count': int  # 更新後のデータ件数
+            }
         """
         print("[update_data] 最新の当選結果を取得中...")
+        previous_count = len(self.data)
         latest_result = fetch_latest_result()
         
         if latest_result is None:
             print("[update_data] 最新データの取得に失敗しました。既存データで分析を続行します。")
-            return False
+            return {
+                'updated': False,
+                'new_records_count': 0,
+                'previous_count': previous_count,
+                'current_count': previous_count
+            }
         
         # 重複チェック: 最新のデータが既に存在するか確認
         latest_date = latest_result['date']
@@ -368,7 +379,12 @@ class NumbersAnalyzer:
         
         if (latest_date, latest_num) in existing_records:
             print(f"[update_data] 最新データは既に存在します: {latest_date} - {latest_num}")
-            return False
+            return {
+                'updated': False,
+                'new_records_count': 0,
+                'previous_count': previous_count,
+                'current_count': previous_count
+            }
         
         # 新しいデータを追加（numは文字列として保存）
         new_record = {
@@ -445,7 +461,15 @@ class NumbersAnalyzer:
         # DataFrameを再読み込み
         self.load_data()
         
-        return True
+        current_count = len(self.data)
+        new_records_count = current_count - previous_count
+        
+        return {
+            'updated': True,
+            'new_records_count': new_records_count,
+            'previous_count': previous_count,
+            'current_count': current_count
+        }
     
     def calculate_gap(self, window: int = 10) -> pd.Series:
         """
@@ -2570,81 +2594,177 @@ class NumbersAnalyzer:
             'reason': '頻出パターン分析から予測'
         }
     
-    def ensemble_predict(self) -> Dict[str, any]:
+    def ensemble_predict(self, use_cache: bool = True, update_info: Optional[Dict[str, any]] = None) -> Dict[str, any]:
         """
         アンサンブル予測（複数手法の統合）
+        
+        Args:
+            use_cache: キャッシュを使用するかどうか（デフォルト: True）
+            update_info: データ更新情報（デフォルト: None）
+                {
+                    'updated': bool,
+                    'new_records_count': int,
+                    'previous_count': int,
+                    'current_count': int
+                }
         
         Returns:
             統合予測結果
         """
+        # データ更新情報を取得
+        data_updated = update_info is not None and update_info.get('updated', False)
+        current_count = len(self.df)
+        
+        # データが更新されていない場合、最新の予測結果を読み込んで再利用
+        cached_prediction = None
+        last_full_recompute_count = None
+        cumulative_updates = 0
+        
+        if use_cache:
+            try:
+                cache_path = "docs/data/latest_prediction.json"
+                if os.path.exists(cache_path):
+                    with open(cache_path, 'r', encoding='utf-8') as f:
+                        cached_prediction = json.load(f)
+                    
+                    cached_total_records = cached_prediction.get('statistics', {}).get('total_records')
+                    last_full_recompute_count = cached_prediction.get('statistics', {}).get('last_full_recompute_count', cached_total_records)
+                    
+                    # データ件数が同じか確認（更新されていない場合）
+                    if cached_total_records == current_count:
+                        print("[ensemble_predict] データが更新されていないため、キャッシュされた予測結果を再利用します")
+                        # タイムスタンプのみ更新
+                        jst_now = datetime.now(ZoneInfo("Asia/Tokyo"))
+                        cached_prediction['timestamp'] = jst_now.isoformat()
+                        return cached_prediction
+                    
+                    # 累積更新件数を計算（前回の完全再計算時からの差分）
+                    cumulative_updates = current_count - last_full_recompute_count
+                    print(f"[ensemble_predict] 前回の完全再計算時からの累積更新件数: {cumulative_updates}件（前回: {last_full_recompute_count}件 → 現在: {current_count}件）")
+            except Exception as e:
+                print(f"[ensemble_predict] キャッシュの読み込みに失敗、再計算を実行: {e}")
+                cumulative_updates = current_count  # キャッシュがない場合は、すべて再計算
+        
+        # 累積更新件数が11件以上の場合、すべて再計算
+        # 11件未満の場合、軽量な分析のみ再計算、重い計算はキャッシュから再利用
+        need_full_recompute = cumulative_updates >= 11
+        
+        if need_full_recompute:
+            print("[ensemble_predict] 累積更新件数が11件以上に達したため、すべての分析を再計算します")
+        else:
+            print(f"[ensemble_predict] 累積更新件数が{cumulative_updates}件のため、軽量な分析のみ再計算し、重い計算はキャッシュから再利用します")
+        
+        # データが更新された場合、またはキャッシュがない場合は再計算
+        print("[ensemble_predict] 予測分析を実行します...")
         chaos_pred = self.predict_chaos()
         markov_pred = self.predict_markov()
         bayesian_pred = self.predict_bayesian()
         periodicity_pred = self.predict_with_periodicity()
         pattern_pred = self.predict_with_patterns()
         
+        # 重い計算（機械学習モデル）は条件付きで実行
+        # 累積更新件数が11件未満の場合、キャッシュから再利用
+        # 累積更新件数が11件以上の場合、再計算が必要（データ分布が大きく変わる可能性があるため）
+        use_ml_cache = use_cache and cached_prediction is not None and not need_full_recompute
+        
         # ランダムフォレストによる予測（計算コストが高いのでエラーハンドリング）
         random_forest_pred = None
-        try:
-            random_forest_pred = self.predict_with_random_forest()
-        except Exception as e:
-            print(f"[ensemble_predict] ランダムフォレスト予測をスキップ: {e}")
+        if use_ml_cache and 'methods' in cached_prediction and 'random_forest' in cached_prediction['methods']:
+            random_forest_pred = cached_prediction['methods']['random_forest']
+            print("[ensemble_predict] ランダムフォレスト予測をキャッシュから再利用")
+        else:
+            try:
+                random_forest_pred = self.predict_with_random_forest()
+            except Exception as e:
+                print(f"[ensemble_predict] ランダムフォレスト予測をスキップ: {e}")
         
         # XGBoostによる予測
         xgboost_pred = None
-        try:
-            xgboost_pred = self.predict_with_xgboost()
-        except Exception as e:
-            print(f"[ensemble_predict] XGBoost予測をスキップ: {e}")
+        if use_ml_cache and 'methods' in cached_prediction and 'xgboost' in cached_prediction['methods']:
+            xgboost_pred = cached_prediction['methods']['xgboost']
+            print("[ensemble_predict] XGBoost予測をキャッシュから再利用")
+        else:
+            try:
+                xgboost_pred = self.predict_with_xgboost()
+            except Exception as e:
+                print(f"[ensemble_predict] XGBoost予測をスキップ: {e}")
         
         # LightGBMによる予測
         lightgbm_pred = None
-        try:
-            lightgbm_pred = self.predict_with_lightgbm()
-        except Exception as e:
-            print(f"[ensemble_predict] LightGBM予測をスキップ: {e}")
+        if use_ml_cache and 'methods' in cached_prediction and 'lightgbm' in cached_prediction['methods']:
+            lightgbm_pred = cached_prediction['methods']['lightgbm']
+            print("[ensemble_predict] LightGBM予測をキャッシュから再利用")
+        else:
+            try:
+                lightgbm_pred = self.predict_with_lightgbm()
+            except Exception as e:
+                print(f"[ensemble_predict] LightGBM予測をスキップ: {e}")
         
         # ARIMAによる予測
         arima_pred = None
-        try:
-            arima_pred = self.predict_with_arima()
-        except Exception as e:
-            print(f"[ensemble_predict] ARIMA予測をスキップ: {e}")
+        if use_ml_cache and 'methods' in cached_prediction and 'arima' in cached_prediction['methods']:
+            arima_pred = cached_prediction['methods']['arima']
+            print("[ensemble_predict] ARIMA予測をキャッシュから再利用")
+        else:
+            try:
+                arima_pred = self.predict_with_arima()
+            except Exception as e:
+                print(f"[ensemble_predict] ARIMA予測をスキップ: {e}")
         
         # スタッキングによる予測
         stacking_pred = None
-        try:
-            stacking_pred = self.predict_with_stacking()
-        except Exception as e:
-            print(f"[ensemble_predict] スタッキング予測をスキップ: {e}")
+        if use_ml_cache and 'methods' in cached_prediction and 'stacking' in cached_prediction['methods']:
+            stacking_pred = cached_prediction['methods']['stacking']
+            print("[ensemble_predict] スタッキング予測をキャッシュから再利用")
+        else:
+            try:
+                stacking_pred = self.predict_with_stacking()
+            except Exception as e:
+                print(f"[ensemble_predict] スタッキング予測をスキップ: {e}")
         
         # HMMによる予測
         hmm_pred = None
-        try:
-            hmm_pred = self.predict_with_hmm()
-        except Exception as e:
-            print(f"[ensemble_predict] HMM予測をスキップ: {e}")
+        if use_ml_cache and 'methods' in cached_prediction and 'hmm' in cached_prediction['methods']:
+            hmm_pred = cached_prediction['methods']['hmm']
+            print("[ensemble_predict] HMM予測をキャッシュから再利用")
+        else:
+            try:
+                hmm_pred = self.predict_with_hmm()
+            except Exception as e:
+                print(f"[ensemble_predict] HMM予測をスキップ: {e}")
         
         # LSTMによる予測
         lstm_pred = None
-        try:
-            lstm_pred = self.predict_with_lstm()
-        except Exception as e:
-            print(f"[ensemble_predict] LSTM予測をスキップ: {e}")
+        if use_ml_cache and 'methods' in cached_prediction and 'lstm' in cached_prediction['methods']:
+            lstm_pred = cached_prediction['methods']['lstm']
+            print("[ensemble_predict] LSTM予測をキャッシュから再利用")
+        else:
+            try:
+                lstm_pred = self.predict_with_lstm()
+            except Exception as e:
+                print(f"[ensemble_predict] LSTM予測をスキップ: {e}")
         
         # コンフォーマル予測
         conformal_pred = None
-        try:
-            conformal_pred = self.predict_with_conformal(base_method='stacking')
-        except Exception as e:
-            print(f"[ensemble_predict] コンフォーマル予測をスキップ: {e}")
+        if use_ml_cache and 'methods' in cached_prediction and 'conformal' in cached_prediction['methods']:
+            conformal_pred = cached_prediction['methods']['conformal']
+            print("[ensemble_predict] コンフォーマル予測をキャッシュから再利用")
+        else:
+            try:
+                conformal_pred = self.predict_with_conformal(base_method='stacking')
+            except Exception as e:
+                print(f"[ensemble_predict] コンフォーマル予測をスキップ: {e}")
         
         # カルマンフィルタによる予測
         kalman_pred = None
-        try:
-            kalman_pred = self.predict_with_kalman()
-        except Exception as e:
-            print(f"[ensemble_predict] カルマンフィルタ予測をスキップ: {e}")
+        if use_ml_cache and 'methods' in cached_prediction and 'kalman' in cached_prediction['methods']:
+            kalman_pred = cached_prediction['methods']['kalman']
+            print("[ensemble_predict] カルマンフィルタ予測をキャッシュから再利用")
+        else:
+            try:
+                kalman_pred = self.predict_with_kalman()
+            except Exception as e:
+                print(f"[ensemble_predict] カルマンフィルタ予測をスキップ: {e}")
         
         # 各手法の予測を集計
         set_votes = {}
@@ -2712,26 +2832,73 @@ class NumbersAnalyzer:
         jst_now = datetime.now(ZoneInfo("Asia/Tokyo"))
         
         # 追加の分析結果を取得
-        correlations = self.analyze_correlations()
-        trends = self.analyze_trends()
-        frequent_patterns = self.extract_frequent_patterns(top_n=10)
-        gap_analysis = self.analyze_gaps_detailed()
-        anomalies = self.detect_anomalies()
-        periodicity_patterns = self.analyze_periodicity()
+        # 累積更新件数が11件未満の場合、キャッシュから再利用
+        # 累積更新件数が11件以上の場合、再計算が必要（統計的な特性が変わる可能性があるため）
+        use_analysis_cache = use_cache and cached_prediction is not None and not need_full_recompute
+        
+        correlations = None
+        if use_analysis_cache and 'advanced_analysis' in cached_prediction and cached_prediction['advanced_analysis'].get('correlations'):
+            correlations = cached_prediction['advanced_analysis']['correlations']
+            print("[ensemble_predict] 相関分析をキャッシュから再利用")
+        else:
+            correlations = self.analyze_correlations()
+        
+        trends = None
+        if use_analysis_cache and 'advanced_analysis' in cached_prediction and cached_prediction['advanced_analysis'].get('trends'):
+            trends = cached_prediction['advanced_analysis']['trends']
+            print("[ensemble_predict] トレンド分析をキャッシュから再利用")
+        else:
+            trends = self.analyze_trends()
+        
+        frequent_patterns = None
+        if use_analysis_cache and 'advanced_analysis' in cached_prediction and cached_prediction['advanced_analysis'].get('frequent_patterns'):
+            frequent_patterns = cached_prediction['advanced_analysis']['frequent_patterns']
+            print("[ensemble_predict] 頻出パターン分析をキャッシュから再利用")
+        else:
+            frequent_patterns = self.extract_frequent_patterns(top_n=10)
+        
+        gap_analysis = None
+        if use_analysis_cache and 'advanced_analysis' in cached_prediction and cached_prediction['advanced_analysis'].get('gap_analysis'):
+            gap_analysis = cached_prediction['advanced_analysis']['gap_analysis']
+            print("[ensemble_predict] ギャップ分析をキャッシュから再利用")
+        else:
+            gap_analysis = self.analyze_gaps_detailed()
+        
+        anomalies = None
+        if use_analysis_cache and 'advanced_analysis' in cached_prediction and cached_prediction['advanced_analysis'].get('anomalies'):
+            anomalies = cached_prediction['advanced_analysis']['anomalies']
+            print("[ensemble_predict] 異常検知をキャッシュから再利用")
+        else:
+            anomalies = self.detect_anomalies()
+        
+        periodicity_patterns = None
+        if use_analysis_cache and 'advanced_analysis' in cached_prediction and cached_prediction['advanced_analysis'].get('periodicity'):
+            periodicity_patterns = cached_prediction['advanced_analysis']['periodicity']
+            print("[ensemble_predict] 周期性分析をキャッシュから再利用")
+        else:
+            periodicity_patterns = self.analyze_periodicity()
         
         # フーリエ変換による周波数解析（計算コストが高いのでオプション）
         frequency_analysis = None
-        try:
-            frequency_analysis = self.analyze_frequency_domain()
-        except Exception as e:
-            print(f"[ensemble_predict] 周波数解析をスキップ: {e}")
+        if use_analysis_cache and 'advanced_analysis' in cached_prediction and cached_prediction['advanced_analysis'].get('frequency_analysis'):
+            frequency_analysis = cached_prediction['advanced_analysis']['frequency_analysis']
+            print("[ensemble_predict] 周波数解析をキャッシュから再利用")
+        else:
+            try:
+                frequency_analysis = self.analyze_frequency_domain()
+            except Exception as e:
+                print(f"[ensemble_predict] 周波数解析をスキップ: {e}")
         
         # クラスタリング分析（計算コストが高いのでオプション）
         clustering = None
-        try:
-            clustering = self.cluster_patterns(n_clusters=5)
-        except Exception as e:
-            print(f"[ensemble_predict] クラスタリング分析をスキップ: {e}")
+        if use_analysis_cache and 'advanced_analysis' in cached_prediction and cached_prediction['advanced_analysis'].get('clustering'):
+            clustering = cached_prediction['advanced_analysis']['clustering']
+            print("[ensemble_predict] クラスタリング分析をキャッシュから再利用")
+        else:
+            try:
+                clustering = self.cluster_patterns(n_clusters=5)
+            except Exception as e:
+                print(f"[ensemble_predict] クラスタリング分析をスキップ: {e}")
         
         # methods辞書を構築
         methods_dict = {
@@ -2760,48 +2927,76 @@ class NumbersAnalyzer:
         if kalman_pred:
             methods_dict['kalman'] = kalman_pred
         
-        # 追加の分析結果を取得
+        # 追加の分析結果を取得（重い計算はキャッシュから再利用）
         wavelet_analysis = None
-        try:
-            wavelet_analysis = self.analyze_wavelet()
-        except Exception as e:
-            print(f"[ensemble_predict] ウェーブレット解析をスキップ: {e}")
+        if use_analysis_cache and 'advanced_analysis' in cached_prediction and cached_prediction['advanced_analysis'].get('wavelet_analysis'):
+            wavelet_analysis = cached_prediction['advanced_analysis']['wavelet_analysis']
+            print("[ensemble_predict] ウェーブレット解析をキャッシュから再利用")
+        else:
+            try:
+                wavelet_analysis = self.analyze_wavelet()
+            except Exception as e:
+                print(f"[ensemble_predict] ウェーブレット解析をスキップ: {e}")
         
         pca_analysis = None
-        try:
-            pca_analysis = self.analyze_pca()
-        except Exception as e:
-            print(f"[ensemble_predict] PCA解析をスキップ: {e}")
+        if use_analysis_cache and 'advanced_analysis' in cached_prediction and cached_prediction['advanced_analysis'].get('pca_analysis'):
+            pca_analysis = cached_prediction['advanced_analysis']['pca_analysis']
+            print("[ensemble_predict] PCA解析をキャッシュから再利用")
+        else:
+            try:
+                pca_analysis = self.analyze_pca()
+            except Exception as e:
+                print(f"[ensemble_predict] PCA解析をスキップ: {e}")
         
         tsne_analysis = None
-        try:
-            tsne_analysis = self.analyze_tsne()
-        except Exception as e:
-            print(f"[ensemble_predict] t-SNE解析をスキップ: {e}")
+        if use_analysis_cache and 'advanced_analysis' in cached_prediction and cached_prediction['advanced_analysis'].get('tsne_analysis'):
+            tsne_analysis = cached_prediction['advanced_analysis']['tsne_analysis']
+            print("[ensemble_predict] t-SNE解析をキャッシュから再利用")
+        else:
+            try:
+                tsne_analysis = self.analyze_tsne()
+            except Exception as e:
+                print(f"[ensemble_predict] t-SNE解析をスキップ: {e}")
         
         continuity_analysis = None
-        try:
-            continuity_analysis = self.analyze_continuity()
-        except Exception as e:
-            print(f"[ensemble_predict] 連続性分析をスキップ: {e}")
+        if use_analysis_cache and 'advanced_analysis' in cached_prediction and cached_prediction['advanced_analysis'].get('continuity_analysis'):
+            continuity_analysis = cached_prediction['advanced_analysis']['continuity_analysis']
+            print("[ensemble_predict] 連続性分析をキャッシュから再利用")
+        else:
+            try:
+                continuity_analysis = self.analyze_continuity()
+            except Exception as e:
+                print(f"[ensemble_predict] 連続性分析をスキップ: {e}")
         
         change_points = None
-        try:
-            change_points = self.detect_change_points()
-        except Exception as e:
-            print(f"[ensemble_predict] 変化点検出をスキップ: {e}")
+        if use_analysis_cache and 'advanced_analysis' in cached_prediction and cached_prediction['advanced_analysis'].get('change_points'):
+            change_points = cached_prediction['advanced_analysis']['change_points']
+            print("[ensemble_predict] 変化点検出をキャッシュから再利用")
+        else:
+            try:
+                change_points = self.detect_change_points()
+            except Exception as e:
+                print(f"[ensemble_predict] 変化点検出をスキップ: {e}")
         
         network_analysis = None
-        try:
-            network_analysis = self.analyze_network()
-        except Exception as e:
-            print(f"[ensemble_predict] ネットワーク分析をスキップ: {e}")
+        if use_analysis_cache and 'advanced_analysis' in cached_prediction and cached_prediction['advanced_analysis'].get('network_analysis'):
+            network_analysis = cached_prediction['advanced_analysis']['network_analysis']
+            print("[ensemble_predict] ネットワーク分析をキャッシュから再利用")
+        else:
+            try:
+                network_analysis = self.analyze_network()
+            except Exception as e:
+                print(f"[ensemble_predict] ネットワーク分析をスキップ: {e}")
         
         genetic_optimization = None
-        try:
-            genetic_optimization = self.optimize_with_genetic_algorithm()
-        except Exception as e:
-            print(f"[ensemble_predict] 遺伝的アルゴリズム最適化をスキップ: {e}")
+        if use_analysis_cache and 'advanced_analysis' in cached_prediction and cached_prediction['advanced_analysis'].get('genetic_optimization'):
+            genetic_optimization = cached_prediction['advanced_analysis']['genetic_optimization']
+            print("[ensemble_predict] 遺伝的アルゴリズム最適化をキャッシュから再利用")
+        else:
+            try:
+                genetic_optimization = self.optimize_with_genetic_algorithm()
+            except Exception as e:
+                print(f"[ensemble_predict] 遺伝的アルゴリズム最適化をスキップ: {e}")
         
         return {
             'timestamp': jst_now.isoformat(),
@@ -2826,7 +3021,8 @@ class NumbersAnalyzer:
             'statistics': {
                 'total_records': len(self.df),
                 'last_date': self.df.iloc[-1]['date'].strftime('%Y-%m-%d'),
-                'last_number': str(self.df.iloc[-1]['num']).zfill(3)
+                'last_number': str(self.df.iloc[-1]['num']).zfill(3),
+                'last_full_recompute_count': len(self.df) if need_full_recompute else (last_full_recompute_count or len(self.df))
             },
             'advanced_analysis': {
                 'correlations': correlations,
@@ -2847,14 +3043,15 @@ class NumbersAnalyzer:
             }
         }
     
-    def save_prediction(self, output_path: str = "docs/data/latest_prediction.json"):
+    def save_prediction(self, output_path: str = "docs/data/latest_prediction.json", update_info: Optional[Dict[str, any]] = None):
         """
         予測結果をJSONファイルに保存（履歴も保存）
         
         Args:
             output_path: 出力ファイルのパス
+            update_info: データ更新情報（デフォルト: None）
         """
-        prediction = self.ensemble_predict()
+        prediction = self.ensemble_predict(use_cache=True, update_info=update_info)
         
         # ディレクトリが存在しない場合は作成
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -2920,15 +3117,19 @@ def main():
     analyzer = NumbersAnalyzer()
     
     # 最新データを取得して更新
-    data_updated = analyzer.update_data()
+    update_info = analyzer.update_data()
     
-    if data_updated:
-        print("[main] データが更新されました。予測分析を実行します。")
+    if update_info['updated']:
+        new_count = update_info['new_records_count']
+        print(f"[main] データが更新されました（新規{new_count}件）。予測分析を実行します。")
+        print("[main] 累積更新件数に応じて、再計算範囲を自動調整します。")
+        print("[main] - 累積更新件数が11件未満: 軽量な分析のみ再計算、重い計算はキャッシュから再利用")
+        print("[main] - 累積更新件数が11件以上: すべての分析を再計算")
     else:
-        print("[main] データは更新されませんでした。既存データで予測分析を実行します。")
+        print("[main] データは更新されませんでした。キャッシュを活用して予測分析を実行します。")
     
-    # 予測分析を実行
-    prediction = analyzer.save_prediction()
+    # 予測分析を実行（データ更新情報を渡す）
+    prediction = analyzer.save_prediction(update_info=update_info)
     
     print("\n=== 予測結果 ===")
     print(f"セット予測（上位3件）:")
@@ -2940,7 +3141,7 @@ def main():
         print(f"  {pred['rank']}. {pred['number']} (信頼度: {pred['confidence']:.3f})")
     
     # データ更新があった場合は、その情報も返す（GitHub Actionsで使用）
-    return data_updated
+    return update_info['updated']
 
 
 if __name__ == "__main__":
