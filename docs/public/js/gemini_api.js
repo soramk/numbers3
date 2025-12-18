@@ -64,6 +64,34 @@ ${JSON.stringify(advancedAnalysis, null, 2)}
   * 各桁の異常値の数と位置
 - periodicity: 周期性分析
   * 曜日・月次・四半期パターン
+- wavelet_analysis: ウェーブレット変換
+  * 時間-周波数解析によるパターン検出
+  * 各桁ごとの総レベル数、近似エネルギー、詳細エネルギー
+  * 短期的な変動と長期的なトレンドを同時に分析
+- pca_analysis: 主成分分析（PCA）
+  * データ構造の次元削減と可視化
+  * 主成分数、累積寄与率、各主成分の寄与率
+  * データの本質的な変動要因の抽出
+- tsne_analysis: t-SNE可視化
+  * 高次元データの2次元可視化
+  * パターンのクラスタリングを視覚的に理解
+  * 最新データポイントの位置情報
+- continuity_analysis: 連続性分析
+  * 連続出現パターン（同じ数字が連続して出る確率）
+  * 交互出現パターン（数字が交互に出るパターン）
+  * 最大連続出現回数
+- change_points: 変化点検出
+  * PELTアルゴリズムによるトレンド変化・レジーム変化の検出
+  * 各桁ごとの変化点数、セグメント数、変化点の日付
+  * パターンが変わった時期の特定
+- network_analysis: ネットワーク分析（グラフ理論）
+  * 数字の遷移をグラフとして分析
+  * 各桁ごとのノード数、エッジ数、最も頻繁な遷移
+  * 数字間の関係性と中心性指標
+- genetic_optimization: 遺伝的アルゴリズム最適化
+  * 予測手法の重み最適化
+  * 各予測手法の最適な重み付け
+  * 適合度に基づく最適化結果
 ` : ''}
 
 【詳細分析指令 - 当選確率向上のための多角的アプローチ】
@@ -173,7 +201,63 @@ ${advancedAnalysis ? `
       c) 四半期パターン: 次回の抽選日がどの四半期かを考慮
     - 時間的な周期性を予測に反映` : ''}
 
-15. 【統合予測の生成】
+15. 【ウェーブレット変換の活用】
+    ${advancedAnalysis.wavelet_analysis ? `
+    - advanced_analysis.wavelet_analysis の結果を活用してください：
+      a) 各桁ごとの総レベル数、近似エネルギー、詳細エネルギーを確認
+      b) 時間と周波数の両方の情報を保持した解析結果を考慮
+      c) 短期的な変動と長期的なトレンドを同時に分析
+    - ウェーブレット変換で検出されたパターンを位相分析と統合` : ''}
+
+16. 【主成分分析（PCA）の活用】
+    ${advancedAnalysis.pca_analysis ? `
+    - advanced_analysis.pca_analysis の結果を活用してください：
+      a) 主成分数と累積寄与率を確認
+      b) 各主成分の寄与率を分析
+      c) データの本質的な変動要因を理解
+    - PCAで抽出された主要な変動要因を予測に反映` : ''}
+
+17. 【t-SNE可視化の活用】
+    ${advancedAnalysis.tsne_analysis ? `
+    - advanced_analysis.tsne_analysis の結果を活用してください：
+      a) 最新データポイントの2次元座標を確認
+      b) 高次元データの構造を視覚的に理解
+      c) パターンのクラスタリングを分析
+    - t-SNEで検出されたデータ構造を予測に反映` : ''}
+
+18. 【連続性分析の活用】
+    ${advancedAnalysis.continuity_analysis ? `
+    - advanced_analysis.continuity_analysis の結果を活用してください：
+      a) 各桁の連続出現回数を確認
+      b) 交互出現パターンを分析
+      c) 最大連続出現回数を考慮
+    - 連続性パターンを予測に反映` : ''}
+
+19. 【変化点検出の活用】
+    ${advancedAnalysis.change_points ? `
+    - advanced_analysis.change_points の結果を活用してください：
+      a) 各桁の変化点数とセグメント数を確認
+      b) 変化点の日付を分析
+      c) トレンド変化・レジーム変化を検出
+    - 変化点後のパターンを予測に反映` : ''}
+
+20. 【ネットワーク分析の活用】
+    ${advancedAnalysis.network_analysis ? `
+    - advanced_analysis.network_analysis の結果を活用してください：
+      a) 各桁のノード数、エッジ数を確認
+      b) 最も頻繁な遷移パターンを分析
+      c) 数字間の関係性を理解
+    - ネットワーク分析で検出された遷移パターンを予測に反映` : ''}
+
+21. 【遺伝的アルゴリズム最適化の活用】
+    ${advancedAnalysis.genetic_optimization ? `
+    - advanced_analysis.genetic_optimization の結果を活用してください：
+      a) 最適化された各予測手法の重みを確認
+      b) 適合度に基づく最適化結果を分析
+      c) 各手法の重要度を理解
+    - 遺伝的アルゴリズムで最適化された重みを予測に反映` : ''}
+
+22. 【統合予測の生成】
 ` : `
 8. 【統合予測の生成】
 `}
@@ -193,7 +277,14 @@ ${advancedAnalysis ? `
    - クラスタリング分析からの支持度（クラスタの特徴を考慮）
    - 周波数解析からの支持度（周期性を考慮）
    - 頻出パターン分析からの支持度（advanced_analysis.frequent_patternsを参照）
-   ${advancedAnalysis.periodicity ? '- 周期性分析からの支持度（曜日・月次・四半期パターンを考慮）' : ''}` : ''}
+   ${advancedAnalysis.periodicity ? '- 周期性分析からの支持度（曜日・月次・四半期パターンを考慮）' : ''}
+   ${advancedAnalysis.wavelet_analysis ? '- ウェーブレット変換からの支持度（時間-周波数解析を考慮）' : ''}
+   ${advancedAnalysis.pca_analysis ? '- 主成分分析からの支持度（データ構造の主要な変動要因を考慮）' : ''}
+   ${advancedAnalysis.tsne_analysis ? '- t-SNE可視化からの支持度（データ構造のクラスタリングを考慮）' : ''}
+   ${advancedAnalysis.continuity_analysis ? '- 連続性分析からの支持度（連続出現・交互出現パターンを考慮）' : ''}
+   ${advancedAnalysis.change_points ? '- 変化点検出からの支持度（トレンド変化・レジーム変化を考慮）' : ''}
+   ${advancedAnalysis.network_analysis ? '- ネットワーク分析からの支持度（数字遷移のグラフ構造を考慮）' : ''}
+   ${advancedAnalysis.genetic_optimization ? '- 遺伝的アルゴリズム最適化からの支持度（最適化された重みを考慮）' : ''}` : ''}
    - 総合信頼度（0-100%の範囲で具体的な数値）
    - 各桁の数字が選ばれた理由（百/十/一それぞれについて）
    
@@ -210,7 +301,14 @@ ${advancedAnalysis ? `
    - 十の位と一の位のトレンド分析からの支持度（短期・中期・長期トレンドを考慮）
    - クラスタリング分析からの支持度（クラスタの特徴を考慮）
    - 周波数解析からの支持度（周期性を考慮）
-   ${advancedAnalysis.periodicity ? '- 周期性分析からの支持度（曜日・月次・四半期パターンを考慮）' : ''}` : ''}
+   ${advancedAnalysis.periodicity ? '- 周期性分析からの支持度（曜日・月次・四半期パターンを考慮）' : ''}
+   ${advancedAnalysis.wavelet_analysis ? '- ウェーブレット変換からの支持度（時間-周波数解析を考慮）' : ''}
+   ${advancedAnalysis.pca_analysis ? '- 主成分分析からの支持度（データ構造の主要な変動要因を考慮）' : ''}
+   ${advancedAnalysis.tsne_analysis ? '- t-SNE可視化からの支持度（データ構造のクラスタリングを考慮）' : ''}
+   ${advancedAnalysis.continuity_analysis ? '- 連続性分析からの支持度（連続出現・交互出現パターンを考慮）' : ''}
+   ${advancedAnalysis.change_points ? '- 変化点検出からの支持度（トレンド変化・レジーム変化を考慮）' : ''}
+   ${advancedAnalysis.network_analysis ? '- ネットワーク分析からの支持度（数字遷移のグラフ構造を考慮）' : ''}
+   ${advancedAnalysis.genetic_optimization ? '- 遺伝的アルゴリズム最適化からの支持度（最適化された重みを考慮）' : ''}` : ''}
    - 総合信頼度（0-100%の範囲で具体的な数値）
    - 十の位と一の位の数字が選ばれた理由
 
@@ -244,6 +342,20 @@ ${advancedAnalysis ? `
    - 頻出パターン分析: 主要な頻出パターン` : ''}
    ${advancedAnalysis.periodicity ? `
    - 周期性分析: 次回の抽選日の時間的パターン` : ''}
+   ${advancedAnalysis.wavelet_analysis ? `
+   - ウェーブレット変換: 時間-周波数解析によるパターン検出結果` : ''}
+   ${advancedAnalysis.pca_analysis ? `
+   - 主成分分析: データ構造の主要な変動要因と寄与率` : ''}
+   ${advancedAnalysis.tsne_analysis ? `
+   - t-SNE可視化: データ構造のクラスタリングと最新データポイントの位置` : ''}
+   ${advancedAnalysis.continuity_analysis ? `
+   - 連続性分析: 連続出現・交互出現パターンの検出結果` : ''}
+   ${advancedAnalysis.change_points ? `
+   - 変化点検出: トレンド変化・レジーム変化の検出結果` : ''}
+   ${advancedAnalysis.network_analysis ? `
+   - ネットワーク分析: 数字遷移のグラフ構造と主要な遷移パターン` : ''}
+   ${advancedAnalysis.genetic_optimization ? `
+   - 遺伝的アルゴリズム最適化: 最適化された各予測手法の重み` : ''}
 
 5. 【統合予測結果】
 ` : `
@@ -265,7 +377,14 @@ ${advancedAnalysis ? `
    - トレンド分析からの支持度: ○%
    - クラスタリング分析からの支持度: ○%
    - 周波数解析からの支持度: ○%
-   ${advancedAnalysis.periodicity ? '- 周期性分析からの支持度: ○%' : ''}` : ''}
+   ${advancedAnalysis.periodicity ? '- 周期性分析からの支持度: ○%' : ''}
+   ${advancedAnalysis.wavelet_analysis ? '- ウェーブレット変換からの支持度: ○%' : ''}
+   ${advancedAnalysis.pca_analysis ? '- 主成分分析からの支持度: ○%' : ''}
+   ${advancedAnalysis.tsne_analysis ? '- t-SNE可視化からの支持度: ○%' : ''}
+   ${advancedAnalysis.continuity_analysis ? '- 連続性分析からの支持度: ○%' : ''}
+   ${advancedAnalysis.change_points ? '- 変化点検出からの支持度: ○%' : ''}
+   ${advancedAnalysis.network_analysis ? '- ネットワーク分析からの支持度: ○%' : ''}
+   ${advancedAnalysis.genetic_optimization ? '- 遺伝的アルゴリズム最適化からの支持度: ○%' : ''}` : ''}
    - 総合信頼度: ○%（各手法の重み付き平均）
    - 予測根拠の要約（2-3行）
    
@@ -284,7 +403,14 @@ ${advancedAnalysis ? `
    - トレンド分析からの支持度: ○%
    - クラスタリング分析からの支持度: ○%
    - 周波数解析からの支持度: ○%
-   ${advancedAnalysis.periodicity ? '- 周期性分析からの支持度: ○%' : ''}` : ''}
+   ${advancedAnalysis.periodicity ? '- 周期性分析からの支持度: ○%' : ''}
+   ${advancedAnalysis.wavelet_analysis ? '- ウェーブレット変換からの支持度: ○%' : ''}
+   ${advancedAnalysis.pca_analysis ? '- 主成分分析からの支持度: ○%' : ''}
+   ${advancedAnalysis.tsne_analysis ? '- t-SNE可視化からの支持度: ○%' : ''}
+   ${advancedAnalysis.continuity_analysis ? '- 連続性分析からの支持度: ○%' : ''}
+   ${advancedAnalysis.change_points ? '- 変化点検出からの支持度: ○%' : ''}
+   ${advancedAnalysis.network_analysis ? '- ネットワーク分析からの支持度: ○%' : ''}
+   ${advancedAnalysis.genetic_optimization ? '- 遺伝的アルゴリズム最適化からの支持度: ○%' : ''}` : ''}
    - 総合信頼度: ○%（各手法の重み付き平均）
    - 予測根拠の要約（2-3行）
 
