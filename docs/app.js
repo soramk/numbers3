@@ -1385,7 +1385,7 @@ function getMethodDataUsageBadgeHtml(methodKey) {
     let usedText = '';
     switch (methodKey) {
         case 'chaos':
-            usedText = `全履歴 ${totalRecords.toLocaleString()}件（位相解析は直近 ${recentPhasesCount || 20}件）`;
+            usedText = `全履歴 ${totalRecords.toLocaleString()}件（位相解析は全件使用）`;
             break;
         case 'markov':
         case 'bayesian':
@@ -1396,9 +1396,11 @@ function getMethodDataUsageBadgeHtml(methodKey) {
         case 'random_forest':
         case 'xgboost':
         case 'lightgbm':
-        case 'arima':
         case 'stacking':
-            usedText = `全履歴 ${totalRecords.toLocaleString()}件（特徴量に直近20回を利用）`;
+            usedText = `全履歴 ${totalRecords.toLocaleString()}件（学習データは全件、特徴量は最大100回まで）`;
+            break;
+        case 'arima':
+            usedText = `全履歴 ${totalRecords.toLocaleString()}件（全件の時系列データを使用）`;
             break;
         default:
             usedText = `${totalRecords.toLocaleString()}件`;

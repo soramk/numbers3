@@ -874,8 +874,10 @@ class NumbersAnalyzer:
         """
         from sklearn.ensemble import RandomForestRegressor
         
-        # 特徴量を作成（過去N回のデータ）
-        window_size = 20
+        # 特徴量を作成（全データを使用）
+        # 過去データの特徴量は最大100回まで使用（全データを使うと特徴量が膨大になるため）
+        max_past_window = min(100, len(self.df))
+        window_size = max_past_window
         
         # 高度な特徴量を含むDataFrameを取得
         df_features = self.create_advanced_features()
@@ -883,9 +885,10 @@ class NumbersAnalyzer:
         features = []
         targets = []
         
+        # 全データから学習データを作成（window_size以降の全データを使用）
         for i in range(window_size, len(df_features)):
             feature = []
-            # 過去window_size回の基本データ
+            # 過去window_size回の基本データ（全データの場合は最大100回まで）
             for j in range(window_size):
                 idx = i - window_size + j
                 feature.extend([
@@ -1152,8 +1155,10 @@ class NumbersAnalyzer:
             print("[predict_with_lightgbm] LightGBMがインストールされていません")
             return None
         
-        # 特徴量を作成（過去N回のデータ）
-        window_size = 20
+        # 特徴量を作成（全データを使用）
+        # 過去データの特徴量は最大100回まで使用（全データを使うと特徴量が膨大になるため）
+        max_past_window = min(100, len(self.df))
+        window_size = max_past_window
         
         # 高度な特徴量を含むDataFrameを取得
         df_features = self.create_advanced_features()
@@ -1161,9 +1166,10 @@ class NumbersAnalyzer:
         features = []
         targets = []
         
+        # 全データから学習データを作成（window_size以降の全データを使用）
         for i in range(window_size, len(df_features)):
             feature = []
-            # 過去window_size回の基本データ
+            # 過去window_size回の基本データ（全データの場合は最大100回まで）
             for j in range(window_size):
                 idx = i - window_size + j
                 feature.extend([
@@ -1323,15 +1329,20 @@ class NumbersAnalyzer:
         from sklearn.linear_model import RidgeCV
         from sklearn.ensemble import RandomForestRegressor
         
-        # 特徴量を作成
-        window_size = 20
+        # 特徴量を作成（全データを使用）
+        # 過去データの特徴量は最大100回まで使用（全データを使うと特徴量が膨大になるため）
+        max_past_window = min(100, len(self.df))
+        window_size = max_past_window
+        
         df_features = self.create_advanced_features()
         
         features = []
         targets = []
         
+        # 全データから学習データを作成（window_size以降の全データを使用）
         for i in range(window_size, len(df_features)):
             feature = []
+            # 過去window_size回の基本データ（全データの場合は最大100回まで）
             for j in range(window_size):
                 idx = i - window_size + j
                 feature.extend([
@@ -1541,7 +1552,8 @@ class NumbersAnalyzer:
         Returns:
             予測結果の辞書
         """
-        recent_phases = self.get_recent_phases(20)
+        # 全件の位相データを使用
+        recent_phases = self.get_recent_phases(len(self.df))
         
         # 位相のトレンドを分析
         predictions = {}
@@ -1939,7 +1951,7 @@ class NumbersAnalyzer:
                 for idx, item in enumerate(mini_top5)
             ],
             'methods': methods_dict,
-            'recent_phases': self.get_recent_phases(20),
+            'recent_phases': self.get_recent_phases(len(self.df)),
             'statistics': {
                 'total_records': len(self.df),
                 'last_date': self.df.iloc[-1]['date'].strftime('%Y-%m-%d'),
