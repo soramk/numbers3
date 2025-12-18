@@ -243,6 +243,18 @@ analyzeBtn.addEventListener('click', async () => {
                 promptArea.classList.remove('hidden');
                 promptContent.style.display = 'none'; // 初期状態は非表示
                 togglePromptBtn.textContent = '表示'; // 初期状態のボタンテキスト
+                
+                // デバッグ: プロンプトに新しい分析手法が含まれているか確認
+                console.log('[analyzeBtn] プロンプト生成完了');
+                console.log('[analyzeBtn] プロンプトに含まれる分析手法:', {
+                    hasWavelet: prompt.includes('ウェーブレット変換'),
+                    hasPCA: prompt.includes('主成分分析'),
+                    hasTSNE: prompt.includes('t-SNE'),
+                    hasContinuity: prompt.includes('連続性分析'),
+                    hasChangePoints: prompt.includes('変化点検出'),
+                    hasNetwork: prompt.includes('ネットワーク分析'),
+                    hasGenetic: prompt.includes('遺伝的アルゴリズム')
+                });
             }
         }
         
