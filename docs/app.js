@@ -1620,22 +1620,39 @@ function renderChaosDetail(method, analysis) {
     
     html += '<h4 class="font-bold text-lg text-gray-800 mb-3">位相トレンド分析</h4>';
     
-    for (const [pos, posTrends] of Object.entries(trends)) {
-        const posName = {'hundred': '百の位', 'ten': '十の位', 'one': '一の位'}[pos] || pos;
-        html += `<div class="bg-white rounded-lg p-3 mb-2">`;
-        html += `<p class="font-semibold text-gray-700 mb-2">${posName}</p>`;
-        
-        if (posTrends.short) {
-            html += `<div class="text-sm text-gray-600">`;
-            html += `<p>短期トレンド（直近10回）: 平均 ${posTrends.short.mean.toFixed(2)}, 傾き ${posTrends.short.trend > 0 ? '+' : ''}${posTrends.short.trend.toFixed(3)}, ボラティリティ ${posTrends.short.volatility.toFixed(2)}</p>`;
-            html += `</div>`;
+    // 分析過程の説明
+    html += '<div class="bg-white rounded-lg p-4 mb-4">';
+    html += '<h5 class="font-semibold text-gray-700 mb-3">分析プロセス</h5>';
+    html += '<ol class="text-sm text-gray-600 space-y-2 list-decimal list-inside">';
+    html += '<li><strong>位相データの取得</strong>: 全件の位相データを使用（各桁ごとに位相空間での位置を計算）</li>';
+    html += '<li><strong>線形回帰による予測</strong>: 位相の時系列データに対して線形回帰を適用し、次回の位相を予測</li>';
+    html += '<li><strong>位相から数字への変換</strong>: 予測された位相をsin関数を使用して0-9の数字に変換</li>';
+    html += '<li><strong>予測値の生成</strong>: 各桁の予測値を組み合わせて3桁の数字を生成</li>';
+    html += '</ol>';
+    html += '</div>';
+    
+    // 位相データの統計
+    if (predictionData.recent_phases) {
+        const phases = predictionData.recent_phases;
+        html += '<div class="bg-white rounded-lg p-4 mb-4">';
+        html += '<h5 class="font-semibold text-gray-700 mb-3">位相データ統計</h5>';
+        html += '<div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">';
+        for (const [pos, posPhases] of Object.entries(phases)) {
+            const posName = {'hundred': '百の位', 'ten': '十の位', 'one': '一の位'}[pos] || pos;
+            if (posPhases && posPhases.length > 0) {
+                const mean = posPhases.reduce((a, b) => a + b, 0) / posPhases.length;
+                const min = Math.min(...posPhases);
+                const max = Math.max(...posPhases);
+                html += `<div class="bg-gray-50 p-3 rounded-lg">`;
+                html += `<div class="font-semibold text-gray-700 mb-1">${posName}</div>`;
+                html += `<div class="text-gray-600">データ数: ${posPhases.length}件</div>`;
+                html += `<div class="text-gray-600">平均: ${mean.toFixed(3)}</div>`;
+                html += `<div class="text-gray-600">範囲: ${min.toFixed(3)} ～ ${max.toFixed(3)}</div>`;
+                html += `</div>`;
+            }
         }
-        if (posTrends.mid) {
-            html += `<div class="text-sm text-gray-600">`;
-            html += `<p>中期トレンド（直近50回）: 平均 ${posTrends.mid.mean.toFixed(2)}, 傾き ${posTrends.mid.trend > 0 ? '+' : ''}${posTrends.mid.trend.toFixed(3)}</p>`;
-            html += `</div>`;
-        }
-        html += `</div>`;
+        html += '</div>';
+        html += '</div>';
     }
     
     html += '</div>';
@@ -1662,13 +1679,32 @@ function renderMarkovDetail(method, analysis) {
     
     html += '<h4 class="font-bold text-lg text-gray-800 mb-3">遷移確率分析</h4>';
     
-    html += '<div class="bg-white rounded-lg p-3">';
-    html += '<p class="text-sm text-gray-700 mb-2">自己相関（前回との相関）:</p>';
+    // 分析過程の説明
+    html += '<div class="bg-white rounded-lg p-4 mb-4">';
+    html += '<h5 class="font-semibold text-gray-700 mb-3">分析プロセス</h5>';
+    html += '<ol class="text-sm text-gray-600 space-y-2 list-decimal list-inside">';
+    html += '<li><strong>遷移確率行列の構築</strong>: 全履歴データから、各桁の0-9の数字間の遷移回数をカウント</li>';
+    html += '<li><strong>確率の正規化</strong>: 各行の合計が1になるように正規化し、遷移確率行列を完成</li>';
+    html += '<li><strong>予測の実行</strong>: 最新の数字から、遷移確率行列を使用して最も確率の高い次の数字を予測</li>';
+    html += '<li><strong>各桁の独立予測</strong>: 百の位、十の位、一の位をそれぞれ独立したマルコフ連鎖として予測</li>';
+    html += '</ol>';
+    html += '</div>';
+    
+    // 自己相関の表示
+    html += '<div class="bg-white rounded-lg p-3 mb-4">';
+    html += '<p class="text-sm text-gray-700 mb-2 font-semibold">自己相関（前回との相関）:</p>';
     html += `<ul class="text-sm text-gray-600 space-y-1">`;
-    html += `<li>百の位: ${(correlations.hundred_lag1 * 100).toFixed(2)}%</li>`;
-    html += `<li>十の位: ${(correlations.ten_lag1 * 100).toFixed(2)}%</li>`;
-    html += `<li>一の位: ${(correlations.one_lag1 * 100).toFixed(2)}%</li>`;
+    if (correlations.hundred_lag1 !== undefined) {
+        html += `<li>百の位: ${(correlations.hundred_lag1 * 100).toFixed(2)}%</li>`;
+    }
+    if (correlations.ten_lag1 !== undefined) {
+        html += `<li>十の位: ${(correlations.ten_lag1 * 100).toFixed(2)}%</li>`;
+    }
+    if (correlations.one_lag1 !== undefined) {
+        html += `<li>一の位: ${(correlations.one_lag1 * 100).toFixed(2)}%</li>`;
+    }
     html += `</ul>`;
+    html += '<p class="text-xs text-gray-500 mt-2">※自己相関が高いほど、前回の値が次回の値に影響を与えやすい</p>';
     html += '</div>';
     
     html += '</div>';
@@ -1698,10 +1734,20 @@ function renderBayesianDetail(method, analysis) {
     
     html += '<h4 class="font-bold text-lg text-gray-800 mb-3">ベイズ更新分析</h4>';
     
-    // ベイズ統計の説明
+    // 分析過程の説明
     html += '<div class="bg-white rounded-lg p-4 mb-4">';
-    html += '<p class="text-sm text-gray-700 mb-3">ベイズ統計では、過去の出現頻度を事前確率として、最新のトレンドを尤度として組み合わせて事後確率を計算します。</p>';
-    html += '<p class="text-sm text-gray-700">ベイズの定理: P(仮説|データ) = P(データ|仮説) × P(仮説) / P(データ)</p>';
+    html += '<h5 class="font-semibold text-gray-700 mb-3">分析プロセス</h5>';
+    html += '<ol class="text-sm text-gray-600 space-y-2 list-decimal list-inside">';
+    html += '<li><strong>事前分布の計算</strong>: 全履歴データから各桁の各数字（0-9）の出現頻度を計算（重み: 0.3）</li>';
+    html += '<li><strong>尤度の計算</strong>: 直近20回のデータから各桁の各数字の出現頻度を計算（重み: 0.7）</li>';
+    html += '<li><strong>事後確率の計算</strong>: 事前分布と尤度の重み付き平均で事後確率を計算（P(事後) = 0.3 × P(事前) + 0.7 × P(尤度)）</li>';
+    html += '<li><strong>予測の実行</strong>: 各桁で事後確率が最も高い数字を選択し、3桁の数字を生成</li>';
+    html += '</ol>';
+    html += '<div class="mt-3 p-3 bg-blue-50 rounded-lg">';
+    html += '<p class="text-xs text-blue-800 font-semibold mb-1">ベイズの定理（簡易版）:</p>';
+    html += '<p class="text-xs text-blue-700">P(仮説|データ) = P(データ|仮説) × P(仮説) / P(データ)</p>';
+    html += '<p class="text-xs text-blue-600 mt-2">※本実装では、重み付き平均により簡易的に事後確率を計算</p>';
+    html += '</div>';
     html += '</div>';
     
     // 頻出パターン（事前確率の参考）
@@ -2273,6 +2319,17 @@ function renderPatternDetail(method, analysis) {
     
     html += '<h4 class="font-bold text-lg text-gray-800 mb-3">頻出パターン分析</h4>';
     
+    // 分析過程の説明
+    html += '<div class="bg-white rounded-lg p-4 mb-4">';
+    html += '<h5 class="font-semibold text-gray-700 mb-3">分析プロセス</h5>';
+    html += '<ol class="text-sm text-gray-600 space-y-2 list-decimal list-inside">';
+    html += '<li><strong>頻出パターンの抽出</strong>: 全履歴データから、3桁コンボ（set_top）と2桁コンボ（mini_top、hundred_ten_top、ten_one_top）の出現頻度を計算</li>';
+    html += '<li><strong>最新データとの照合</strong>: 最新の数字（百の位と十の位、十の位と一の位）が頻出パターンに含まれているか確認</li>';
+    html += '<li><strong>予測の実行</strong>: 頻出パターンに基づいて次の数字を予測（百の位と十の位の組み合わせから一の位を、十の位と一の位の組み合わせから百の位を予測）</li>';
+    html += '<li><strong>予測値の生成</strong>: 各桁の予測値を組み合わせて3桁の数字を生成</li>';
+    html += '</ol>';
+    html += '</div>';
+    
     if (patterns.set_top) {
         html += '<div class="bg-white rounded-lg p-3 mb-2">';
         html += '<p class="text-sm font-semibold text-gray-700 mb-2">頻出3桁コンボ（上位5件）:</p>';
@@ -2392,13 +2449,14 @@ function renderRandomForestDetail(method, analysis) {
     html += '<div class="bg-white rounded-lg p-4">';
     html += '<h5 class="font-semibold text-gray-700 mb-3">使用している特徴量</h5>';
     html += '<ul class="text-sm text-gray-600 space-y-2">';
-    html += '<li>• <strong>過去20回のデータ</strong>: 各桁の値、合計値、範囲</li>';
-    html += '<li>• <strong>移動平均（MA）</strong>: 5回、10回、20回、50回の移動平均</li>';
-    html += '<li>• <strong>指数移動平均（EMA）</strong>: より最近のデータに重みを付けた平均</li>';
-    html += '<li>• <strong>RSI（相対力指数）</strong>: 上昇と下降の強さを測定</li>';
-    html += '<li>• <strong>MACD</strong>: トレンドの変化を検出</li>';
-    html += '<li>• <strong>ボリンジャーバンド</strong>: 統計的な価格帯を表示</li>';
+    html += '<li>• <strong>過去最大100回の基本データ</strong>: 各桁の値、合計値、範囲（全データを使用する場合は最大100回まで）</li>';
+    html += '<li>• <strong>移動平均（MA）</strong>: 5回、10回、20回、50回の移動平均（全データから計算）</li>';
+    html += '<li>• <strong>指数移動平均（EMA）</strong>: より最近のデータに重みを付けた平均（全データから計算）</li>';
+    html += '<li>• <strong>RSI（相対力指数）</strong>: 上昇と下降の強さを測定（全データから計算）</li>';
+    html += '<li>• <strong>MACD</strong>: トレンドの変化を検出（全データから計算）</li>';
+    html += '<li>• <strong>ボリンジャーバンド</strong>: 統計的な価格帯を表示（全データから計算）</li>';
     html += '</ul>';
+    html += '<p class="text-xs text-gray-500 mt-2">※学習データは全件使用、特徴量の「過去N回の基本データ」は最大100回までに制限</p>';
     html += '</div>';
     
     html += '</div>';
@@ -2462,11 +2520,11 @@ function renderXGBoostDetail(method, analysis) {
     html += '<div class="bg-white rounded-lg p-4">';
     html += '<h5 class="font-semibold text-gray-700 mb-3">予測プロセス</h5>';
     html += '<ol class="text-sm text-gray-600 space-y-2 list-decimal list-inside">';
-    html += '<li>過去20回のデータと高度な特徴量（MA、EMA、RSI、MACDなど）を準備</li>';
-    html += '<li>各桁（百の位、十の位、一の位）に対して個別にXGBoostモデルを学習</li>';
-    html += '<li>勾配ブースティングにより、段階的に予測精度を向上</li>';
-    html += '<li>特徴量の重要度を計算し、予測に寄与する要因を分析</li>';
-    html += '<li>最新データから各桁の値を予測し、3桁の数字を生成</li>';
+    html += '<li><strong>特徴量の準備</strong>: 全データから学習データを作成（過去最大100回の基本データ + 高度な特徴量: MA、EMA、RSI、MACDなど）</li>';
+    html += '<li><strong>モデルの学習</strong>: 各桁（百の位、十の位、一の位）に対して個別にXGBoostモデルを学習（全データを使用）</li>';
+    html += '<li><strong>勾配ブースティング</strong>: 弱学習器を順次追加し、前のモデルの誤差を修正することで段階的に予測精度を向上</li>';
+    html += '<li><strong>特徴量の重要度</strong>: 各特徴量が予測にどれだけ寄与しているかを計算し、予測に寄与する要因を分析</li>';
+    html += '<li><strong>予測の実行</strong>: 最新データから各桁の値を予測し、0-9の範囲に丸めて3桁の数字を生成</li>';
     html += '</ol>';
     html += '</div>';
     
@@ -2531,11 +2589,11 @@ function renderLightGBMDetail(method, analysis) {
     html += '<div class="bg-white rounded-lg p-4">';
     html += '<h5 class="font-semibold text-gray-700 mb-3">予測プロセス</h5>';
     html += '<ol class="text-sm text-gray-600 space-y-2 list-decimal list-inside">';
-    html += '<li>過去20回のデータと高度な特徴量を準備</li>';
-    html += '<li>GOSS（勾配ベースサンプリング）により効率的にデータをサンプリング</li>';
-    html += '<li>各桁に対して個別にLightGBMモデルを学習（リーフワイズ成長）</li>';
-    html += '<li>EFB（排他的特徴量バンドリング）により特徴量を最適化</li>';
-    html += '<li>最新データから各桁の値を予測し、3桁の数字を生成</li>';
+    html += '<li><strong>特徴量の準備</strong>: 全データから学習データを作成（過去最大100回の基本データ + 高度な特徴量: MA、EMA、RSI、MACDなど）</li>';
+    html += '<li><strong>GOSS（勾配ベースサンプリング）</strong>: 勾配の大きいデータポイントを優先的に使用し、効率的にデータをサンプリング</li>';
+    html += '<li><strong>モデルの学習</strong>: 各桁に対して個別にLightGBMモデルを学習（全データを使用、リーフワイズ成長）</li>';
+    html += '<li><strong>EFB（排他的特徴量バンドリング）</strong>: 互いに排他的な特徴量を束ねることで、特徴量を最適化</li>';
+    html += '<li><strong>予測の実行</strong>: 最新データから各桁の値を予測し、0-9の範囲に丸めて3桁の数字を生成</li>';
     html += '</ol>';
     html += '</div>';
     
@@ -2592,11 +2650,11 @@ function renderARIMADetail(method, analysis) {
     html += '<div class="bg-white rounded-lg p-4">';
     html += '<h5 class="font-semibold text-gray-700 mb-3">予測プロセス</h5>';
     html += '<ol class="text-sm text-gray-600 space-y-2 list-decimal list-inside">';
-    html += '<li>各桁の時系列データを取得</li>';
-    html += '<li>時系列が定常かどうかを確認（定常でない場合は差分を適用）</li>';
-    html += '<li>ARIMA(2,1,2)モデルを各桁に対して学習</li>';
-    html += '<li>過去の値と誤差項から次の値を予測</li>';
-    html += '<li>予測値を0-9の範囲に丸めて、3桁の数字を生成</li>';
+    html += '<li><strong>時系列データの取得</strong>: 全件の時系列データを各桁ごとに取得</li>';
+    html += '<li><strong>ARIMA(2,1,2)モデルの適用</strong>: 各桁に対してARIMA(2,1,2)モデルを適用（AR項: 過去2回の値、I項: 1回の差分、MA項: 過去2回の誤差項）</li>';
+    html += '<li><strong>モデルの学習</strong>: 全データを使用してARIMAモデルを学習</li>';
+    html += '<li><strong>予測の実行</strong>: 学習したモデルから1ステップ先を予測（過去の値と誤差項を使用）</li>';
+    html += '<li><strong>予測値の調整</strong>: 予測値を0-9の範囲に丸めて、3桁の数字を生成</li>';
     html += '</ol>';
     html += '</div>';
     
@@ -2663,12 +2721,12 @@ function renderStackingDetail(method, analysis) {
     html += '<div class="bg-white rounded-lg p-4">';
     html += '<h5 class="font-semibold text-gray-700 mb-3">予測プロセス</h5>';
     html += '<ol class="text-sm text-gray-600 space-y-2 list-decimal list-inside">';
-    html += '<li>過去20回のデータと高度な特徴量を準備</li>';
-    html += '<li>3-foldクロスバリデーションを使用して、各ベースモデルを学習</li>';
-    html += '<li>各ベースモデルが各桁の値を予測</li>';
-    html += '<li>ベースモデルの予測結果をメタモデル（Ridge回帰）に入力</li>';
-    html += '<li>メタモデルが最適な組み合わせ方を学習し、最終的な予測を生成</li>';
-    html += '<li>予測値を0-9の範囲に丸めて、3桁の数字を生成</li>';
+    html += '<li><strong>特徴量の準備</strong>: 全データから学習データを作成（過去最大100回の基本データ + 高度な特徴量: MA、EMA、RSI、MACDなど）</li>';
+    html += '<li><strong>ベースモデルの学習</strong>: 3-foldクロスバリデーションを使用して、ランダムフォレスト、XGBoost、LightGBMを各桁ごとに学習（全データを使用）</li>';
+    html += '<li><strong>ベースモデルの予測</strong>: 各ベースモデルが各桁の値を予測</li>';
+    html += '<li><strong>メタモデルの学習</strong>: ベースモデルの予測結果を特徴量として、メタモデル（Ridge回帰）を学習</li>';
+    html += '<li><strong>最終予測の生成</strong>: メタモデルが最適な組み合わせ方を学習し、最終的な予測を生成</li>';
+    html += '<li><strong>予測値の調整</strong>: 予測値を0-9の範囲に丸めて、3桁の数字を生成</li>';
     html += '</ol>';
     html += '</div>';
     
