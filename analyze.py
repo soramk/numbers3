@@ -1796,9 +1796,19 @@ class NumbersAnalyzer:
             return None
         
         try:
+            # データ量を制限（最新250件のみ使用、計算時間を大幅に短縮）
+            # データ量が少ない場合は全データを使用
+            max_data_points = 250
+            if len(self.df) <= max_data_points:
+                df_for_pca = self.df
+                print(f"[analyze_pca] データ量が{len(self.df)}件のため、全データを使用します")
+            else:
+                df_for_pca = self.df.tail(max_data_points)
+                print(f"[analyze_pca] データ量を{max_data_points}件に制限して計算します（全{len(self.df)}件中）")
+            
             # 特徴量を作成（各桁の値、合計値、範囲など）
             features = []
-            for idx, row in self.df.iterrows():
+            for idx, row in df_for_pca.iterrows():
                 feature = [
                     float(row['hundred']),
                     float(row['ten']),
@@ -1857,9 +1867,20 @@ class NumbersAnalyzer:
             return None
         
         try:
+            # データ量を制限（最新250件のみ使用、計算時間を大幅に短縮）
+            # t-SNEの計算量はO(n²)のため、データ量を減らすことで計算時間を大幅に短縮
+            # データ量が少ない場合は全データを使用
+            max_data_points = 250
+            if len(self.df) <= max_data_points:
+                df_for_tsne = self.df
+                print(f"[analyze_tsne] データ量が{len(self.df)}件のため、全データを使用します")
+            else:
+                df_for_tsne = self.df.tail(max_data_points)
+                print(f"[analyze_tsne] データ量を{max_data_points}件に制限して計算します（全{len(self.df)}件中）")
+            
             # 特徴量を作成
             features = []
-            for idx, row in self.df.iterrows():
+            for idx, row in df_for_tsne.iterrows():
                 feature = [
                     float(row['hundred']),
                     float(row['ten']),
@@ -1876,7 +1897,9 @@ class NumbersAnalyzer:
             features_scaled = scaler.fit_transform(features_array)
             
             # t-SNE（2次元に変換）
-            tsne = TSNE(n_components=2, random_state=42, perplexity=min(30, len(features_scaled) - 1))
+            # perplexityはデータ量に応じて調整（30以下、データ量-1以下）
+            perplexity = min(30, len(features_scaled) - 1, max(5, len(features_scaled) // 4))
+            tsne = TSNE(n_components=2, random_state=42, perplexity=perplexity)
             transformed = tsne.fit_transform(features_scaled)
             
             return {
