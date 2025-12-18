@@ -381,7 +381,7 @@ function renderSetPredictions() {
     container.innerHTML = '';
 
     predictionData.set_predictions.forEach((pred, index) => {
-        const card = createPredictionCard(pred, index + 1, 'blue');
+        const card = createPredictionCard(pred, index + 1, 'blue', 'set');
         card.style.opacity = '0';
         card.style.transform = 'translateY(20px)';
         container.appendChild(card);
@@ -403,7 +403,7 @@ function renderMiniPredictions() {
     container.innerHTML = '';
 
     predictionData.mini_predictions.forEach((pred, index) => {
-        const card = createPredictionCard(pred, index + 1, 'green');
+        const card = createPredictionCard(pred, index + 1, 'green', 'mini');
         card.style.opacity = '0';
         card.style.transform = 'translateY(20px)';
         container.appendChild(card);
@@ -421,7 +421,7 @@ function renderMiniPredictions() {
 /**
  * 予測カードを作成
  */
-function createPredictionCard(prediction, rank, color) {
+function createPredictionCard(prediction, rank, color, type = 'set') {
     const card = document.createElement('div');
     
     // カラーマッピング（より洗練されたグラデーション）
@@ -458,6 +458,62 @@ function createPredictionCard(prediction, rank, color) {
                           rank === 4 ? 'bg-gradient-to-r from-blue-300 to-blue-400 text-white' :
                           'bg-gradient-to-r from-purple-300 to-purple-400 text-white';
     
+    // 関連する予測手法を見つける
+    const relatedMethods = findRelatedMethods(prediction.number, type);
+    
+    // 関連手法のアイコンを生成
+    let relatedMethodsIcons = '';
+    if (relatedMethods.length > 0) {
+        const methodIcons = {
+            'chaos': `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>`,
+            'markov': `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>`,
+            'bayesian': `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>`,
+            'periodicity': `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>`,
+            'pattern': `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>`,
+            'random_forest': `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path></svg>`,
+            'xgboost': `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>`,
+            'lightgbm': `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>`,
+            'arima': `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>`,
+            'stacking': `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>`,
+            'hmm': `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>`,
+            'lstm': `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path></svg>`,
+            'conformal': `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`,
+            'kalman': `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>`
+        };
+        
+        const methodColorClasses = {
+            'chaos': 'bg-purple-100 text-purple-700',
+            'markov': 'bg-blue-100 text-blue-700',
+            'bayesian': 'bg-green-100 text-green-700',
+            'periodicity': 'bg-orange-100 text-orange-700',
+            'pattern': 'bg-indigo-100 text-indigo-700',
+            'random_forest': 'bg-emerald-100 text-emerald-700',
+            'xgboost': 'bg-red-100 text-red-700',
+            'lightgbm': 'bg-yellow-100 text-yellow-700',
+            'arima': 'bg-cyan-100 text-cyan-700',
+            'stacking': 'bg-violet-100 text-violet-700',
+            'hmm': 'bg-teal-100 text-teal-700',
+            'lstm': 'bg-pink-100 text-pink-700',
+            'conformal': 'bg-lime-100 text-lime-700',
+            'kalman': 'bg-sky-100 text-sky-700'
+        };
+        
+        relatedMethodsIcons = `
+            <div class="mt-3 pt-3 border-t border-gray-200">
+                <p class="text-xs font-semibold text-gray-600 mb-2">関連する予測手法</p>
+                <div class="flex flex-wrap gap-2">
+                    ${relatedMethods.slice(0, 6).map(methodKey => `
+                        <div class="flex items-center gap-1 px-2 py-1 ${methodColorClasses[methodKey] || 'bg-gray-100 text-gray-700'} rounded-lg text-xs font-semibold" title="${getMethodName(methodKey)}">
+                            ${methodIcons[methodKey] || ''}
+                            <span class="hidden sm:inline">${getMethodNameShort(methodKey)}</span>
+                        </div>
+                    `).join('')}
+                    ${relatedMethods.length > 6 ? `<div class="px-2 py-1 bg-gray-100 text-gray-600 rounded-lg text-xs font-semibold">+${relatedMethods.length - 6}</div>` : ''}
+                </div>
+            </div>
+        `;
+    }
+    
     card.innerHTML = `
         <div class="flex items-center justify-center mb-4">
             <span class="px-3 py-1 ${rankBadgeStyle} rounded-full text-xs font-bold shadow-md">第${rank}候補</span>
@@ -480,9 +536,80 @@ function createPredictionCard(prediction, rank, color) {
                 <div class="${colors.bar} h-3 rounded-full transition-all duration-1000 ease-out shadow-sm" style="width: ${confidencePercent}%"></div>
             </div>
         </div>
+        ${relatedMethodsIcons}
     `;
     
     return card;
+}
+
+/**
+ * 予測番号に関連する予測手法を見つける
+ */
+function findRelatedMethods(predictionNumber, type) {
+    if (!predictionData || !predictionData.methods) {
+        return [];
+    }
+    
+    const relatedMethods = [];
+    const methods = predictionData.methods;
+    
+    Object.keys(methods).forEach(methodKey => {
+        const method = methods[methodKey];
+        if (!method) return;
+        
+        const methodPrediction = type === 'set' ? method.set_prediction : method.mini_prediction;
+        if (methodPrediction === predictionNumber) {
+            relatedMethods.push(methodKey);
+        }
+    });
+    
+    return relatedMethods;
+}
+
+/**
+ * 予測手法の短縮名を取得
+ */
+function getMethodNameShort(methodKey) {
+    const shortNames = {
+        'chaos': 'カオス',
+        'markov': 'マルコフ',
+        'bayesian': 'ベイズ',
+        'periodicity': '周期性',
+        'pattern': 'パターン',
+        'random_forest': 'RF',
+        'xgboost': 'XGB',
+        'lightgbm': 'LGBM',
+        'arima': 'ARIMA',
+        'stacking': 'スタッキング',
+        'hmm': 'HMM',
+        'lstm': 'LSTM',
+        'conformal': 'コンフォーマル',
+        'kalman': 'カルマン'
+    };
+    return shortNames[methodKey] || methodKey;
+}
+
+/**
+ * 予測手法の正式名を取得
+ */
+function getMethodName(methodKey) {
+    const methodNames = {
+        'chaos': 'カオス理論',
+        'markov': 'マルコフ連鎖',
+        'bayesian': 'ベイズ統計',
+        'periodicity': '周期性分析',
+        'pattern': '頻出パターン分析',
+        'random_forest': 'ランダムフォレスト',
+        'xgboost': 'XGBoost',
+        'lightgbm': 'LightGBM',
+        'arima': 'ARIMA',
+        'stacking': 'スタッキング',
+        'hmm': '隠れマルコフモデル（HMM）',
+        'lstm': 'LSTM（長短期記憶）',
+        'conformal': 'コンフォーマル予測',
+        'kalman': 'カルマンフィルタ'
+    };
+    return methodNames[methodKey] || methodKey;
 }
 
 /**
