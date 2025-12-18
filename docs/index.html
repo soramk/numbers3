@@ -56,10 +56,114 @@
         .phase-tab-btn:hover:not(.active) {
             color: rgb(99, 102, 241);
         }
+        .sidebar-link {
+            transition: all 0.2s ease;
+        }
+        .sidebar-link:hover {
+            background: rgba(99, 102, 241, 0.1);
+            transform: translateX(4px);
+        }
+        .sidebar-link.active {
+            background: rgba(99, 102, 241, 0.15);
+            border-left: 3px solid rgb(99, 102, 241);
+        }
+        .section-content {
+            scroll-margin-top: 100px;
+        }
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 30;
+        }
+        .sidebar-overlay.open {
+            display: block;
+        }
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+            .sidebar.open {
+                transform: translateX(0);
+            }
+        }
     </style>
 </head>
 <body class="min-h-screen">
-    <div class="container mx-auto px-4 py-6 md:py-12 max-w-6xl">
+    <!-- モバイルメニューボタン -->
+    <button id="mobileMenuBtn" class="fixed top-4 left-4 z-50 md:hidden bg-white/90 backdrop-blur-sm p-3 rounded-lg shadow-lg">
+        <svg class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+    </button>
+
+    <!-- サイドバーオーバーレイ（モバイル用） -->
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
+    <!-- サイドバー -->
+    <aside id="sidebar" class="fixed left-0 top-0 h-full w-64 bg-white/95 backdrop-blur-sm shadow-xl z-40 sidebar overflow-y-auto">
+        <div class="p-6">
+            <div class="mb-8 flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-extrabold bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                        ナンバーズ3
+                    </h1>
+                    <p class="text-sm text-gray-600 mt-1">予測ツール</p>
+                </div>
+                <button id="closeSidebarBtn" class="md:hidden text-gray-500 hover:text-gray-700">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+            
+            <nav class="space-y-2">
+                <a href="#predictions" class="sidebar-link active flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 font-medium">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                    統合予測結果
+                </a>
+                <a href="#phase-chart" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 font-medium">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                    位相推移グラフ
+                </a>
+                <a href="#methods" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 font-medium">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                    </svg>
+                    予測手法の詳細
+                </a>
+                <a href="#analysis" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 font-medium">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                    </svg>
+                    詳細分析結果
+                </a>
+            </nav>
+
+            <div class="mt-8 pt-8 border-t border-gray-200">
+                <a href="analyzer.html" class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-lg font-semibold hover:from-purple-600 hover:to-indigo-600 transition-all duration-300 text-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    詳細分析ツール
+                </a>
+            </div>
+        </div>
+    </aside>
+
+    <!-- メインコンテンツ -->
+    <div class="md:ml-64">
+        <div class="container mx-auto px-4 py-6 md:py-8 max-w-7xl">
         <!-- ヘッダー -->
         <header class="text-center mb-8 md:mb-12 fade-in">
             <div class="glass-card rounded-2xl p-6 md:p-8 mb-6">
@@ -100,6 +204,16 @@
 
         <!-- メインコンテンツ -->
         <div id="content" class="hidden space-y-6">
+            <!-- ヘッダー -->
+            <header class="text-center mb-6 fade-in">
+                <div class="glass-card rounded-2xl p-4 md:p-6">
+                    <h1 class="text-3xl md:text-4xl font-extrabold mb-2 bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                        ナンバーズ3予測ツール
+                    </h1>
+                    <p class="text-sm md:text-base text-gray-600">次回当選番号予測</p>
+                </div>
+            </header>
+
             <!-- 履歴選択 -->
             <div class="glass-card rounded-2xl p-5 md:p-6 fade-in">
                 <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
@@ -128,7 +242,7 @@
             </div>
 
             <!-- 統合予測結果 -->
-            <div class="glass-card rounded-2xl p-6 md:p-8 fade-in">
+            <div id="predictions" class="glass-card rounded-2xl p-6 md:p-8 fade-in section-content">
                 <div class="flex items-center gap-3 mb-6">
                     <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-lg">
                         <span class="text-white font-bold text-xl">🎯</span>
@@ -157,7 +271,7 @@
             </div>
 
             <!-- 位相グラフ -->
-            <div class="glass-card rounded-2xl p-6 md:p-8 fade-in">
+            <div id="phase-chart" class="glass-card rounded-2xl p-6 md:p-8 fade-in section-content">
                 <h2 class="text-2xl md:text-3xl font-bold text-gray-800 mb-6 flex items-center gap-3">
                     <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
@@ -185,7 +299,7 @@
             </div>
 
             <!-- 予測手法の詳細 -->
-            <div class="glass-card rounded-2xl p-6 md:p-8 fade-in">
+            <div id="methods" class="glass-card rounded-2xl p-6 md:p-8 fade-in section-content">
                 <h2 class="text-2xl md:text-3xl font-bold text-gray-800 mb-6 flex items-center gap-3">
                     <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
@@ -196,7 +310,7 @@
             </div>
 
             <!-- 詳細分析結果 -->
-            <div class="glass-card rounded-2xl p-6 md:p-8 fade-in">
+            <div id="analysis" class="glass-card rounded-2xl p-6 md:p-8 fade-in section-content">
                 <h2 class="text-2xl md:text-3xl font-bold text-gray-800 mb-6 flex items-center gap-3">
                     <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
@@ -416,8 +530,86 @@
             </div>
         </div>
     </div>
+    </div>
 
     <script src="app.js"></script>
+    <script>
+        // モバイルメニューの開閉
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
+        const closeSidebarBtn = document.getElementById('closeSidebarBtn');
+        
+        function openSidebar() {
+            sidebar.classList.add('open');
+            sidebarOverlay.classList.add('open');
+        }
+        
+        function closeSidebar() {
+            sidebar.classList.remove('open');
+            sidebarOverlay.classList.remove('open');
+        }
+        
+        if (mobileMenuBtn && sidebar) {
+            mobileMenuBtn.addEventListener('click', openSidebar);
+        }
+        
+        if (closeSidebarBtn) {
+            closeSidebarBtn.addEventListener('click', closeSidebar);
+        }
+        
+        if (sidebarOverlay) {
+            sidebarOverlay.addEventListener('click', closeSidebar);
+        }
+
+        // サイドバーリンクのクリック処理
+        document.querySelectorAll('.sidebar-link').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetId = link.getAttribute('href').substring(1);
+                const targetElement = document.getElementById(targetId);
+                
+                if (targetElement) {
+                    // アクティブ状態を更新
+                    document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+                    link.classList.add('active');
+                    
+                    // スムーズスクロール
+                    targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    
+                    // モバイルでメニューを閉じる
+                    if (window.innerWidth < 768) {
+                        sidebar.classList.remove('open');
+                    }
+                }
+            });
+        });
+
+        // スクロール時にアクティブなセクションを更新
+        const sections = document.querySelectorAll('.section-content');
+        const sidebarLinks = document.querySelectorAll('.sidebar-link');
+        
+        function updateActiveSection() {
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                const sectionHeight = section.clientHeight;
+                if (window.scrollY >= (sectionTop - 150)) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            sidebarLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href').substring(1) === current) {
+                    link.classList.add('active');
+                }
+            });
+        }
+
+        window.addEventListener('scroll', updateActiveSection);
+        updateActiveSection(); // 初期状態を設定
+    </script>
 </body>
 </html>
 
