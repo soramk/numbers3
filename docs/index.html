@@ -279,6 +279,139 @@
                         </button>
                         <div id="detail-frequency" class="analysis-detail-content hidden mt-4"></div>
                     </div>
+
+                    <!-- ウェーブレット変換 -->
+                    <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
+                        <button class="analysis-detail-btn w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors" data-analysis="wavelet">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold">
+                                    🌊
+                                </div>
+                                <div class="text-left">
+                                    <h3 class="font-bold text-gray-800">ウェーブレット変換</h3>
+                                    <p class="text-xs text-gray-600">時間-周波数解析によるパターン検出</p>
+                                </div>
+                            </div>
+                            <svg class="w-5 h-5 text-gray-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div id="detail-wavelet" class="analysis-detail-content hidden mt-4"></div>
+                    </div>
+
+                    <!-- 主成分分析（PCA） -->
+                    <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
+                        <button class="analysis-detail-btn w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors" data-analysis="pca">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold">
+                                    📊
+                                </div>
+                                <div class="text-left">
+                                    <h3 class="font-bold text-gray-800">主成分分析（PCA）</h3>
+                                    <p class="text-xs text-gray-600">データ構造の次元削減と可視化</p>
+                                </div>
+                            </div>
+                            <svg class="w-5 h-5 text-gray-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div id="detail-pca" class="analysis-detail-content hidden mt-4"></div>
+                    </div>
+
+                    <!-- t-SNE -->
+                    <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
+                        <button class="analysis-detail-btn w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors" data-analysis="tsne">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center text-white font-bold">
+                                    🎨
+                                </div>
+                                <div class="text-left">
+                                    <h3 class="font-bold text-gray-800">t-SNE可視化</h3>
+                                    <p class="text-xs text-gray-600">高次元データの2次元可視化</p>
+                                </div>
+                            </div>
+                            <svg class="w-5 h-5 text-gray-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div id="detail-tsne" class="analysis-detail-content hidden mt-4"></div>
+                    </div>
+
+                    <!-- 連続性分析 -->
+                    <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
+                        <button class="analysis-detail-btn w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors" data-analysis="continuity">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center text-white font-bold">
+                                    🔄
+                                </div>
+                                <div class="text-left">
+                                    <h3 class="font-bold text-gray-800">連続性分析</h3>
+                                    <p class="text-xs text-gray-600">連続出現・交互出現パターンの検出</p>
+                                </div>
+                            </div>
+                            <svg class="w-5 h-5 text-gray-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div id="detail-continuity" class="analysis-detail-content hidden mt-4"></div>
+                    </div>
+
+                    <!-- 変化点検出 -->
+                    <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
+                        <button class="analysis-detail-btn w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors" data-analysis="change_points">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-red-500 to-pink-500 flex items-center justify-center text-white font-bold">
+                                    ⚡
+                                </div>
+                                <div class="text-left">
+                                    <h3 class="font-bold text-gray-800">変化点検出</h3>
+                                    <p class="text-xs text-gray-600">トレンド変化・レジーム変化の検出</p>
+                                </div>
+                            </div>
+                            <svg class="w-5 h-5 text-gray-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div id="detail-change_points" class="analysis-detail-content hidden mt-4"></div>
+                    </div>
+
+                    <!-- ネットワーク分析 -->
+                    <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
+                        <button class="analysis-detail-btn w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors" data-analysis="network">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-white font-bold">
+                                    🕸️
+                                </div>
+                                <div class="text-left">
+                                    <h3 class="font-bold text-gray-800">ネットワーク分析</h3>
+                                    <p class="text-xs text-gray-600">グラフ理論による数字遷移の分析</p>
+                                </div>
+                            </div>
+                            <svg class="w-5 h-5 text-gray-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div id="detail-network" class="analysis-detail-content hidden mt-4"></div>
+                    </div>
+
+                    <!-- 遺伝的アルゴリズム最適化 -->
+                    <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
+                        <button class="analysis-detail-btn w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors" data-analysis="genetic">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-500 to-yellow-500 flex items-center justify-center text-white font-bold">
+                                    🧬
+                                </div>
+                                <div class="text-left">
+                                    <h3 class="font-bold text-gray-800">遺伝的アルゴリズム最適化</h3>
+                                    <p class="text-xs text-gray-600">予測手法の重み最適化</p>
+                                </div>
+                            </div>
+                            <svg class="w-5 h-5 text-gray-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
+                            </svg>
+                        </button>
+                        <div id="detail-genetic" class="analysis-detail-content hidden mt-4"></div>
+                    </div>
                 </div>
             </div>
         </div>
