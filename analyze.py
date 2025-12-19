@@ -2788,8 +2788,8 @@ class NumbersAnalyzer:
         clustering = None
         try:
             clustering = self.cluster_patterns(n_clusters=5)
-            except Exception as e:
-                print(f"[ensemble_predict] クラスタリング分析をスキップ: {e}")
+        except Exception as e:
+            print(f"[ensemble_predict] クラスタリング分析をスキップ: {e}")
         
         # methods辞書を構築
         methods_dict = {
