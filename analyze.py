@@ -1429,6 +1429,11 @@ class NumbersAnalyzer:
         features_array = np.nan_to_num(features_array, nan=0.0)
         targets_array = np.nan_to_num(targets_array, nan=0.0)
         
+        # LightGBMの警告を避けるため、pandas DataFrameに変換（特徴量名を付与）
+        n_features = features_array.shape[1]
+        feature_names = [f'feature_{i}' for i in range(n_features)]
+        features_df = pd.DataFrame(features_array, columns=feature_names)
+        
         # ベースモデルを定義
         base_models = [
             ('rf', RandomForestRegressor(n_estimators=50, random_state=42, max_depth=8, n_jobs=-1)),
@@ -1461,17 +1466,24 @@ class NumbersAnalyzer:
         # 各桁を個別に予測
         predictions = {}
         
+        import warnings
+        
+        # LightGBMの警告を抑制（StackingRegressor内部でNumPy配列に変換されるため）
+        warnings.filterwarnings('ignore', message='.*does not have valid feature names.*', category=UserWarning, module='sklearn.utils.validation')
+        
         for pos_idx, pos_name in enumerate(['hundred', 'ten', 'one']):
             target_pos = targets_array[:, pos_idx]
             
-            stacking_regressor.fit(features_array, target_pos)
+            # DataFrameを使用して学習（LightGBMの警告を回避）
+            stacking_regressor.fit(features_df, target_pos)
             
-            # 最新データから予測
+            # 最新データから予測（DataFrame形式で）
             latest_features = features[-1]
             latest_features_array = np.array(latest_features).reshape(1, -1)
             latest_features_array = np.nan_to_num(latest_features_array, nan=0.0)
+            latest_features_df = pd.DataFrame(latest_features_array, columns=feature_names)
             
-            predicted = stacking_regressor.predict(latest_features_array)[0]
+            predicted = stacking_regressor.predict(latest_features_df)[0]
             predictions[pos_name] = int(np.round(np.clip(predicted, 0, 9)))
         
         set_pred = f"{predictions['hundred']}{predictions['ten']}{predictions['one']}"
