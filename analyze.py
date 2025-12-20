@@ -1247,6 +1247,15 @@ class NumbersAnalyzer:
         features_array = np.nan_to_num(features_array, nan=0.0)
         targets_array = np.nan_to_num(targets_array, nan=0.0)
         
+        # 特徴量名を生成（DataFrame用）
+        feature_names = []
+        for j in range(window_size):
+            feature_names.extend([f'past_{j}_hundred', f'past_{j}_ten', f'past_{j}_one', f'past_{j}_sum', f'past_{j}_span'])
+        feature_names.extend(['hundred_ma20', 'ten_ma20', 'one_ma20', 'hundred_rsi', 'ten_rsi', 'one_rsi', 'hundred_macd', 'ten_macd', 'one_macd'])
+        
+        # DataFrameに変換（特徴量名を設定）
+        df_features_train = pd.DataFrame(features_array, columns=feature_names)
+        
         # LightGBMで学習（各桁を個別に予測）
         predictions = {}
         feature_importances = []
@@ -1262,14 +1271,15 @@ class NumbersAnalyzer:
                 n_jobs=-1,
                 verbose=-1
             )
-            model.fit(features_array, target_pos)
+            model.fit(df_features_train, target_pos)
             
-            # 最新データから予測
+            # 最新データから予測（DataFrameとして渡す）
             latest_features = features[-1]
             latest_features_array = np.array(latest_features).reshape(1, -1)
             latest_features_array = np.nan_to_num(latest_features_array, nan=0.0)
+            df_features_pred = pd.DataFrame(latest_features_array, columns=feature_names)
             
-            predicted = model.predict(latest_features_array)[0]
+            predicted = model.predict(df_features_pred)[0]
             predictions[pos_name] = int(np.round(np.clip(predicted, 0, 9)))
             
             # 特徴量重要度を保存（最初の桁のみ）
@@ -1592,9 +1602,9 @@ class NumbersAnalyzer:
                 
                 model.compile(optimizer=Adam(learning_rate=0.001), loss='mse', metrics=['mae'])
                 
-                # 学習（エポック数は少なめに設定）
+                # 学習（エポック数は少なめに設定、処理時間短縮のため）
                 X_reshaped = X.reshape((X.shape[0], X.shape[1], 1))
-                model.fit(X_reshaped, y, epochs=10, batch_size=32, verbose=0, validation_split=0.2)
+                model.fit(X_reshaped, y, epochs=5, batch_size=32, verbose=0, validation_split=0.2)
                 
                 # 最新データから予測
                 last_sequence = data[-window_size:].reshape(1, window_size, 1)
@@ -2149,9 +2159,9 @@ class NumbersAnalyzer:
             toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=0.1, indpb=0.2)
             toolbox.register("select", tools.selTournament, tournsize=3)
             
-            # 遺伝的アルゴリズムを実行
-            population = toolbox.population(n=50)
-            ngen = 20  # 世代数
+            # 遺伝的アルゴリズムを実行（処理時間短縮のため個体数と世代数を削減）
+            population = toolbox.population(n=30)
+            ngen = 10  # 世代数（20から10に削減）
             
             algorithms.eaSimple(population, toolbox, cxpb=0.5, mutpb=0.2, ngen=ngen, verbose=False)
             
@@ -2635,64 +2645,90 @@ class NumbersAnalyzer:
         """
         # 常に全再計算を実行
         print("[ensemble_predict] 予測分析を実行します（全再計算モード）...")
+        start_time = time.time()
+        
+        print("[ensemble_predict] 軽量な予測手法を実行中...")
         chaos_pred = self.predict_chaos()
         markov_pred = self.predict_markov()
         bayesian_pred = self.predict_bayesian()
         periodicity_pred = self.predict_with_periodicity()
         pattern_pred = self.predict_with_patterns()
+        print(f"[ensemble_predict] 軽量な予測手法完了（経過時間: {time.time() - start_time:.1f}秒）")
         
         # ランダムフォレストによる予測（計算コストが高いのでエラーハンドリング）
         random_forest_pred = None
         try:
+            print("[ensemble_predict] ランダムフォレスト予測を実行中...")
+            rf_start = time.time()
             random_forest_pred = self.predict_with_random_forest()
+            print(f"[ensemble_predict] ランダムフォレスト予測完了（経過時間: {time.time() - rf_start:.1f}秒）")
         except Exception as e:
             print(f"[ensemble_predict] ランダムフォレスト予測をスキップ: {e}")
         
         # XGBoostによる予測
         xgboost_pred = None
         try:
+            print("[ensemble_predict] XGBoost予測を実行中...")
+            xgb_start = time.time()
             xgboost_pred = self.predict_with_xgboost()
+            print(f"[ensemble_predict] XGBoost予測完了（経過時間: {time.time() - xgb_start:.1f}秒）")
         except Exception as e:
             print(f"[ensemble_predict] XGBoost予測をスキップ: {e}")
         
         # LightGBMによる予測
         lightgbm_pred = None
         try:
+            print("[ensemble_predict] LightGBM予測を実行中...")
+            lgb_start = time.time()
             lightgbm_pred = self.predict_with_lightgbm()
+            print(f"[ensemble_predict] LightGBM予測完了（経過時間: {time.time() - lgb_start:.1f}秒）")
         except Exception as e:
             print(f"[ensemble_predict] LightGBM予測をスキップ: {e}")
         
         # ARIMAによる予測
         arima_pred = None
         try:
+            print("[ensemble_predict] ARIMA予測を実行中...")
+            arima_start = time.time()
             arima_pred = self.predict_with_arima()
+            print(f"[ensemble_predict] ARIMA予測完了（経過時間: {time.time() - arima_start:.1f}秒）")
         except Exception as e:
             print(f"[ensemble_predict] ARIMA予測をスキップ: {e}")
         
         # スタッキングによる予測
         stacking_pred = None
         try:
+            print("[ensemble_predict] スタッキング予測を実行中...")
+            stack_start = time.time()
             stacking_pred = self.predict_with_stacking()
+            print(f"[ensemble_predict] スタッキング予測完了（経過時間: {time.time() - stack_start:.1f}秒）")
         except Exception as e:
             print(f"[ensemble_predict] スタッキング予測をスキップ: {e}")
         
         # HMMによる予測
         hmm_pred = None
         try:
+            print("[ensemble_predict] HMM予測を実行中...")
+            hmm_start = time.time()
             hmm_pred = self.predict_with_hmm()
+            print(f"[ensemble_predict] HMM予測完了（経過時間: {time.time() - hmm_start:.1f}秒）")
         except Exception as e:
             print(f"[ensemble_predict] HMM予測をスキップ: {e}")
         
         # LSTMによる予測
         lstm_pred = None
         try:
+            print("[ensemble_predict] LSTM予測を実行中（時間がかかる可能性があります）...")
+            lstm_start = time.time()
             lstm_pred = self.predict_with_lstm()
+            print(f"[ensemble_predict] LSTM予測完了（経過時間: {time.time() - lstm_start:.1f}秒）")
         except Exception as e:
             print(f"[ensemble_predict] LSTM予測をスキップ: {e}")
         
         # コンフォーマル予測
         conformal_pred = None
         try:
+            print("[ensemble_predict] コンフォーマル予測を実行中...")
             conformal_pred = self.predict_with_conformal(base_method='stacking')
         except Exception as e:
             print(f"[ensemble_predict] コンフォーマル予測をスキップ: {e}")
@@ -2700,9 +2736,12 @@ class NumbersAnalyzer:
         # カルマンフィルタによる予測
         kalman_pred = None
         try:
+            print("[ensemble_predict] カルマンフィルタ予測を実行中...")
             kalman_pred = self.predict_with_kalman()
         except Exception as e:
             print(f"[ensemble_predict] カルマンフィルタ予測をスキップ: {e}")
+        
+        print(f"[ensemble_predict] すべての予測手法完了（総経過時間: {time.time() - start_time:.1f}秒）")
         
         # 各手法の予測を集計
         set_votes = {}
@@ -2770,24 +2809,33 @@ class NumbersAnalyzer:
         jst_now = datetime.now(ZoneInfo("Asia/Tokyo"))
         
         # 追加の分析結果を取得（常に再計算）
+        print("[ensemble_predict] 基本分析を実行中...")
+        analysis_start = time.time()
         correlations = self.analyze_correlations()
         trends = self.analyze_trends()
         frequent_patterns = self.extract_frequent_patterns(top_n=10)
         gap_analysis = self.analyze_gaps_detailed()
         anomalies = self.detect_anomalies()
         periodicity_patterns = self.analyze_periodicity()
+        print(f"[ensemble_predict] 基本分析完了（経過時間: {time.time() - analysis_start:.1f}秒）")
         
         # フーリエ変換による周波数解析（計算コストが高いのでオプション）
         frequency_analysis = None
         try:
+            print("[ensemble_predict] 周波数解析を実行中...")
+            freq_start = time.time()
             frequency_analysis = self.analyze_frequency_domain()
+            print(f"[ensemble_predict] 周波数解析完了（経過時間: {time.time() - freq_start:.1f}秒）")
         except Exception as e:
             print(f"[ensemble_predict] 周波数解析をスキップ: {e}")
         
         # クラスタリング分析（計算コストが高いのでオプション）
         clustering = None
         try:
+            print("[ensemble_predict] クラスタリング分析を実行中...")
+            cluster_start = time.time()
             clustering = self.cluster_patterns(n_clusters=5)
+            print(f"[ensemble_predict] クラスタリング分析完了（経過時間: {time.time() - cluster_start:.1f}秒）")
         except Exception as e:
             print(f"[ensemble_predict] クラスタリング分析をスキップ: {e}")
         
@@ -2819,21 +2867,33 @@ class NumbersAnalyzer:
             methods_dict['kalman'] = kalman_pred
         
         # 追加の分析結果を取得（常に再計算）
+        print("[ensemble_predict] 高度な分析を実行中...")
+        advanced_start = time.time()
+        
         wavelet_analysis = None
         try:
+            print("[ensemble_predict] ウェーブレット解析を実行中...")
+            wavelet_start = time.time()
             wavelet_analysis = self.analyze_wavelet()
+            print(f"[ensemble_predict] ウェーブレット解析完了（経過時間: {time.time() - wavelet_start:.1f}秒）")
         except Exception as e:
             print(f"[ensemble_predict] ウェーブレット解析をスキップ: {e}")
         
         pca_analysis = None
         try:
+            print("[ensemble_predict] PCA解析を実行中...")
+            pca_start = time.time()
             pca_analysis = self.analyze_pca()
+            print(f"[ensemble_predict] PCA解析完了（経過時間: {time.time() - pca_start:.1f}秒）")
         except Exception as e:
             print(f"[ensemble_predict] PCA解析をスキップ: {e}")
         
         tsne_analysis = None
         try:
+            print("[ensemble_predict] t-SNE解析を実行中（時間がかかる可能性があります）...")
+            tsne_start = time.time()
             tsne_analysis = self.analyze_tsne()
+            print(f"[ensemble_predict] t-SNE解析完了（経過時間: {time.time() - tsne_start:.1f}秒）")
         except Exception as e:
             print(f"[ensemble_predict] t-SNE解析をスキップ: {e}")
         
@@ -2851,15 +2911,24 @@ class NumbersAnalyzer:
         
         network_analysis = None
         try:
+            print("[ensemble_predict] ネットワーク分析を実行中...")
+            network_start = time.time()
             network_analysis = self.analyze_network()
+            print(f"[ensemble_predict] ネットワーク分析完了（経過時間: {time.time() - network_start:.1f}秒）")
         except Exception as e:
             print(f"[ensemble_predict] ネットワーク分析をスキップ: {e}")
         
         genetic_optimization = None
         try:
+            print("[ensemble_predict] 遺伝的アルゴリズム最適化を実行中（時間がかかる可能性があります）...")
+            genetic_start = time.time()
             genetic_optimization = self.optimize_with_genetic_algorithm()
+            print(f"[ensemble_predict] 遺伝的アルゴリズム最適化完了（経過時間: {time.time() - genetic_start:.1f}秒）")
         except Exception as e:
             print(f"[ensemble_predict] 遺伝的アルゴリズム最適化をスキップ: {e}")
+        
+        print(f"[ensemble_predict] 高度な分析完了（総経過時間: {time.time() - advanced_start:.1f}秒）")
+        print(f"[ensemble_predict] 全体の処理完了（総経過時間: {time.time() - start_time:.1f}秒）")
         
         return {
             'timestamp': jst_now.isoformat(),
