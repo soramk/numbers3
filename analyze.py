@@ -291,6 +291,64 @@ def fetch_latest_result(timeout: int = 10, sleep_sec: float = 1.0) -> Optional[D
 class NumbersAnalyzer:
     """ナンバーズ3のデータ分析と予測を行うクラス"""
     
+    # ============================================================================
+    # ============================================================================
+    # 予測処理のデータ量・パラメータ設定（実行時間最適化のための定数）
+    # ============================================================================
+    # 
+    # 【データ量設定】
+    # 予測処理の実行時間を短縮するため、使用するデータ量を制限しています。
+    # これらの値を変更することで、精度と実行時間のバランスを調整できます。
+    # ============================================================================
+    
+    # --- 共通データ量設定 ---
+    # 過去データの特徴量ウィンドウサイズ（各予測手法で使用する過去データの回数）
+    PREDICTION_PAST_WINDOW_SIZE = 50  # 過去50回のデータを使用
+    
+    # 学習に使用するデータ件数（最新N件のみを使用して高速化）
+    PREDICTION_MAX_TRAINING_SAMPLES = 200  # 最新200件のデータのみを使用
+    
+    # --- LSTM専用設定 ---
+    LSTM_WINDOW_SIZE = 30  # LSTMで使用するシーケンス長（過去30回のデータ）
+    LSTM_EPOCHS = 5  # LSTMの学習エポック数（高速化のため5）
+    LSTM_BATCH_SIZE = 32  # LSTMのバッチサイズ
+    
+    # --- Random Forest パラメータ ---
+    RF_N_ESTIMATORS = 100  # Random Forestの木の数
+    RF_MAX_DEPTH = 10  # Random Forestの最大深度
+    
+    # --- XGBoost パラメータ ---
+    XGB_N_ESTIMATORS = 30  # XGBoostの木の数（高速化のため30）
+    XGB_MAX_DEPTH = 5  # XGBoostの最大深度（高速化のため5）
+    XGB_LEARNING_RATE = 0.1  # XGBoostの学習率
+    
+    # --- LightGBM パラメータ ---
+    LGB_N_ESTIMATORS = 50  # LightGBMの木の数（高速化のため50）
+    LGB_MAX_DEPTH = 5  # LightGBMの最大深度（高速化のため5）
+    LGB_LEARNING_RATE = 0.1  # LightGBMの学習率
+    
+    # --- Stacking パラメータ ---
+    # スタッキングは複数のベースモデルを組み合わせるため、個別にパラメータを設定
+    STACKING_CV = 2  # スタッキングのクロスバリデーション分割数（高速化のため2）
+    
+    # スタッキング内のRandom Forest
+    STACKING_RF_N_ESTIMATORS = 30  # スタッキング内のRandom Forestの木の数
+    STACKING_RF_MAX_DEPTH = 6  # スタッキング内のRandom Forestの最大深度
+    
+    # スタッキング内のXGBoost
+    STACKING_XGB_N_ESTIMATORS = 30  # スタッキング内のXGBoostの木の数
+    STACKING_XGB_MAX_DEPTH = 5  # スタッキング内のXGBoostの最大深度
+    STACKING_XGB_LEARNING_RATE = 0.1  # スタッキング内のXGBoostの学習率
+    
+    # スタッキング内のLightGBM
+    STACKING_LGB_N_ESTIMATORS = 30  # スタッキング内のLightGBMの木の数
+    STACKING_LGB_MAX_DEPTH = 5  # スタッキング内のLightGBMの最大深度
+    STACKING_LGB_LEARNING_RATE = 0.1  # スタッキング内のLightGBMの学習率
+    
+    # ============================================================================
+    
+    # ============================================================================
+    
     def __init__(self, data_path: str = None):
         """
         初期化
@@ -898,21 +956,22 @@ class NumbersAnalyzer:
         """
         from sklearn.ensemble import RandomForestRegressor
         
-        # 特徴量を作成（全データを使用）
-        # 過去データの特徴量は最大100回まで使用（全データを使うと特徴量が膨大になるため）
-        max_past_window = min(100, len(self.df))
-        window_size = max_past_window
+        # 特徴量を作成（高速化のため最新データのみを使用）
+        window_size = min(self.PREDICTION_PAST_WINDOW_SIZE, len(self.df))
         
         # 高度な特徴量を含むDataFrameを取得
         df_features = self.create_advanced_features()
         
+        # 高速化のため、最新N件のデータのみを使用
+        start_idx = max(window_size, len(df_features) - self.PREDICTION_MAX_TRAINING_SAMPLES)
+        
         features = []
         targets = []
         
-        # 全データから学習データを作成（window_size以降の全データを使用）
-        for i in range(window_size, len(df_features)):
+        # 最新データから学習データを作成（start_idx以降のデータのみを使用）
+        for i in range(start_idx, len(df_features)):
             feature = []
-            # 過去window_size回の基本データ（全データの場合は最大100回まで）
+            # 過去window_size回の基本データ
             for j in range(window_size):
                 idx = i - window_size + j
                 feature.extend([
@@ -970,7 +1029,7 @@ class NumbersAnalyzer:
         targets_array = np.nan_to_num(targets_array, nan=0.0)
         
         # ランダムフォレストで学習
-        rf = RandomForestRegressor(n_estimators=100, random_state=42, max_depth=10, n_jobs=-1)
+        rf = RandomForestRegressor(n_estimators=self.RF_N_ESTIMATORS, random_state=42, max_depth=self.RF_MAX_DEPTH, n_jobs=-1)
         rf.fit(features_array, targets_array)
         
         # 最新データから予測
@@ -994,7 +1053,7 @@ class NumbersAnalyzer:
         
         # 特徴量名を生成
         feature_names = []
-        # 過去20回の基本データ（各回で5つの特徴量: hundred, ten, one, sum, span）
+        # 過去window_size回の基本データ（各回で5つの特徴量: hundred, ten, one, sum, span）
         for j in range(window_size):
             feature_names.extend([
                 f'past_{j}_hundred',
@@ -1058,16 +1117,20 @@ class NumbersAnalyzer:
             print("[predict_with_xgboost] XGBoostがインストールされていません")
             return None
         
-        # 特徴量を作成（過去N回のデータ）
-        window_size = 20
+        # 特徴量を作成（定義済みの定数を使用）
+        window_size = min(self.PREDICTION_PAST_WINDOW_SIZE, len(self.df))
         
         # 高度な特徴量を含むDataFrameを取得
         df_features = self.create_advanced_features()
         
+        # 高速化のため、最新N件のデータのみを使用
+        start_idx = max(window_size, len(df_features) - self.PREDICTION_MAX_TRAINING_SAMPLES)
+        
         features = []
         targets = []
         
-        for i in range(window_size, len(df_features)):
+        # 最新データから学習データを作成（start_idx以降のデータのみを使用）
+        for i in range(start_idx, len(df_features)):
             feature = []
             # 過去window_size回の基本データ
             for j in range(window_size):
@@ -1131,9 +1194,9 @@ class NumbersAnalyzer:
             target_pos = targets_array[:, pos_idx]
             
             model = xgb.XGBRegressor(
-                n_estimators=100,
-                max_depth=6,
-                learning_rate=0.1,
+                n_estimators=self.XGB_N_ESTIMATORS,
+                max_depth=self.XGB_MAX_DEPTH,
+                learning_rate=self.XGB_LEARNING_RATE,
                 random_state=42,
                 n_jobs=-1
             )
@@ -1179,19 +1242,20 @@ class NumbersAnalyzer:
             print("[predict_with_lightgbm] LightGBMがインストールされていません")
             return None
         
-        # 特徴量を作成（全データを使用）
-        # 過去データの特徴量は最大100回まで使用（全データを使うと特徴量が膨大になるため）
-        max_past_window = min(100, len(self.df))
-        window_size = max_past_window
+        # 特徴量を作成（高速化のため最新データのみを使用）
+        window_size = min(self.PREDICTION_PAST_WINDOW_SIZE, len(self.df))
         
         # 高度な特徴量を含むDataFrameを取得
         df_features = self.create_advanced_features()
         
+        # 高速化のため、最新N件のデータのみを使用
+        start_idx = max(window_size, len(df_features) - self.PREDICTION_MAX_TRAINING_SAMPLES)
+        
         features = []
         targets = []
         
-        # 全データから学習データを作成（window_size以降の全データを使用）
-        for i in range(window_size, len(df_features)):
+        # 最新データから学習データを作成（start_idx以降のデータのみを使用）
+        for i in range(start_idx, len(df_features)):
             feature = []
             # 過去window_size回の基本データ（全データの場合は最大100回まで）
             for j in range(window_size):
@@ -1264,9 +1328,9 @@ class NumbersAnalyzer:
             target_pos = targets_array[:, pos_idx]
             
             model = lgb.LGBMRegressor(
-                n_estimators=100,
-                max_depth=6,
-                learning_rate=0.1,
+                n_estimators=self.LGB_N_ESTIMATORS,
+                max_depth=self.LGB_MAX_DEPTH,
+                learning_rate=self.LGB_LEARNING_RATE,
                 random_state=42,
                 n_jobs=-1,
                 verbose=-1
@@ -1363,18 +1427,19 @@ class NumbersAnalyzer:
         from sklearn.linear_model import RidgeCV
         from sklearn.ensemble import RandomForestRegressor
         
-        # 特徴量を作成（全データを使用）
-        # 過去データの特徴量は最大100回まで使用（全データを使うと特徴量が膨大になるため）
-        max_past_window = min(100, len(self.df))
-        window_size = max_past_window
+        # 特徴量を作成（高速化のため最新データのみを使用）
+        window_size = min(self.PREDICTION_PAST_WINDOW_SIZE, len(self.df))
         
         df_features = self.create_advanced_features()
+        
+        # 高速化のため、最新N件のデータのみを使用
+        start_idx = max(window_size, len(df_features) - self.PREDICTION_MAX_TRAINING_SAMPLES)
         
         features = []
         targets = []
         
-        # 全データから学習データを作成（window_size以降の全データを使用）
-        for i in range(window_size, len(df_features)):
+        # 最新データから学習データを作成（start_idx以降のデータのみを使用）
+        for i in range(start_idx, len(df_features)):
             feature = []
             # 過去window_size回の基本データ（全データの場合は最大100回まで）
             for j in range(window_size):
@@ -1434,32 +1499,50 @@ class NumbersAnalyzer:
         feature_names = [f'feature_{i}' for i in range(n_features)]
         features_df = pd.DataFrame(features_array, columns=feature_names)
         
-        # ベースモデルを定義
+        # ベースモデルを定義（定義済みの定数を使用）
         base_models = [
-            ('rf', RandomForestRegressor(n_estimators=50, random_state=42, max_depth=8, n_jobs=-1)),
+            ('rf', RandomForestRegressor(
+                n_estimators=self.STACKING_RF_N_ESTIMATORS,
+                random_state=42,
+                max_depth=self.STACKING_RF_MAX_DEPTH,
+                n_jobs=-1
+            )),
         ]
         
         # XGBoostとLightGBMが利用可能な場合は追加
         try:
             import xgboost as xgb
-            base_models.append(('xgb', xgb.XGBRegressor(n_estimators=50, max_depth=6, learning_rate=0.1, random_state=42, n_jobs=-1)))
+            base_models.append(('xgb', xgb.XGBRegressor(
+                n_estimators=self.STACKING_XGB_N_ESTIMATORS,
+                max_depth=self.STACKING_XGB_MAX_DEPTH,
+                learning_rate=self.STACKING_XGB_LEARNING_RATE,
+                random_state=42,
+                n_jobs=-1
+            )))
         except ImportError:
             pass
         
         try:
             import lightgbm as lgb
-            base_models.append(('lgb', lgb.LGBMRegressor(n_estimators=50, max_depth=6, learning_rate=0.1, random_state=42, n_jobs=-1, verbose=-1)))
+            base_models.append(('lgb', lgb.LGBMRegressor(
+                n_estimators=self.STACKING_LGB_N_ESTIMATORS,
+                max_depth=self.STACKING_LGB_MAX_DEPTH,
+                learning_rate=self.STACKING_LGB_LEARNING_RATE,
+                random_state=42,
+                n_jobs=-1,
+                verbose=-1
+            )))
         except ImportError:
             pass
         
         # メタモデル（最終予測を行うモデル）
         meta_model = RidgeCV()
         
-        # スタッキング回帰器を作成
+        # スタッキング回帰器を作成（定義済みの定数を使用）
         stacking_regressor = StackingRegressor(
             estimators=base_models,
             final_estimator=meta_model,
-            cv=3,
+            cv=self.STACKING_CV,
             n_jobs=-1
         )
         
@@ -1561,8 +1644,9 @@ class NumbersAnalyzer:
         try:
             import tensorflow as tf
             from tensorflow.keras.models import Sequential
-            from tensorflow.keras.layers import LSTM, Dense, Dropout
+            from tensorflow.keras.layers import Input, LSTM, Dense, Dropout
             from tensorflow.keras.optimizers import Adam
+            import warnings
         except ImportError:
             print("[predict_with_lstm] tensorflowがインストールされていません")
             return None
@@ -1581,7 +1665,8 @@ class NumbersAnalyzer:
                 'reason': 'LSTM（データ不足のため簡易予測）'
             }
         
-        window_size = min(30, len(self.df) - 10)
+        # 定義済みの定数を使用
+        window_size = min(self.LSTM_WINDOW_SIZE, len(self.df) - 10)
         predictions = {}
         
         for pos in ['hundred', 'ten', 'one']:
@@ -1602,9 +1687,10 @@ class NumbersAnalyzer:
                     predictions[pos] = int(self.df.iloc[-1][pos])
                     continue
                 
-                # LSTMモデルを構築
+                # LSTMモデルを構築（Inputレイヤーを使用して警告を回避）
                 model = Sequential([
-                    LSTM(50, return_sequences=True, input_shape=(window_size, 1)),
+                    Input(shape=(window_size, 1)),
+                    LSTM(50, return_sequences=True),
                     Dropout(0.2),
                     LSTM(50, return_sequences=False),
                     Dropout(0.2),
@@ -1614,9 +1700,18 @@ class NumbersAnalyzer:
                 
                 model.compile(optimizer=Adam(learning_rate=0.001), loss='mse', metrics=['mae'])
                 
-                # 学習（エポック数は少なめに設定、処理時間短縮のため）
+                # 学習（定義済みの定数を使用）
+                # FutureWarning（np.object）を抑制
                 X_reshaped = X.reshape((X.shape[0], X.shape[1], 1))
-                model.fit(X_reshaped, y, epochs=5, batch_size=32, verbose=0, validation_split=0.2)
+                with warnings.catch_warnings():
+                    warnings.filterwarnings('ignore', category=FutureWarning, module='keras')
+                    model.fit(
+                        X_reshaped, y,
+                        epochs=self.LSTM_EPOCHS,
+                        batch_size=self.LSTM_BATCH_SIZE,
+                        verbose=0,
+                        validation_split=0.2
+                    )
                 
                 # 最新データから予測
                 last_sequence = data[-window_size:].reshape(1, window_size, 1)
@@ -1642,18 +1737,18 @@ class NumbersAnalyzer:
             'reason': 'LSTM（長短期記憶）ニューラルネットワークによる予測'
         }
     
-    def predict_with_conformal(self, base_method: str = 'stacking', alpha: float = 0.1) -> Dict[str, any]:
+    def predict_with_conformal(self, base_method: str = 'lightgbm', alpha: float = 0.1) -> Dict[str, any]:
         """
         コンフォーマル予測（予測区間を統計的に保証）
         
         Args:
-            base_method: ベースとなる予測手法
+            base_method: ベースとなる予測手法（デフォルトはlightgbmで高速化）
             alpha: 信頼水準（デフォルト0.1 = 90%信頼区間）
         
         Returns:
             予測結果の辞書（予測区間を含む）
         """
-        # ベース予測を取得
+        # ベース予測を取得（高速化のためlightgbmをデフォルトに変更）
         base_prediction = None
         if base_method == 'stacking':
             base_prediction = self.predict_with_stacking()
@@ -1664,8 +1759,8 @@ class NumbersAnalyzer:
         elif base_method == 'lightgbm':
             base_prediction = self.predict_with_lightgbm()
         else:
-            # デフォルトはスタッキング
-            base_prediction = self.predict_with_stacking()
+            # デフォルトはlightgbm（高速化のため）
+            base_prediction = self.predict_with_lightgbm()
         
         if not base_prediction:
             # フォールバック
@@ -2741,7 +2836,7 @@ class NumbersAnalyzer:
         conformal_pred = None
         try:
             print("[ensemble_predict] コンフォーマル予測を実行中...")
-            conformal_pred = self.predict_with_conformal(base_method='stacking')
+            conformal_pred = self.predict_with_conformal(base_method='lightgbm')  # 高速化のためlightgbmに変更
         except Exception as e:
             print(f"[ensemble_predict] コンフォーマル予測をスキップ: {e}")
         
