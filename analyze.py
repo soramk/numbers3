@@ -45,8 +45,10 @@ def fetch_latest_result(timeout: int = 10, sleep_sec: float = 1.0) -> Optional[D
             "Chrome/120.0.0.0 Safari/537.36"
         ),
         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-        "Accept-Language": "ja,en-US;q=0.9,en;q=0.8",
+        # "Accept-Language": "ja,en-US;q=0.9,en;q=0.8", # 言語設定は自動判定に任せる
     }
+    
+    valid_results = []
     
     for url, site_type in urls:
         try:
@@ -125,7 +127,8 @@ def fetch_latest_result(timeout: int = 10, sleep_sec: float = 1.0) -> Optional[D
                             value = cells[1].get_text(strip=True) if len(cells) > 1 else ""
                             
                             # 「第xxxx回」の行から回号を抽出
-                            if "回別" in label or "回" in label:
+                            # スペースや「回別」などの表記揺らぎに対応
+                            if "回" in label or "回別" in label:
                                 issue_match = re.search(r"第?(\d+)回", value)
                                 if issue_match:
                                     issue_found = issue_match.group(1)
