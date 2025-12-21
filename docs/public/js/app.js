@@ -198,7 +198,7 @@ analyzeBtn.addEventListener('click', async () => {
 
         // 最新の予測結果から高度な分析データを取得
         try {
-            const predictionResponse = await fetch('../data/latest_prediction.json');
+            const predictionResponse = await fetch('data/latest_prediction.json');
             if (predictionResponse.ok) {
                 const predictionData = await predictionResponse.json();
                 advancedAnalysis = predictionData.advanced_analysis || null;
