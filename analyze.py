@@ -17,6 +17,7 @@ from scipy.optimize import minimize_scalar
 from typing import Dict, List, Tuple, Optional
 import requests
 from bs4 import BeautifulSoup
+import argparse
 
 
 def fetch_latest_result(timeout: int = 10, sleep_sec: float = 1.0) -> Optional[Dict[str, str]]:
@@ -2734,24 +2735,19 @@ class NumbersAnalyzer:
             'reason': '頻出パターン分析から予測'
         }
     
-    def ensemble_predict(self, update_info: Optional[Dict[str, any]] = None) -> Dict[str, any]:
+    def ensemble_predict(self, update_info: Optional[Dict[str, any]] = None, mode: str = 'light') -> Dict[str, any]:
         """
         アンサンブル予測（複数手法の統合）
         
         Args:
             update_info: データ更新情報（デフォルト: None）
-                {
-                    'updated': bool,
-                    'new_records_count': int,
-                    'previous_count': int,
-                    'current_count': int
-                }
+            mode: 実行モード ('light' または 'full')
         
         Returns:
             統合予測結果
         """
         # 常に全再計算を実行
-        print("[ensemble_predict] 予測分析を実行します（全再計算モード）...")
+        print(f"[ensemble_predict] 予測分析を実行します（{mode}モード）...")
         start_time = time.time()
         
         print("[ensemble_predict] 軽量な予測手法を実行中...")
@@ -2804,33 +2800,42 @@ class NumbersAnalyzer:
         
         # スタッキングによる予測
         stacking_pred = None
-        try:
-            print("[ensemble_predict] スタッキング予測を実行中...")
-            stack_start = time.time()
-            stacking_pred = self.predict_with_stacking()
-            print(f"[ensemble_predict] スタッキング予測完了（経過時間: {time.time() - stack_start:.1f}秒）")
-        except Exception as e:
-            print(f"[ensemble_predict] スタッキング予測をスキップ: {e}")
+        if mode == 'full':
+            try:
+                print("[ensemble_predict] スタッキング予測を実行中...")
+                stack_start = time.time()
+                stacking_pred = self.predict_with_stacking()
+                print(f"[ensemble_predict] スタッキング予測完了（経過時間: {time.time() - stack_start:.1f}秒）")
+            except Exception as e:
+                print(f"[ensemble_predict] スタッキング予測をスキップ: {e}")
+        else:
+            print("[ensemble_predict] スタッキング予測をスキップ（軽量モード）")
         
         # HMMによる予測
         hmm_pred = None
-        try:
-            print("[ensemble_predict] HMM予測を実行中...")
-            hmm_start = time.time()
-            hmm_pred = self.predict_with_hmm()
-            print(f"[ensemble_predict] HMM予測完了（経過時間: {time.time() - hmm_start:.1f}秒）")
-        except Exception as e:
-            print(f"[ensemble_predict] HMM予測をスキップ: {e}")
+        if mode == 'full':
+            try:
+                print("[ensemble_predict] HMM予測を実行中...")
+                hmm_start = time.time()
+                hmm_pred = self.predict_with_hmm()
+                print(f"[ensemble_predict] HMM予測完了（経過時間: {time.time() - hmm_start:.1f}秒）")
+            except Exception as e:
+                print(f"[ensemble_predict] HMM予測をスキップ: {e}")
+        else:
+            print("[ensemble_predict] HMM予測をスキップ（軽量モード）")
         
         # LSTMによる予測
         lstm_pred = None
-        try:
-            print("[ensemble_predict] LSTM予測を実行中（時間がかかる可能性があります）...")
-            lstm_start = time.time()
-            lstm_pred = self.predict_with_lstm()
-            print(f"[ensemble_predict] LSTM予測完了（経過時間: {time.time() - lstm_start:.1f}秒）")
-        except Exception as e:
-            print(f"[ensemble_predict] LSTM予測をスキップ: {e}")
+        if mode == 'full':
+            try:
+                print("[ensemble_predict] LSTM予測を実行中（時間がかかる可能性があります）...")
+                lstm_start = time.time()
+                lstm_pred = self.predict_with_lstm()
+                print(f"[ensemble_predict] LSTM予測完了（経過時間: {time.time() - lstm_start:.1f}秒）")
+            except Exception as e:
+                print(f"[ensemble_predict] LSTM予測をスキップ: {e}")
+        else:
+            print("[ensemble_predict] LSTM予測をスキップ（軽量モード）")
         
         # コンフォーマル予測
         conformal_pred = None
@@ -2996,13 +3001,16 @@ class NumbersAnalyzer:
             print(f"[ensemble_predict] PCA解析をスキップ: {e}")
         
         tsne_analysis = None
-        try:
-            print("[ensemble_predict] t-SNE解析を実行中（時間がかかる可能性があります）...")
-            tsne_start = time.time()
-            tsne_analysis = self.analyze_tsne()
-            print(f"[ensemble_predict] t-SNE解析完了（経過時間: {time.time() - tsne_start:.1f}秒）")
-        except Exception as e:
-            print(f"[ensemble_predict] t-SNE解析をスキップ: {e}")
+        if mode == 'full':
+            try:
+                print("[ensemble_predict] t-SNE解析を実行中（時間がかかる可能性があります）...")
+                tsne_start = time.time()
+                tsne_analysis = self.analyze_tsne()
+                print(f"[ensemble_predict] t-SNE解析完了（経過時間: {time.time() - tsne_start:.1f}秒）")
+            except Exception as e:
+                print(f"[ensemble_predict] t-SNE解析をスキップ: {e}")
+        else:
+             print("[ensemble_predict] t-SNE解析をスキップ（軽量モード）")
         
         continuity_analysis = None
         try:
@@ -3026,13 +3034,16 @@ class NumbersAnalyzer:
             print(f"[ensemble_predict] ネットワーク分析をスキップ: {e}")
         
         genetic_optimization = None
-        try:
-            print("[ensemble_predict] 遺伝的アルゴリズム最適化を実行中（時間がかかる可能性があります）...")
-            genetic_start = time.time()
-            genetic_optimization = self.optimize_with_genetic_algorithm()
-            print(f"[ensemble_predict] 遺伝的アルゴリズム最適化完了（経過時間: {time.time() - genetic_start:.1f}秒）")
-        except Exception as e:
-            print(f"[ensemble_predict] 遺伝的アルゴリズム最適化をスキップ: {e}")
+        if mode == 'full':
+            try:
+                print("[ensemble_predict] 遺伝的アルゴリズム最適化を実行中（時間がかかる可能性があります）...")
+                genetic_start = time.time()
+                genetic_optimization = self.optimize_with_genetic_algorithm()
+                print(f"[ensemble_predict] 遺伝的アルゴリズム最適化完了（経過時間: {time.time() - genetic_start:.1f}秒）")
+            except Exception as e:
+                print(f"[ensemble_predict] 遺伝的アルゴリズム最適化をスキップ: {e}")
+        else:
+            print("[ensemble_predict] 遺伝的アルゴリズム最適化をスキップ（軽量モード）")
         
         print(f"[ensemble_predict] 高度な分析完了（総経過時間: {time.time() - advanced_start:.1f}秒）")
         print(f"[ensemble_predict] 全体の処理完了（総経過時間: {time.time() - start_time:.1f}秒）")
@@ -3081,15 +3092,16 @@ class NumbersAnalyzer:
             }
         }
     
-    def save_prediction(self, output_path: str = "docs/data/latest_prediction.json", update_info: Optional[Dict[str, any]] = None):
+    def save_prediction(self, output_path: str = "docs/data/latest_prediction.json", update_info: Optional[Dict[str, any]] = None, mode: str = 'light'):
         """
         予測結果をJSONファイルに保存（履歴も保存）
         
         Args:
             output_path: 出力ファイルのパス
             update_info: データ更新情報（デフォルト: None）
+            mode: 実行モード
         """
-        prediction = self.ensemble_predict(update_info=update_info)
+        prediction = self.ensemble_predict(update_info=update_info, mode=mode)
         
         # ディレクトリが存在しない場合は作成
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
@@ -3152,6 +3164,13 @@ class NumbersAnalyzer:
 
 def main():
     """メイン実行関数"""
+    parser = argparse.ArgumentParser(description='Numbers3 Prediction Analysis')
+    parser.add_argument('--mode', choices=['light', 'full'], default='light',
+                        help='Execution mode: light (fast, default) or full (comprehensive)')
+    args = parser.parse_args()
+    
+    print(f"[main] 開始モード: {args.mode}")
+
     analyzer = NumbersAnalyzer()
     
     # 最新データを取得して更新
@@ -3164,7 +3183,7 @@ def main():
         print("[main] データは更新されませんでした。予測分析を実行します。")
     
     # 予測分析を実行（常に全再計算）
-    prediction = analyzer.save_prediction(update_info=update_info)
+    prediction = analyzer.save_prediction(update_info=update_info, mode=args.mode)
     
     print("\n=== 予測結果 ===")
     print(f"セット予測（上位3件）:")

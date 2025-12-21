@@ -12,6 +12,8 @@ jobs:
     permissions:
       contents: write
     
+    timeout-minutes: 60  # 暴走防止のため60分でタイムアウト
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -22,6 +24,7 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'  # pipパッケージをキャッシュしてインストール時間を短縮
       
       - name: Install dependencies
         run: |
@@ -31,7 +34,8 @@ jobs:
       - name: Run analysis
         id: run-analysis
         run: |
-          python analyze.py
+          # 毎日実行は軽量モード（--mode light）で高速化
+          python analyze.py --mode light
           echo "analysis_completed=true" >> $GITHUB_OUTPUT
         continue-on-error: true
       
