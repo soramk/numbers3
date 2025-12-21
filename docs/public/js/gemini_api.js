@@ -1,19 +1,19 @@
 import { GoogleGenerativeAI } from "https://esm.run/@google/generative-ai";
 
 // phaseHistory と統計情報から Gemini に渡すプロンプト文字列を生成
-export function buildPhasePrompt(phaseHistory, globalStats, advancedAnalysis = null) {
-    // phaseHistoryが既に500回分にスライスされている場合はそのまま使用
-    // そうでない場合は最後の500回を取得
-    const phaseSlice = Array.isArray(phaseHistory)
-        ? (phaseHistory.length > 500 ? phaseHistory.slice(-500) : phaseHistory)
-        : [];
-    console.log(`[buildPhasePrompt] プロンプトに含めるデータ件数: ${phaseSlice.length}`);
-    const phaseStr = JSON.stringify(phaseSlice);
-    const statsStr = globalStats
-        ? JSON.stringify(globalStats)
-        : '{}';
+export function buildPhasePrompt(phaseHistory, globalStats, advancedAnalysis = null, predictionMethods = null) {
+  // phaseHistoryが既に500回分にスライスされている場合はそのまま使用
+  // そうでない場合は最後の500回を取得
+  const phaseSlice = Array.isArray(phaseHistory)
+    ? (phaseHistory.length > 500 ? phaseHistory.slice(-500) : phaseHistory)
+    : [];
+  console.log(`[buildPhasePrompt] プロンプトに含めるデータ件数: ${phaseSlice.length}`);
+  const phaseStr = JSON.stringify(phaseSlice);
+  const statsStr = globalStats
+    ? JSON.stringify(globalStats)
+    : '{}';
 
-    return `
+  return `
 あなたはカオス理論と統計学の専門家です。
 ナンバーズ3の当選番号を正弦波モデルで解析し、各回において「正解を出すために必要だった位相パラメータ(optimalPhase)」を逆算しました。
 
@@ -92,6 +92,21 @@ ${JSON.stringify(advancedAnalysis, null, 2)}
   * 予測手法の重み最適化
   * 各予測手法の最適な重み付け
   * 適合度に基づく最適化結果
+` : ''}
+
+${predictionMethods ? `
+【各予測モデルによる推奨数字】
+以下は、物理モデル・統計モデル・機械学習モデルによる個別の予測結果です：
+${JSON.stringify(predictionMethods, null, 2)}
+
+モデルの説明:
+- random_forest, xgboost, lightgbm: 決定木ベースの機械学習モデル
+- lstm: ディープラーニング（時系列予測）
+- arima: 統計的時系列モデル
+- hmm: 隠れマルコフモデル
+- stacking: 複数のモデルを組み合わせたメタモデル
+- chaos: カオス理論に基づく予測
+- genetic_optimization: 遺伝的アルゴリズムによる最適化
 ` : ''}
 
 【詳細分析指令 - 当選確率向上のための多角的アプローチ】
@@ -424,28 +439,29 @@ ${advancedAnalysis ? `6` : `5`}. 【注意事項・リスク評価】
 
 // feature_api_usage.js の estimateTokens ロジックを簡略移植
 export function estimateTokensForPrompt(prompt) {
-    const chars = prompt.length;
-    const words = prompt.split(/\s+/).length;
-    return Math.ceil(chars / 4 + words * 1.3);
+  const chars = prompt.length;
+  const words = prompt.split(/\s+/).length;
+  return Math.ceil(chars / 4 + words * 1.3);
 }
 
 // Gemini に問い合わせ
 // modelName には "gemini-1.5-flash" などを指定（未指定時はローカルストレージ or デフォルトを使用）
 // globalStats には MathEngine.getGlobalStats() の結果を渡す
 // advancedAnalysis には latest_prediction.json の advanced_analysis セクションを渡す
-export async function askGemini(apiKey, phaseHistory, modelName, globalStats, advancedAnalysis = null) {
-    if (!apiKey) throw new Error("API Keyが必要です");
+// predictionMethods には latest_prediction.json の methods セクションを渡す
+export async function askGemini(apiKey, phaseHistory, modelName, globalStats, advancedAnalysis = null, predictionMethods = null) {
+  if (!apiKey) throw new Error("API Keyが必要です");
 
-    const genAI = new GoogleGenerativeAI(apiKey);
-    const selectedModel =
-        modelName ||
-        localStorage.getItem('gemini_model') ||
-        'gemini-2.5-flash';
+  const genAI = new GoogleGenerativeAI(apiKey);
+  const selectedModel =
+    modelName ||
+    localStorage.getItem('gemini_model') ||
+    'gemini-2.5-flash';
 
-    const model = genAI.getGenerativeModel({ model: selectedModel });
+  const model = genAI.getGenerativeModel({ model: selectedModel });
 
-    const prompt = buildPhasePrompt(phaseHistory, globalStats, advancedAnalysis);
+  const prompt = buildPhasePrompt(phaseHistory, globalStats, advancedAnalysis, predictionMethods);
 
-    const result = await model.generateContent(prompt);
-    return result.response.text();
+  const result = await model.generateContent(prompt);
+  return result.response.text();
 }

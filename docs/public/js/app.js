@@ -35,6 +35,7 @@ let engine = null;
 let analysisResult = null;
 let analysisStats = null;
 let advancedAnalysis = null; // 高度な分析結果を保存
+let predictionMethods = null; // 各モデルの予測結果を保存
 let predictionHistory = [];
 let frequencyChartInstance = null;
 let currentPrompt = null;
@@ -187,27 +188,30 @@ analyzeBtn.addEventListener('click', async () => {
         // ルート index.html から見ると data.json は public/ 配下
         const response = await fetch('public/data.json');
         const data = await response.json();
-        
+
         engine = new MathEngine(data);
-        
+
         // 3桁すべての位について、直近500回分の最適位相を逆算
         analysisResult = engine.calculatePhaseTrendAll(500);
         // 全履歴を使った統計サマリ
         analysisStats = engine.getGlobalStats();
-        
+
         // 最新の予測結果から高度な分析データを取得
         try {
             const predictionResponse = await fetch('../data/latest_prediction.json');
             if (predictionResponse.ok) {
                 const predictionData = await predictionResponse.json();
                 advancedAnalysis = predictionData.advanced_analysis || null;
+                predictionMethods = predictionData.methods || null;
                 console.log('[analyzeBtn] 高度な分析データを読み込みました:', advancedAnalysis ? Object.keys(advancedAnalysis) : 'なし');
+                console.log('[analyzeBtn] 予測モデルデータを読み込みました:', predictionMethods ? Object.keys(predictionMethods) : 'なし');
             }
         } catch (e) {
             console.warn('[analyzeBtn] 予測結果の読み込みに失敗:', e);
             advancedAnalysis = null;
+            predictionMethods = null;
         }
-        
+
         // チャート描画
         drawChart(analysisResult);
 
@@ -232,18 +236,18 @@ analyzeBtn.addEventListener('click', async () => {
         // プロンプト長から推定トークン数を計算し表示（直近500回分をプロンプトに含める）
         if (tokenEstimate && analysisResult && analysisResult.length) {
             const promptData = analysisResult.slice(-500); // プロンプトには直近500回分を使用
-            const prompt = buildPhasePrompt(promptData, analysisStats, advancedAnalysis);
+            const prompt = buildPhasePrompt(promptData, analysisStats, advancedAnalysis, predictionMethods);
             currentPrompt = prompt; // プロンプトを保存
             const estTokens = estimateTokensForPrompt(prompt);
             tokenEstimate.innerText = `推定プロンプト長: 約 ${estTokens.toLocaleString()} トークン（直近500回分の位相データ + 高度な分析結果を使用）`;
-            
+
             // プロンプトエリアを表示
             if (promptArea && promptContent && togglePromptBtn) {
                 promptContent.textContent = prompt;
                 promptArea.classList.remove('hidden');
                 promptContent.style.display = 'none'; // 初期状態は非表示
                 togglePromptBtn.textContent = '表示'; // 初期状態のボタンテキスト
-                
+
                 // デバッグ: プロンプトに新しい分析手法が含まれているか確認
                 console.log('[analyzeBtn] プロンプト生成完了');
                 console.log('[analyzeBtn] プロンプトに含まれる分析手法:', {
@@ -257,16 +261,16 @@ analyzeBtn.addEventListener('click', async () => {
                 });
             }
         }
-        
+
         predictBtn.disabled = false;
-        
+
         // 頻出率グラフを自動表示（全期間）
         if (frequencyChartInstance) {
             frequencyChartInstance.destroy();
             frequencyChartInstance = null;
         }
         drawFrequencyChart('all', null);
-        
+
         alert('解析完了。係数の推移グラフを表示しました。');
     } catch (e) {
         console.error(e);
@@ -291,7 +295,7 @@ predictBtn.addEventListener('click', async () => {
         // 500回分のデータを明示的に渡す
         const promptData = analysisResult ? analysisResult.slice(-500) : [];
         console.log(`[predictBtn] プロンプトに渡すデータ件数: ${promptData.length}`);
-        const response = await askGemini(key, promptData, modelName, analysisStats, advancedAnalysis);
+        const response = await askGemini(key, promptData, modelName, analysisStats, advancedAnalysis, predictionMethods);
         output.innerText = response;
         if (savePredictionBtn) {
             savePredictionBtn.disabled = false;
@@ -378,17 +382,17 @@ if (copyPromptBtn) {
             alert('プロンプトが生成されていません。先に「データ解析・逆算開始」を実行してください。');
             return;
         }
-        
+
         try {
             // クリップボードAPIを使用してコピー
             await navigator.clipboard.writeText(currentPrompt);
-            
+
             // ボタンのテキストを一時的に変更してフィードバックを提供
             const originalText = copyPromptBtn.textContent;
             copyPromptBtn.textContent = '✓ コピー完了！';
             copyPromptBtn.style.backgroundColor = '#10b981';
             copyPromptBtn.style.color = '#fff';
-            
+
             setTimeout(() => {
                 copyPromptBtn.textContent = originalText;
                 copyPromptBtn.style.backgroundColor = '';
@@ -397,7 +401,7 @@ if (copyPromptBtn) {
         } catch (err) {
             // クリップボードAPIが使えない場合のフォールバック
             console.error('クリップボードへのコピーに失敗:', err);
-            
+
             // テキストエリアを作成してコピー
             const textarea = document.createElement('textarea');
             textarea.value = currentPrompt;
@@ -405,14 +409,14 @@ if (copyPromptBtn) {
             textarea.style.opacity = '0';
             document.body.appendChild(textarea);
             textarea.select();
-            
+
             try {
                 document.execCommand('copy');
                 const originalText = copyPromptBtn.textContent;
                 copyPromptBtn.textContent = '✓ コピー完了！';
                 copyPromptBtn.style.backgroundColor = '#10b981';
                 copyPromptBtn.style.color = '#fff';
-                
+
                 setTimeout(() => {
                     copyPromptBtn.textContent = originalText;
                     copyPromptBtn.style.backgroundColor = '';
@@ -435,14 +439,14 @@ if (downloadPromptBtn) {
             alert('プロンプトが生成されていません。先に「データ解析・逆算開始」を実行してください。');
             return;
         }
-        
+
         const now = new Date();
         const y = now.getFullYear();
         const m = String(now.getMonth() + 1).padStart(2, '0');
         const d = String(now.getDate()).padStart(2, '0');
         const hh = String(now.getHours()).padStart(2, '0');
         const mm = String(now.getMinutes()).padStart(2, '0');
-        
+
         const blob = new Blob([currentPrompt], { type: 'text/plain;charset=utf-8' });
         const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -487,8 +491,8 @@ function drawChart(data) {
             responsive: true,
             maintainAspectRatio: false,
             scales: {
-                y: { type: 'linear', display: true, position: 'left', title: {display:true, text:'Phase(0-6.28)'} },
-                y1: { type: 'linear', display: true, position: 'right', min:0, max:9, grid: {drawOnChartArea: false} }
+                y: { type: 'linear', display: true, position: 'left', title: { display: true, text: 'Phase(0-6.28)' } },
+                y1: { type: 'linear', display: true, position: 'right', min: 0, max: 9, grid: { drawOnChartArea: false } }
             }
         }
     });
@@ -503,7 +507,7 @@ function drawFrequencyChart(periodType = 'all', filterValue = null) {
 
     const chartType = frequencyChartType ? frequencyChartType.value : 'set';
     const ctx = document.getElementById('frequencyChart');
-    
+
     if (!ctx) return;
 
     // 既存のグラフインスタンスを破棄
@@ -523,7 +527,7 @@ function drawFrequencyChart(periodType = 'all', filterValue = null) {
     if (chartType === 'mini') {
         // ミニ（下2桁）グラフ
         const miniData = engine.getMiniFrequencyByPeriod(periodType, filterValue);
-        
+
         // 00-99のラベルを生成（10個ずつ表示）
         const labels = [];
         const data = [];
@@ -563,7 +567,7 @@ function drawFrequencyChart(periodType = 'all', filterValue = null) {
                     },
                     tooltip: {
                         callbacks: {
-                            label: function(context) {
+                            label: function (context) {
                                 const index = context.dataIndex;
                                 const value = context.parsed.y;
                                 const count = counts[index];
@@ -643,7 +647,7 @@ function drawFrequencyChart(periodType = 'all', filterValue = null) {
                     },
                     tooltip: {
                         callbacks: {
-                            label: function(context) {
+                            label: function (context) {
                                 const datasetLabel = context.dataset.label || '';
                                 const value = context.parsed.y;
                                 const index = context.dataIndex;
@@ -681,19 +685,19 @@ if (frequencyPeriodType) {
     frequencyPeriodType.addEventListener('change', () => {
         const periodType = frequencyPeriodType.value;
         const periodValueSelect = frequencyPeriodValue;
-        
+
         if (periodType === 'all') {
             periodValueSelect.style.display = 'none';
             periodValueSelect.value = '';
         } else {
             periodValueSelect.style.display = 'block';
             periodValueSelect.innerHTML = '<option value="">選択してください</option>';
-            
+
             if (!engine) {
                 alert('先に「データ解析・逆算開始」を実行してください。');
                 return;
             }
-            
+
             const periods = engine.getAvailablePeriods();
 
             let options = [];
@@ -731,10 +735,10 @@ if (frequencyChartType) {
     frequencyChartType.addEventListener('change', () => {
         // グラフタイプが変更されたら、現在の期間設定で再描画
         const periodType = frequencyPeriodType ? frequencyPeriodType.value : 'all';
-        const filterValue = frequencyPeriodValue && frequencyPeriodValue.value 
-            ? frequencyPeriodValue.value 
+        const filterValue = frequencyPeriodValue && frequencyPeriodValue.value
+            ? frequencyPeriodValue.value
             : null;
-        
+
         if (periodType === 'all' || filterValue) {
             drawFrequencyChart(periodType, filterValue);
         }
@@ -745,15 +749,15 @@ if (frequencyChartType) {
 if (updateFrequencyChart) {
     updateFrequencyChart.addEventListener('click', () => {
         const periodType = frequencyPeriodType ? frequencyPeriodType.value : 'all';
-        const filterValue = frequencyPeriodValue && frequencyPeriodValue.value 
-            ? frequencyPeriodValue.value 
+        const filterValue = frequencyPeriodValue && frequencyPeriodValue.value
+            ? frequencyPeriodValue.value
             : null;
-        
+
         if (periodType !== 'all' && !filterValue) {
             alert('期間を選択してください。');
             return;
         }
-        
+
         drawFrequencyChart(periodType, filterValue);
     });
 }
