@@ -300,52 +300,72 @@ class NumbersAnalyzer:
     # 【データ量設定】
     # 予測処理の実行時間を短縮するため、使用するデータ量を制限しています。
     # これらの値を変更することで、精度と実行時間のバランスを調整できます。
+    # 
+    # ■ 実行時間への影響度（目安）
+    # ★☆☆: ほぼ影響なし
+    # ★★☆: 数秒〜数十秒の影響
+    # ★★★: 数分以上の影響（特にデータ量や学習回数に比例）
     # ============================================================================
     
     # --- 共通データ量設定 ---
     # 過去データの特徴量ウィンドウサイズ（各予測手法で使用する過去データの回数）
-    PREDICTION_PAST_WINDOW_SIZE = 50  # 過去50回のデータを使用
+    # 影響度: ★☆☆（メモリ使用量に微増）
+    PREDICTION_PAST_WINDOW_SIZE = 50
     
     # 学習に使用するデータ件数（最新N件のみを使用して高速化）
-    PREDICTION_MAX_TRAINING_SAMPLES = 200  # 最新200件のデータのみを使用
+    # ★重要: これを増やすと、RandomForest, XGBoost, LightGBM, LSTMなど全ての学習時間が比例して伸びます。
+    # 影響度: ★★☆（全モデルの学習時間に影響）
+    PREDICTION_MAX_TRAINING_SAMPLES = 200
     
-    # --- LSTM専用設定 ---
+    # --- LSTM専用設定（Fullモードのみ） ---
+    # LSTMは計算コストが非常に高いです。
     LSTM_WINDOW_SIZE = 30  # LSTMで使用するシーケンス長（過去30回のデータ）
-    LSTM_EPOCHS = 5  # LSTMの学習エポック数（高速化のため5）
-    LSTM_BATCH_SIZE = 32  # LSTMのバッチサイズ
+    # LSTMの学習エポック数（高速化のため5）
+    # 影響度: ★★★（増やしすぎると学習時間が激増します。通常は50-100必要ですが5に制限中）
+    LSTM_EPOCHS = 5
+    LSTM_BATCH_SIZE = 32  # LSTMのバッチサイズ（影響度: ★★☆）
     
     # --- Random Forest パラメータ ---
-    RF_N_ESTIMATORS = 100  # Random Forestの木の数
-    RF_MAX_DEPTH = 10  # Random Forestの最大深度
+    # 並列処理が効くので比較的早いですが、決定木の数に比例します。
+    RF_N_ESTIMATORS = 100  # Random Forestの木の数（影響度: ★★☆）
+    RF_MAX_DEPTH = 10  # Random Forestの最大深度（影響度: ★☆☆）
     
     # --- XGBoost パラメータ ---
-    XGB_N_ESTIMATORS = 30  # XGBoostの木の数（高速化のため30）
-    XGB_MAX_DEPTH = 5  # XGBoostの最大深度（高速化のため5）
-    XGB_LEARNING_RATE = 0.1  # XGBoostの学習率
+    # 勾配ブースティングは逐次処理なので、木の数を増やすと時間がかかります。
+    XGB_N_ESTIMATORS = 30  # XGBoostの木の数（影響度: ★★☆）
+    XGB_MAX_DEPTH = 5  # XGBoostの最大深度（影響度: ★☆☆）
+    XGB_LEARNING_RATE = 0.1  # XGBoostの学習率（影響度: ★☆☆）
     
     # --- LightGBM パラメータ ---
-    LGB_N_ESTIMATORS = 50  # LightGBMの木の数（高速化のため50）
-    LGB_MAX_DEPTH = 5  # LightGBMの最大深度（高速化のため5）
-    LGB_LEARNING_RATE = 0.1  # LightGBMの学習率
+    # 高速ですが、データ数が少ないとオーバーフィットしやすいです。
+    LGB_N_ESTIMATORS = 50  # LightGBMの木の数（影響度: ★★☆）
+    LGB_MAX_DEPTH = 5  # LightGBMの最大深度（影響度: ★☆☆）
+    LGB_LEARNING_RATE = 0.1  # LightGBMの学習率（影響度: ★☆☆）
     
-    # --- Stacking パラメータ ---
-    # スタッキングは複数のベースモデルを組み合わせるため、個別にパラメータを設定
-    STACKING_CV = 2  # スタッキングのクロスバリデーション分割数（高速化のため2）
+    # --- Stacking パラメータ（Fullモードのみ） ---
+    # ベースモデルの数 × バリデーション分割数(CV) の回数だけ学習が走るため、非常に重いです。
+    # スタッキングのクロスバリデーション分割数（高速化のため2）
+    # 影響度: ★★★（これを5などにすると計算時間が2.5倍になります）
+    STACKING_CV = 2
     
     # スタッキング内のRandom Forest
-    STACKING_RF_N_ESTIMATORS = 30  # スタッキング内のRandom Forestの木の数
-    STACKING_RF_MAX_DEPTH = 6  # スタッキング内のRandom Forestの最大深度
+    STACKING_RF_N_ESTIMATORS = 30  # スタッキング内のRandom Forestの木の数（影響度: ★★☆）
+    STACKING_RF_MAX_DEPTH = 6  # スタッキング内のRandom Forestの最大深度（影響度: ★☆☆）
     
     # スタッキング内のXGBoost
-    STACKING_XGB_N_ESTIMATORS = 30  # スタッキング内のXGBoostの木の数
-    STACKING_XGB_MAX_DEPTH = 5  # スタッキング内のXGBoostの最大深度
-    STACKING_XGB_LEARNING_RATE = 0.1  # スタッキング内のXGBoostの学習率
+    STACKING_XGB_N_ESTIMATORS = 30  # スタッキング内のXGBoostの木の数（影響度: ★★☆）
+    STACKING_XGB_MAX_DEPTH = 5  # スタッキング内のXGBoostの最大深度（影響度: ★☆☆）
+    STACKING_XGB_LEARNING_RATE = 0.1  # スタッキング内のXGBoostの学習率（影響度: ★☆☆）
     
     # スタッキング内のLightGBM
-    STACKING_LGB_N_ESTIMATORS = 30  # スタッキング内のLightGBMの木の数
-    STACKING_LGB_MAX_DEPTH = 5  # スタッキング内のLightGBMの最大深度
-    STACKING_LGB_LEARNING_RATE = 0.1  # スタッキング内のLightGBMの学習率
-    
+    STACKING_LGB_N_ESTIMATORS = 30  # スタッキング内のLightGBMの木の数（影響度: ★★☆）
+    STACKING_LGB_MAX_DEPTH = 5  # スタッキング内のLightGBMの最大深度（影響度: ★☆☆）
+    STACKING_LGB_LEARNING_RATE = 0.1  # スタッキング内のLightGBMの学習率（影響度: ★☆☆）
+
+    # --- t-SNE パラメータ（Fullモードのみ） ---
+    # t-SNEは計算量がO(N^2)で増えるため、データ数が最大のボトルネックになります。
+    # 現在はコード内で max_data_points = 250 にハードコードされています。
+    # 影響度: ★★★（データ数を増やすと指数関数的に重くなります）  
     # ============================================================================
     
     # ============================================================================
@@ -1967,10 +1987,13 @@ class NumbersAnalyzer:
             print(f"[analyze_pca] PCA解析に失敗: {e}")
             return None
     
-    def analyze_tsne(self) -> Dict[str, any]:
+    def analyze_tsne(self, max_data_points: int = 250) -> Dict[str, any]:
         """
         t-SNEによる高次元データの可視化
         
+        Args:
+            max_data_points: 計算に使用する最大データ数
+            
         Returns:
             t-SNE解析結果の辞書
         """
@@ -1985,10 +2008,7 @@ class NumbersAnalyzer:
             return None
         
         try:
-            # データ量を制限（最新250件のみ使用、計算時間を大幅に短縮）
-            # t-SNEの計算量はO(n²)のため、データ量を減らすことで計算時間を大幅に短縮
-            # データ量が少ない場合は全データを使用
-            max_data_points = 250
+            # データ量を制限
             if len(self.df) <= max_data_points:
                 df_for_tsne = self.df
                 print(f"[analyze_tsne] データ量が{len(self.df)}件のため、全データを使用します")
@@ -2800,42 +2820,33 @@ class NumbersAnalyzer:
         
         # スタッキングによる予測
         stacking_pred = None
-        if mode == 'full':
-            try:
-                print("[ensemble_predict] スタッキング予測を実行中...")
-                stack_start = time.time()
-                stacking_pred = self.predict_with_stacking()
-                print(f"[ensemble_predict] スタッキング予測完了（経過時間: {time.time() - stack_start:.1f}秒）")
-            except Exception as e:
-                print(f"[ensemble_predict] スタッキング予測をスキップ: {e}")
-        else:
-            print("[ensemble_predict] スタッキング予測をスキップ（軽量モード）")
+        try:
+            print("[ensemble_predict] スタッキング予測を実行中...")
+            stack_start = time.time()
+            stacking_pred = self.predict_with_stacking()
+            print(f"[ensemble_predict] スタッキング予測完了（経過時間: {time.time() - stack_start:.1f}秒）")
+        except Exception as e:
+            print(f"[ensemble_predict] スタッキング予測をスキップ: {e}")
         
         # HMMによる予測
         hmm_pred = None
-        if mode == 'full':
-            try:
-                print("[ensemble_predict] HMM予測を実行中...")
-                hmm_start = time.time()
-                hmm_pred = self.predict_with_hmm()
-                print(f"[ensemble_predict] HMM予測完了（経過時間: {time.time() - hmm_start:.1f}秒）")
-            except Exception as e:
-                print(f"[ensemble_predict] HMM予測をスキップ: {e}")
-        else:
-            print("[ensemble_predict] HMM予測をスキップ（軽量モード）")
+        try:
+            print("[ensemble_predict] HMM予測を実行中...")
+            hmm_start = time.time()
+            hmm_pred = self.predict_with_hmm()
+            print(f"[ensemble_predict] HMM予測完了（経過時間: {time.time() - hmm_start:.1f}秒）")
+        except Exception as e:
+            print(f"[ensemble_predict] HMM予測をスキップ: {e}")
         
         # LSTMによる予測
         lstm_pred = None
-        if mode == 'full':
-            try:
-                print("[ensemble_predict] LSTM予測を実行中（時間がかかる可能性があります）...")
-                lstm_start = time.time()
-                lstm_pred = self.predict_with_lstm()
-                print(f"[ensemble_predict] LSTM予測完了（経過時間: {time.time() - lstm_start:.1f}秒）")
-            except Exception as e:
-                print(f"[ensemble_predict] LSTM予測をスキップ: {e}")
-        else:
-            print("[ensemble_predict] LSTM予測をスキップ（軽量モード）")
+        try:
+            print("[ensemble_predict] LSTM予測を実行中（時間がかかる可能性があります）...")
+            lstm_start = time.time()
+            lstm_pred = self.predict_with_lstm()
+            print(f"[ensemble_predict] LSTM予測完了（経過時間: {time.time() - lstm_start:.1f}秒）")
+        except Exception as e:
+            print(f"[ensemble_predict] LSTM予測をスキップ: {e}")
         
         # コンフォーマル予測
         conformal_pred = None
@@ -3001,16 +3012,15 @@ class NumbersAnalyzer:
             print(f"[ensemble_predict] PCA解析をスキップ: {e}")
         
         tsne_analysis = None
-        if mode == 'full':
-            try:
-                print("[ensemble_predict] t-SNE解析を実行中（時間がかかる可能性があります）...")
-                tsne_start = time.time()
-                tsne_analysis = self.analyze_tsne()
-                print(f"[ensemble_predict] t-SNE解析完了（経過時間: {time.time() - tsne_start:.1f}秒）")
-            except Exception as e:
-                print(f"[ensemble_predict] t-SNE解析をスキップ: {e}")
-        else:
-             print("[ensemble_predict] t-SNE解析をスキップ（軽量モード）")
+        try:
+            # モードに応じてデータ件数を変更（Light=10, Full=250）
+            tsne_limit = 250 if mode == 'full' else 10
+            print(f"[ensemble_predict] t-SNE解析を実行中（上限: {tsne_limit}件）...")
+            tsne_start = time.time()
+            tsne_analysis = self.analyze_tsne(max_data_points=tsne_limit)
+            print(f"[ensemble_predict] t-SNE解析完了（経過時間: {time.time() - tsne_start:.1f}秒）")
+        except Exception as e:
+            print(f"[ensemble_predict] t-SNE解析をスキップ: {e}")
         
         continuity_analysis = None
         try:
@@ -3034,16 +3044,13 @@ class NumbersAnalyzer:
             print(f"[ensemble_predict] ネットワーク分析をスキップ: {e}")
         
         genetic_optimization = None
-        if mode == 'full':
-            try:
-                print("[ensemble_predict] 遺伝的アルゴリズム最適化を実行中（時間がかかる可能性があります）...")
-                genetic_start = time.time()
-                genetic_optimization = self.optimize_with_genetic_algorithm()
-                print(f"[ensemble_predict] 遺伝的アルゴリズム最適化完了（経過時間: {time.time() - genetic_start:.1f}秒）")
-            except Exception as e:
-                print(f"[ensemble_predict] 遺伝的アルゴリズム最適化をスキップ: {e}")
-        else:
-            print("[ensemble_predict] 遺伝的アルゴリズム最適化をスキップ（軽量モード）")
+        try:
+            print("[ensemble_predict] 遺伝的アルゴリズム最適化を実行中（時間がかかる可能性があります）...")
+            genetic_start = time.time()
+            genetic_optimization = self.optimize_with_genetic_algorithm()
+            print(f"[ensemble_predict] 遺伝的アルゴリズム最適化完了（経過時間: {time.time() - genetic_start:.1f}秒）")
+        except Exception as e:
+            print(f"[ensemble_predict] 遺伝的アルゴリズム最適化をスキップ: {e}")
         
         print(f"[ensemble_predict] 高度な分析完了（総経過時間: {time.time() - advanced_start:.1f}秒）")
         print(f"[ensemble_predict] 全体の処理完了（総経過時間: {time.time() - start_time:.1f}秒）")

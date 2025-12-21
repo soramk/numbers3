@@ -5,6 +5,15 @@ on:
     # 毎日 22:00 JST (13:00 UTC) に実行
     - cron: '0 13 * * *'
   workflow_dispatch:  # 手動実行を許可
+    inputs:
+      mode:
+        description: 'Execution Mode (light/full)'
+        required: true
+        default: 'light'
+        type: choice
+        options:
+        - light
+        - full
 
 jobs:
   update-prediction:
@@ -34,8 +43,10 @@ jobs:
       - name: Run analysis
         id: run-analysis
         run: |
-          # 毎日実行は軽量モード（--mode light）で高速化
-          python analyze.py --mode light
+          # 入力がなければ light (スケジュール実行時など)
+          MODE="${{ inputs.mode || 'light' }}"
+          echo "Run mode: $MODE"
+          python analyze.py --mode $MODE
           echo "analysis_completed=true" >> $GITHUB_OUTPUT
         continue-on-error: true
       
