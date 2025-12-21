@@ -29,10 +29,11 @@ def fetch_latest_result(timeout: int = 10, sleep_sec: float = 1.0) -> Optional[D
         sleep_sec: リクエスト前の待機時間（秒）
     
     Returns:
-        dict | None: {"date": "YYYY-MM-DD", "num": "191"} 形式の辞書、取得に失敗した場合は None
+        dict | None: {"date": "YYYY-MM-DD", "num": "191", "issue": "6625"} 形式の辞書、取得に失敗した場合は None
     """
     # 複数の情報源を試す（優先順位順）
     urls = [
+        # みずほ銀行は不安定な場合があるため、楽天を優先またはフォールバックとして使用
         ("https://www.mizuhobank.co.jp/takarakuji/check/numbers/numbers3/index.html", "mizuhobank"),
         ("https://takarakuji.rakuten.co.jp/backnumber/numbers3/", "rakuten"),
     ]
@@ -112,6 +113,7 @@ def fetch_latest_result(timeout: int = 10, sleep_sec: float = 1.0) -> Optional[D
                         # 各行を確認
                         date_found = None
                         num_found = None
+                        issue_found = None
                         
                         for row_idx, row in enumerate(rows):
                             cells = row.find_all(["td", "th"])
@@ -121,6 +123,12 @@ def fetch_latest_result(timeout: int = 10, sleep_sec: float = 1.0) -> Optional[D
                             # 最初のセルが項目名、2番目のセルが値
                             label = cells[0].get_text(strip=True)
                             value = cells[1].get_text(strip=True) if len(cells) > 1 else ""
+                            
+                            # 「第xxxx回」の行から回号を抽出
+                            if "回別" in label or "回" in label:
+                                issue_match = re.search(r"第?(\d+)回", value)
+                                if issue_match:
+                                    issue_found = issue_match.group(1)
                             
                             # 「抽せん日」の行から日付を抽出
                             if "抽せん日" in label:
@@ -151,7 +159,9 @@ def fetch_latest_result(timeout: int = 10, sleep_sec: float = 1.0) -> Optional[D
                             # 両方見つかったら結果を確定
                             if date_found and num_found:
                                 result = {"date": date_found, "num": num_found}
-                                print(f"[fetch_latest_result] テーブル{table_idx}から取得成功: {date_found} - {num_found}")
+                                if issue_found:
+                                    result["issue"] = issue_found
+                                print(f"[fetch_latest_result] テーブル{table_idx}から取得成功: {date_found} - {num_found} (第{issue_found if issue_found else '?'}回)")
                                 break
                         
                         if result:
@@ -176,6 +186,12 @@ def fetch_latest_result(timeout: int = 10, sleep_sec: float = 1.0) -> Optional[D
                             num_str = match.group(4).zfill(3)
                             draw_date = datetime(year, month, day).strftime("%Y-%m-%d")
                             result = {"date": draw_date, "num": num_str}
+                            
+                            # 回号も探す
+                            issue_match = re.search(r"第?(\d+)回", page_text)
+                            if issue_match:
+                                result["issue"] = issue_match.group(1)
+                                
                             print(f"[fetch_latest_result] ページ全体から取得成功: {draw_date} - {num_str}")
                             break
             
@@ -199,6 +215,13 @@ def fetch_latest_result(timeout: int = 10, sleep_sec: float = 1.0) -> Optional[D
                             label = cells[0].get_text(strip=True)
                             value = cells[1].get_text(strip=True) if len(cells) > 1 else ""
                             
+                            # 第xxxxx回
+                            if "回別" in label or "回" in label:
+                                issue_match = re.search(r"第?(\d+)回", value)
+                                if issue_match:
+                                    issue_found = issue_match.group(1)
+                            
+                            # 抽せん日
                             if "抽せん日" in label or "抽選日" in label:
                                 # 日付を抽出
                                 date_match = re.search(r"(\d{4})[/.-](\d{1,2})[/.-](\d{1,2})", value)
@@ -470,6 +493,10 @@ class NumbersAnalyzer:
             'date': latest_date,
             'num': latest_num  # 文字列として保存（既存データ形式に合わせる）
         }
+        # 回号があれば追加
+        if 'issue' in latest_result:
+            new_record['issue'] = latest_result['issue']
+            
         self.data.append(new_record)
         
         # 日付でソート
