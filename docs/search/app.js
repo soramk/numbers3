@@ -61,6 +61,13 @@ function setupEventListeners() {
 
     // CSVダウンロード
     document.getElementById('csvDownloadBtn').addEventListener('click', exportCSV);
+
+    // ROIランキング
+    document.getElementById('showRankingBtn').addEventListener('click', showRoiRanking);
+    document.getElementById('closeModalBtn').addEventListener('click', closeRoiModal);
+    document.getElementById('rankingModal').addEventListener('click', (e) => {
+        if (e.target.id === 'rankingModal') closeRoiModal();
+    });
 }
 
 function switchTab(mode) {
@@ -488,4 +495,107 @@ function exportCSV() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+}
+
+// ------ ROIランキング ------
+function showRoiRanking() {
+    const modal = document.getElementById('rankingModal');
+    modal.classList.remove('hidden');
+
+    // 少し遅らせて計算（UIブロック回避用だが、ここでは簡易的に即実行）
+    setTimeout(calculateRoiRanking, 50);
+}
+
+function closeRoiModal() {
+    document.getElementById('rankingModal').classList.add('hidden');
+}
+
+function calculateRoiRanking() {
+    const listContainer = document.getElementById('rankingList');
+    listContainer.innerHTML = '<div class="text-center py-4"><div class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-500 border-t-transparent"></div><p class="mt-2 text-gray-500">計算中...</p></div>';
+
+    // 全履歴から各数字の出現回数をカウント
+    // ストレートのみ対象（ボックスは組み合わせが多いので今回は割愛、要望あれば追加）
+    const counts = {};
+    allData.forEach(item => {
+        const num = String(item.num).padStart(3, '0');
+        counts[num] = (counts[num] || 0) + 1;
+    });
+
+    // 000〜999までの各数字についてROI計算
+    // 条件: 毎回5口(1000円)購入、当選金額90,000円
+    const totalDraws = allData.length;
+    const costPerDraw = 1000; // 5口
+    const totalCost = totalDraws * costPerDraw;
+    const prize = 90000;
+
+    const ranking = [];
+    for (let i = 0; i < 1000; i++) {
+        const numStr = String(i).padStart(3, '0');
+        const count = counts[numStr] || 0;
+        const totalWin = count * prize * 5; // 5口分当選
+        const balance = totalWin - totalCost;
+        const roi = (totalWin / totalCost * 100);
+
+        ranking.push({
+            num: numStr,
+            count: count,
+            win: totalWin,
+            balance: balance,
+            roi: roi
+        });
+    }
+
+    // ROI降順ソート
+    ranking.sort((a, b) => b.roi - a.roi);
+
+    // Top 10表示
+    const top10 = ranking.slice(0, 10);
+
+    let html = '';
+    top10.forEach((item, index) => {
+        const rank = index + 1;
+        let rankColor = 'bg-gray-100 text-gray-600';
+        if (rank === 1) rankColor = 'bg-yellow-100 text-yellow-700 border-yellow-300';
+        if (rank === 2) rankColor = 'bg-gray-200 text-gray-700 border-gray-400';
+        if (rank === 3) rankColor = 'bg-orange-100 text-orange-700 border-orange-300';
+
+        html += `
+            <div class="flex items-center gap-4 p-4 rounded-xl border ${rankColor} shadow-sm transition-transform hover:scale-[1.01]">
+                <div class="text-2xl font-black w-8 text-center">${rank}</div>
+                <div class="text-3xl font-black tracking-widest text-[#333]">${item.num}</div>
+                <div class="flex-1 text-right">
+                    <div class="text-xs text-gray-500">出現回数</div>
+                    <div class="font-bold text-lg">${item.count}回</div>
+                </div>
+                <div class="flex-1 text-right border-l border-gray-300/50 pl-4">
+                    <div class="text-xs text-gray-500">収支</div>
+                    <div class="font-bold text-lg ${item.balance > 0 ? 'text-red-600' : 'text-blue-600'}">
+                        ${item.balance > 0 ? '+' : ''}${item.balance.toLocaleString()}
+                    </div>
+                </div>
+                <div class="flex-1 text-right border-l border-gray-300/50 pl-4 min-w-[80px]">
+                    <div class="text-xs text-gray-500">ROI</div>
+                    <div class="font-bold text-xl ${item.roi >= 100 ? 'text-red-600' : 'text-blue-600'}">
+                        ${item.roi.toFixed(1)}%
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    // ワースト1 (おまけ)
+    const worst = ranking[ranking.length - 1]; // 出現0回なら複数あるが、末尾を取得
+    html += `
+        <div class="mt-6 pt-4 border-t border-gray-200">
+            <h4 class="text-sm font-bold text-gray-500 mb-2">💩 ワースト1位 (ROI最低)</h4>
+            <div class="flex items-center gap-4 p-3 rounded-lg bg-blue-50 border border-blue-100 text-blue-900 opacity-70">
+                <div class="text-lg font-bold w-8 text-center">-</div>
+                <div class="text-xl font-bold tracking-widest">${worst.num}</div>
+                <div class="ml-auto text-sm">出現: ${worst.count}回 / 収支: ${worst.balance.toLocaleString()} / ROI: ${worst.roi.toFixed(1)}%</div>
+            </div>
+        </div>
+    `;
+
+    listContainer.innerHTML = html;
 }
