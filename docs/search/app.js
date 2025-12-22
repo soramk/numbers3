@@ -52,6 +52,10 @@ function setupEventListeners() {
     document.getElementById('searchBtn').addEventListener('click', performNumberSearch);
     document.getElementById('searchDateBtn').addEventListener('click', performDateSearch);
 
+    // リセットボタン
+    document.getElementById('resetNumberBtn').addEventListener('click', resetNumberForm);
+    document.getElementById('resetDateBtn').addEventListener('click', resetDateForm);
+
     // シミュレーション再計算
     document.getElementById('calcSimBtn').addEventListener('click', calculateSimulation);
 
@@ -143,6 +147,24 @@ function performDateSearch() {
 
     currentFilteredIndices = hitIndices;
     renderResults(hitIndices);
+}
+
+function resetNumberForm() {
+    document.getElementById('hundredSelect').value = '';
+    document.getElementById('tenSelect').value = '';
+    document.getElementById('oneSelect').value = '';
+    document.getElementById('boxSearch').checked = false;
+    currentFilteredIndices = [];
+    document.getElementById('resultArea').classList.add('hidden');
+    resetDisplays();
+}
+
+function resetDateForm() {
+    document.getElementById('searchMonth').value = '';
+    document.getElementById('searchDay').value = '';
+    currentFilteredIndices = [];
+    document.getElementById('resultArea').classList.add('hidden');
+    resetDisplays();
 }
 
 // ------ 共通描画 ------

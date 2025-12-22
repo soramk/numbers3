@@ -133,24 +133,41 @@
                     </div>
 
                     <!-- 検索ボタン -->
-                    <button id="searchBtn"
-                        class="h-12 w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                        </svg>
-                        数字で検索
-                    </button>
+                    <div class="flex gap-2 w-full">
+                        <button id="resetNumberBtn"
+                            class="h-12 w-16 flex-shrink-0 bg-gray-200 hover:bg-gray-300 text-gray-600 font-bold rounded-xl shadow-sm hover:shadow transition-all flex items-center justify-center"
+                            aria-label="リセット" title="入力をリセット">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                                </path>
+                            </svg>
+                        </button>
+                        <button id="searchBtn"
+                            class="h-12 flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                            数字で検索
+                        </button>
+                    </div>
                 </div>
 
                 <!-- オプション -->
                 <div class="mt-4 flex flex-wrap gap-4 items-center pl-1">
-                    <label class="inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="boxSearch"
-                            class="form-checkbox w-5 h-5 text-indigo-600 rounded border-gray-300 focus:ring-indigo-500">
-                        <span class="ml-2 text-gray-700 font-medium select-none">ボックス検索（順不同）</span>
-                    </label>
-                    <div class="text-xs text-gray-500 ml-2">※ 3つの数字が全て一致する組み合わせを検索します（例: 123 → 123, 132, 213, ...）</div>
+                    <div class="relative flex items-start">
+                        <div class="flex items-center h-5">
+                            <input id="boxSearch" type="checkbox"
+                                class="focus:ring-indigo-500 h-5 w-5 text-indigo-600 border-gray-300 rounded cursor-pointer">
+                        </div>
+                        <div class="ml-3 text-sm">
+                            <label for="boxSearch"
+                                class="font-medium text-gray-700 cursor-pointer select-none">ボックス検索（順不同）</label>
+                            <p class="text-gray-500 text-xs mt-0.5">※ 3つの数字が全て一致する組み合わせを検索します（例: 123 → 123, 132, 213...）
+                            </p>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -201,14 +218,25 @@
                     </div>
 
                     <!-- 検索ボタン -->
-                    <button id="searchDateBtn"
-                        class="h-12 w-full bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                        </svg>
-                        日付で検索
-                    </button>
+                    <div class="flex gap-2 w-full">
+                        <button id="resetDateBtn"
+                            class="h-12 w-16 flex-shrink-0 bg-gray-200 hover:bg-gray-300 text-gray-600 font-bold rounded-xl shadow-sm hover:shadow transition-all flex items-center justify-center"
+                            aria-label="リセット" title="入力をリセット">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                                </path>
+                            </svg>
+                        </button>
+                        <button id="searchDateBtn"
+                            class="h-12 flex-1 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                            日付で検索
+                        </button>
+                    </div>
                 </div>
                 <div class="text-xs text-gray-500 mt-4 ml-1">※ 過去のこの日に当選した全ての番号を表示します。（年は無視されます）</div>
             </div>
@@ -329,7 +357,7 @@
                     <div class="space-y-6">
                         <div>
                             <h3 class="text-sm font-semibold text-gray-600 mb-3">合計値の傾向</h3>
-                            <div class="h-32">
+                            <div class="h-32 relative">
                                 <canvas id="nextSumChart"></canvas>
                             </div>
                         </div>
@@ -363,13 +391,13 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                     <div class="bg-white/50 rounded-xl p-4">
                         <h3 class="text-sm font-semibold text-center text-gray-600 mb-4">曜日別出現率</h3>
-                        <div class="h-64">
+                        <div class="h-64 relative">
                             <canvas id="weekdayChart"></canvas>
                         </div>
                     </div>
                     <div class="bg-white/50 rounded-xl p-4">
                         <h3 class="text-sm font-semibold text-center text-gray-600 mb-4">月別出現率</h3>
-                        <div class="h-64">
+                        <div class="h-64 relative">
                             <canvas id="monthChart"></canvas>
                         </div>
                     </div>
