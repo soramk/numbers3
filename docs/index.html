@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="ja">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
@@ -10,66 +11,108 @@
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom@2.0.1/dist/chartjs-plugin-zoom.min.js"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="./public/styles.css">
+    <link rel="manifest" href="./manifest.json">
+    <script>
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('./service-worker.js')
+                    .then(reg => console.log('Main SW registered!', reg))
+                    .catch(err => console.log('Main SW registration failed', err));
+            });
+        }
+    </script>
     <style>
         * {
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
         }
+
         body {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%);
             background-size: 400% 400%;
             animation: gradientShift 15s ease infinite;
         }
+
         @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
         }
+
         .glass-card {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255, 255, 255, 0.3);
             box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
         }
+
         .prediction-card {
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
+
         .prediction-card:hover {
             transform: translateY(-4px) scale(1.02);
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
         }
+
         .fade-in {
             animation: fadeIn 0.6s ease-in;
         }
+
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
+
         .phase-tab-btn {
             transition: all 0.2s ease;
             cursor: pointer;
         }
+
         .phase-tab-btn.active {
             color: rgb(79, 70, 229);
             border-bottom: 2px solid rgb(79, 70, 229);
         }
+
         .phase-tab-btn:hover:not(.active) {
             color: rgb(99, 102, 241);
         }
+
         .sidebar-link {
             transition: all 0.2s ease;
         }
+
         .sidebar-link:hover {
             background: rgba(99, 102, 241, 0.1);
             transform: translateX(4px);
         }
+
         .sidebar-link.active {
             background: rgba(99, 102, 241, 0.15);
             border-left: 3px solid rgb(99, 102, 241);
         }
+
         .section-content {
             scroll-margin-top: 100px;
         }
+
         .sidebar-overlay {
             display: none;
             position: fixed;
@@ -80,23 +123,28 @@
             background: rgba(0, 0, 0, 0.5);
             z-index: 30;
         }
+
         .sidebar-overlay.open {
             display: block;
         }
+
         @media (max-width: 768px) {
             .sidebar {
                 transform: translateX(-100%);
                 transition: transform 0.3s ease;
             }
+
             .sidebar.open {
                 transform: translateX(0);
             }
         }
     </style>
 </head>
+
 <body class="min-h-screen">
     <!-- モバイルメニューボタン -->
-    <button id="mobileMenuBtn" class="fixed top-4 left-4 z-50 md:hidden bg-white/90 backdrop-blur-sm p-3 rounded-lg shadow-lg">
+    <button id="mobileMenuBtn"
+        class="fixed top-4 left-4 z-50 md:hidden bg-white/90 backdrop-blur-sm p-3 rounded-lg shadow-lg">
         <svg class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
         </svg>
@@ -106,54 +154,81 @@
     <div id="sidebarOverlay" class="sidebar-overlay"></div>
 
     <!-- サイドバー -->
-    <aside id="sidebar" class="fixed left-0 top-0 h-full w-64 bg-white/95 backdrop-blur-sm shadow-xl z-40 sidebar overflow-y-auto">
+    <aside id="sidebar"
+        class="fixed left-0 top-0 h-full w-64 bg-white/95 backdrop-blur-sm shadow-xl z-40 sidebar overflow-y-auto">
         <div class="p-6">
             <div class="mb-8 flex items-center justify-between">
                 <div>
-                    <h1 class="text-2xl font-extrabold bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                    <h1
+                        class="text-2xl font-extrabold bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
                         ナンバーズ3
                     </h1>
                     <p class="text-sm text-gray-600 mt-1">予測ツール</p>
                 </div>
                 <button id="closeSidebarBtn" class="md:hidden text-gray-500 hover:text-gray-700">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
                     </svg>
                 </button>
             </div>
-            
+
             <nav class="space-y-2">
-                <a href="#predictions" class="sidebar-link active flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 font-medium">
+                <a href="#predictions"
+                    class="sidebar-link active flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 font-medium">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
+                        </path>
                     </svg>
                     統合予測結果
                 </a>
-                <a href="#phase-chart" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 font-medium">
+                <a href="#phase-chart"
+                    class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 font-medium">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
+                        </path>
                     </svg>
                     位相推移グラフ
                 </a>
-                <a href="#methods" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 font-medium">
+                <a href="#methods"
+                    class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 font-medium">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z">
+                        </path>
                     </svg>
                     予測手法の詳細
                 </a>
-                <a href="#analysis" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 font-medium">
+                <a href="#analysis"
+                    class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 font-medium">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
+                        </path>
                     </svg>
                     詳細分析結果
+                </a>
+                <a href="search/index.html"
+                    class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 font-medium">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    過去データ検索・分析
                 </a>
             </nav>
 
             <div class="mt-8 pt-8 border-t border-gray-200">
-                <a href="analyzer.html" class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-lg font-semibold hover:from-purple-600 hover:to-indigo-600 transition-all duration-300 text-sm">
+                <a href="analyzer.html"
+                    class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-lg font-semibold hover:from-purple-600 hover:to-indigo-600 transition-all duration-300 text-sm">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
+                        </path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                     </svg>
                     詳細分析ツール
                 </a>
@@ -164,374 +239,463 @@
     <!-- メインコンテンツ -->
     <div class="md:ml-64">
         <div class="container mx-auto px-4 py-6 md:py-8 max-w-7xl">
-        <!-- ヘッダー -->
-        <header class="text-center mb-8 md:mb-12 fade-in">
-            <div class="glass-card rounded-2xl p-6 md:p-8 mb-6">
-                <h1 class="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-3 bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                    ナンバーズ3
-                </h1>
-                <p class="text-lg md:text-xl text-gray-700 font-medium mb-4">次回当選番号予測</p>
-                <div class="flex gap-3 justify-center flex-wrap">
-                    <a href="analyzer.html" class="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-xl font-semibold hover:from-purple-600 hover:to-indigo-600 transition-all duration-300 shadow-lg hover:shadow-xl">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                        </svg>
-                        詳細分析ツール
-                    </a>
-                </div>
-            </div>
-        </header>
-
-        <!-- ローディング表示 -->
-        <div id="loading" class="text-center py-20 fade-in">
-            <div class="inline-block relative">
-                <div class="absolute inset-0 rounded-full border-4 border-purple-200 animate-ping"></div>
-                <div class="relative inline-block animate-spin rounded-full h-16 w-16 border-4 border-purple-600 border-t-transparent"></div>
-            </div>
-            <p class="mt-6 text-lg font-medium text-white drop-shadow-lg">予測データを読み込み中...</p>
-        </div>
-
-        <!-- エラー表示 -->
-        <div id="error" class="hidden glass-card rounded-xl p-5 mb-6 border-l-4 border-red-500 fade-in">
-            <div class="flex items-center gap-3">
-                <svg class="w-6 h-6 text-red-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                <p id="errorMessage" class="text-red-700 font-medium"></p>
-            </div>
-        </div>
-
-        <!-- メインコンテンツ -->
-        <div id="content" class="hidden space-y-6">
             <!-- ヘッダー -->
-            <header class="text-center mb-6 fade-in">
-                <div class="glass-card rounded-2xl p-4 md:p-6">
-                    <h1 class="text-3xl md:text-4xl font-extrabold mb-2 bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                        ナンバーズ3予測ツール
+            <header class="text-center mb-8 md:mb-12 fade-in">
+                <div class="glass-card rounded-2xl p-6 md:p-8 mb-6">
+                    <h1
+                        class="text-4xl md:text-5xl lg:text-6xl font-extrabold mb-3 bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                        ナンバーズ3
                     </h1>
-                    <p class="text-sm md:text-base text-gray-600">次回当選番号予測</p>
+                    <p class="text-lg md:text-xl text-gray-700 font-medium mb-4">次回当選番号予測</p>
+                    <div class="flex gap-3 justify-center flex-wrap">
+                        <a href="analyzer.html"
+                            class="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-xl font-semibold hover:from-purple-600 hover:to-indigo-600 transition-all duration-300 shadow-lg hover:shadow-xl">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
+                                </path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            </svg>
+                            詳細分析ツール
+                        </a>
+                    </div>
                 </div>
             </header>
 
-            <!-- 履歴選択 -->
-            <div class="glass-card rounded-2xl p-5 md:p-6 fade-in">
-                <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
-                    <div class="flex-1">
-                        <label for="historySelect" class="block text-sm font-semibold text-gray-700 mb-2.5 flex items-center gap-2">
-                            <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                            </svg>
-                            予測履歴を選択
-                        </label>
-                        <select id="historySelect" class="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 font-medium text-gray-700 shadow-sm hover:border-purple-300">
-                            <option value="latest">最新の予測</option>
-                        </select>
+            <!-- ローディング表示 -->
+            <div id="loading" class="text-center py-20 fade-in">
+                <div class="inline-block relative">
+                    <div class="absolute inset-0 rounded-full border-4 border-purple-200 animate-ping"></div>
+                    <div
+                        class="relative inline-block animate-spin rounded-full h-16 w-16 border-4 border-purple-600 border-t-transparent">
                     </div>
-                    <div class="flex gap-4 md:gap-8">
-                        <div class="text-center md:text-left">
-                            <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">最終更新</p>
-                            <p id="lastUpdate" class="text-base md:text-lg font-bold text-gray-800"></p>
+                </div>
+                <p class="mt-6 text-lg font-medium text-white drop-shadow-lg">予測データを読み込み中...</p>
+            </div>
+
+            <!-- エラー表示 -->
+            <div id="error" class="hidden glass-card rounded-xl p-5 mb-6 border-l-4 border-red-500 fade-in">
+                <div class="flex items-center gap-3">
+                    <svg class="w-6 h-6 text-red-500 flex-shrink-0" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <p id="errorMessage" class="text-red-700 font-medium"></p>
+                </div>
+            </div>
+
+            <!-- メインコンテンツ -->
+            <div id="content" class="hidden space-y-6">
+                <!-- ヘッダー -->
+                <header class="text-center mb-6 fade-in">
+                    <div class="glass-card rounded-2xl p-4 md:p-6">
+                        <h1
+                            class="text-3xl md:text-4xl font-extrabold mb-2 bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                            ナンバーズ3予測ツール
+                        </h1>
+                        <p class="text-sm md:text-base text-gray-600">次回当選番号予測</p>
+                    </div>
+                </header>
+
+                <!-- 履歴選択 -->
+                <div class="glass-card rounded-2xl p-5 md:p-6 fade-in">
+                    <div class="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+                        <div class="flex-1">
+                            <label for="historySelect"
+                                class="block text-sm font-semibold text-gray-700 mb-2.5 flex items-center gap-2">
+                                <svg class="w-4 h-4 text-purple-600" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z">
+                                    </path>
+                                </svg>
+                                予測履歴を選択
+                            </label>
+                            <select id="historySelect"
+                                class="w-full px-4 py-3 bg-white border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition-all duration-200 font-medium text-gray-700 shadow-sm hover:border-purple-300">
+                                <option value="latest">最新の予測</option>
+                            </select>
                         </div>
-                        <div class="text-center md:text-right">
-                            <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">データ件数</p>
-                            <p id="totalRecords" class="text-base md:text-lg font-bold text-gray-800"></p>
+                        <div class="flex gap-4 md:gap-8">
+                            <div class="text-center md:text-left">
+                                <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">最終更新</p>
+                                <p id="lastUpdate" class="text-base md:text-lg font-bold text-gray-800"></p>
+                            </div>
+                            <div class="text-center md:text-right">
+                                <p class="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">データ件数</p>
+                                <p id="totalRecords" class="text-base md:text-lg font-bold text-gray-800"></p>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- 統合予測結果 -->
-            <div id="predictions" class="glass-card rounded-2xl p-6 md:p-8 fade-in section-content">
-                <div class="flex items-center gap-3 mb-6">
-                    <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-lg">
-                        <span class="text-white font-bold text-xl">🎯</span>
+                <!-- 統合予測結果 -->
+                <div id="predictions" class="glass-card rounded-2xl p-6 md:p-8 fade-in section-content">
+                    <div class="flex items-center gap-3 mb-6">
+                        <div
+                            class="w-12 h-12 rounded-xl bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center shadow-lg">
+                            <span class="text-white font-bold text-xl">🎯</span>
+                        </div>
+                        <div>
+                            <h2 class="text-2xl md:text-3xl font-bold text-gray-800">統合予測結果</h2>
+                            <p class="text-sm text-gray-600 mt-0.5">全手法を統合した予測（重み付き平均）</p>
+                        </div>
                     </div>
-                    <div>
-                        <h2 class="text-2xl md:text-3xl font-bold text-gray-800">統合予測結果</h2>
-                        <p class="text-sm text-gray-600 mt-0.5">全手法を統合した予測（重み付き平均）</p>
+                    <div class="space-y-8">
+                        <!-- セット予測（一段目） -->
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                                <span
+                                    class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm">S</span>
+                                セット予測（3桁）
+                            </h3>
+                            <div id="setPredictions"
+                                class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4"></div>
+                        </div>
+                        <!-- ミニ予測（二段目） -->
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
+                                <span
+                                    class="w-8 h-8 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white font-bold text-sm">M</span>
+                                ミニ予測（下2桁）
+                            </h3>
+                            <div id="miniPredictions"
+                                class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4"></div>
+                        </div>
                     </div>
                 </div>
-                <div class="space-y-8">
-                    <!-- セット予測（一段目） -->
-                    <div>
-                        <h3 class="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                            <span class="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center text-white font-bold text-sm">S</span>
-                            セット予測（3桁）
-                        </h3>
-                        <div id="setPredictions" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4"></div>
+
+                <!-- 位相グラフ -->
+                <div id="phase-chart" class="glass-card rounded-2xl p-6 md:p-8 fade-in section-content">
+                    <h2 class="text-2xl md:text-3xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+                        <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
+                            </path>
+                        </svg>
+                        位相推移グラフ
+                    </h2>
+                    <!-- タブ切り替え -->
+                    <div class="mb-4 flex gap-2 border-b border-gray-200">
+                        <button
+                            class="phase-tab-btn active px-4 py-2 text-sm font-semibold text-indigo-600 border-b-2 border-indigo-600 transition-colors"
+                            data-pos="hundred">
+                            百の位
+                        </button>
+                        <button
+                            class="phase-tab-btn px-4 py-2 text-sm font-semibold text-gray-600 hover:text-indigo-600 transition-colors"
+                            data-pos="ten">
+                            十の位
+                        </button>
+                        <button
+                            class="phase-tab-btn px-4 py-2 text-sm font-semibold text-gray-600 hover:text-indigo-600 transition-colors"
+                            data-pos="one">
+                            一の位
+                        </button>
+                        <button
+                            class="phase-tab-btn px-4 py-2 text-sm font-semibold text-gray-600 hover:text-indigo-600 transition-colors"
+                            data-pos="all">
+                            全て表示
+                        </button>
                     </div>
-                    <!-- ミニ予測（二段目） -->
-                    <div>
-                        <h3 class="text-lg font-semibold text-gray-700 mb-4 flex items-center gap-2">
-                            <span class="w-8 h-8 rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center text-white font-bold text-sm">M</span>
-                            ミニ予測（下2桁）
-                        </h3>
-                        <div id="miniPredictions" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4"></div>
+                    <div class="h-96 md:h-[500px] bg-white rounded-xl p-4 shadow-inner">
+                        <canvas id="phaseChart"></canvas>
                     </div>
                 </div>
-            </div>
 
-            <!-- 位相グラフ -->
-            <div id="phase-chart" class="glass-card rounded-2xl p-6 md:p-8 fade-in section-content">
-                <h2 class="text-2xl md:text-3xl font-bold text-gray-800 mb-6 flex items-center gap-3">
-                    <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                    </svg>
-                    位相推移グラフ
-                </h2>
-                <!-- タブ切り替え -->
-                <div class="mb-4 flex gap-2 border-b border-gray-200">
-                    <button class="phase-tab-btn active px-4 py-2 text-sm font-semibold text-indigo-600 border-b-2 border-indigo-600 transition-colors" data-pos="hundred">
-                        百の位
-                    </button>
-                    <button class="phase-tab-btn px-4 py-2 text-sm font-semibold text-gray-600 hover:text-indigo-600 transition-colors" data-pos="ten">
-                        十の位
-                    </button>
-                    <button class="phase-tab-btn px-4 py-2 text-sm font-semibold text-gray-600 hover:text-indigo-600 transition-colors" data-pos="one">
-                        一の位
-                    </button>
-                    <button class="phase-tab-btn px-4 py-2 text-sm font-semibold text-gray-600 hover:text-indigo-600 transition-colors" data-pos="all">
-                        全て表示
-                    </button>
+                <!-- 予測手法の詳細 -->
+                <div id="methods" class="glass-card rounded-2xl p-6 md:p-8 fade-in section-content">
+                    <h2 class="text-2xl md:text-3xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+                        <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z">
+                            </path>
+                        </svg>
+                        予測手法の詳細
+                    </h2>
+                    <div id="methodDetails" class="space-y-4"></div>
                 </div>
-                <div class="h-96 md:h-[500px] bg-white rounded-xl p-4 shadow-inner">
-                    <canvas id="phaseChart"></canvas>
-                </div>
-            </div>
 
-            <!-- 予測手法の詳細 -->
-            <div id="methods" class="glass-card rounded-2xl p-6 md:p-8 fade-in section-content">
-                <h2 class="text-2xl md:text-3xl font-bold text-gray-800 mb-6 flex items-center gap-3">
-                    <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"></path>
-                    </svg>
-                    予測手法の詳細
-                </h2>
-                <div id="methodDetails" class="space-y-4"></div>
-            </div>
+                <!-- 詳細分析結果 -->
+                <div id="analysis" class="glass-card rounded-2xl p-6 md:p-8 fade-in section-content">
+                    <h2 class="text-2xl md:text-3xl font-bold text-gray-800 mb-6 flex items-center gap-3">
+                        <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
+                            </path>
+                        </svg>
+                        詳細分析結果
+                    </h2>
+                    <div class="space-y-4">
+                        <!-- 相関分析 -->
+                        <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
+                            <button
+                                class="analysis-detail-btn w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                                data-analysis="correlations">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold">
+                                        📊
+                                    </div>
+                                    <div class="text-left">
+                                        <h3 class="font-bold text-gray-800">相関分析</h3>
+                                        <p class="text-xs text-gray-600">桁間相関・自己相関の分析結果</p>
+                                    </div>
+                                </div>
+                                <svg class="w-5 h-5 text-gray-400 transform transition-transform" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div id="detail-correlations" class="analysis-detail-content hidden mt-4"></div>
+                        </div>
 
-            <!-- 詳細分析結果 -->
-            <div id="analysis" class="glass-card rounded-2xl p-6 md:p-8 fade-in section-content">
-                <h2 class="text-2xl md:text-3xl font-bold text-gray-800 mb-6 flex items-center gap-3">
-                    <svg class="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
-                    </svg>
-                    詳細分析結果
-                </h2>
-                <div class="space-y-4">
-                    <!-- 相関分析 -->
-                    <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
-                        <button class="analysis-detail-btn w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors" data-analysis="correlations">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white font-bold">
-                                    📊
+                        <!-- トレンド分析 -->
+                        <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
+                            <button
+                                class="analysis-detail-btn w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                                data-analysis="trends">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-white font-bold">
+                                        📈
+                                    </div>
+                                    <div class="text-left">
+                                        <h3 class="font-bold text-gray-800">トレンド分析</h3>
+                                        <p class="text-xs text-gray-600">短期・中期・長期トレンドの分析結果</p>
+                                    </div>
                                 </div>
-                                <div class="text-left">
-                                    <h3 class="font-bold text-gray-800">相関分析</h3>
-                                    <p class="text-xs text-gray-600">桁間相関・自己相関の分析結果</p>
-                                </div>
-                            </div>
-                            <svg class="w-5 h-5 text-gray-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                            </svg>
-                        </button>
-                        <div id="detail-correlations" class="analysis-detail-content hidden mt-4"></div>
-                    </div>
+                                <svg class="w-5 h-5 text-gray-400 transform transition-transform" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div id="detail-trends" class="analysis-detail-content hidden mt-4"></div>
+                        </div>
 
-                    <!-- トレンド分析 -->
-                    <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
-                        <button class="analysis-detail-btn w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors" data-analysis="trends">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-white font-bold">
-                                    📈
+                        <!-- クラスタリング分析 -->
+                        <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
+                            <button
+                                class="analysis-detail-btn w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                                data-analysis="clustering">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
+                                        🎯
+                                    </div>
+                                    <div class="text-left">
+                                        <h3 class="font-bold text-gray-800">クラスタリング分析</h3>
+                                        <p class="text-xs text-gray-600">パターンのグループ化分析結果</p>
+                                    </div>
                                 </div>
-                                <div class="text-left">
-                                    <h3 class="font-bold text-gray-800">トレンド分析</h3>
-                                    <p class="text-xs text-gray-600">短期・中期・長期トレンドの分析結果</p>
-                                </div>
-                            </div>
-                            <svg class="w-5 h-5 text-gray-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                            </svg>
-                        </button>
-                        <div id="detail-trends" class="analysis-detail-content hidden mt-4"></div>
-                    </div>
+                                <svg class="w-5 h-5 text-gray-400 transform transition-transform" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div id="detail-clustering" class="analysis-detail-content hidden mt-4"></div>
+                        </div>
 
-                    <!-- クラスタリング分析 -->
-                    <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
-                        <button class="analysis-detail-btn w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors" data-analysis="clustering">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center text-white font-bold">
-                                    🎯
+                        <!-- 周波数解析 -->
+                        <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
+                            <button
+                                class="analysis-detail-btn w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                                data-analysis="frequency">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-10 h-10 rounded-lg bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center text-white font-bold">
+                                        🌊
+                                    </div>
+                                    <div class="text-left">
+                                        <h3 class="font-bold text-gray-800">周波数解析</h3>
+                                        <p class="text-xs text-gray-600">フーリエ変換による周期性の検出</p>
+                                    </div>
                                 </div>
-                                <div class="text-left">
-                                    <h3 class="font-bold text-gray-800">クラスタリング分析</h3>
-                                    <p class="text-xs text-gray-600">パターンのグループ化分析結果</p>
-                                </div>
-                            </div>
-                            <svg class="w-5 h-5 text-gray-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                            </svg>
-                        </button>
-                        <div id="detail-clustering" class="analysis-detail-content hidden mt-4"></div>
-                    </div>
+                                <svg class="w-5 h-5 text-gray-400 transform transition-transform" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div id="detail-frequency" class="analysis-detail-content hidden mt-4"></div>
+                        </div>
 
-                    <!-- 周波数解析 -->
-                    <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
-                        <button class="analysis-detail-btn w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors" data-analysis="frequency">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-yellow-500 to-orange-500 flex items-center justify-center text-white font-bold">
-                                    🌊
+                        <!-- ウェーブレット変換 -->
+                        <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
+                            <button
+                                class="analysis-detail-btn w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                                data-analysis="wavelet">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold">
+                                        🌊
+                                    </div>
+                                    <div class="text-left">
+                                        <h3 class="font-bold text-gray-800">ウェーブレット変換</h3>
+                                        <p class="text-xs text-gray-600">時間-周波数解析によるパターン検出</p>
+                                    </div>
                                 </div>
-                                <div class="text-left">
-                                    <h3 class="font-bold text-gray-800">周波数解析</h3>
-                                    <p class="text-xs text-gray-600">フーリエ変換による周期性の検出</p>
-                                </div>
-                            </div>
-                            <svg class="w-5 h-5 text-gray-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                            </svg>
-                        </button>
-                        <div id="detail-frequency" class="analysis-detail-content hidden mt-4"></div>
-                    </div>
+                                <svg class="w-5 h-5 text-gray-400 transform transition-transform" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div id="detail-wavelet" class="analysis-detail-content hidden mt-4"></div>
+                        </div>
 
-                    <!-- ウェーブレット変換 -->
-                    <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
-                        <button class="analysis-detail-btn w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors" data-analysis="wavelet">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center text-white font-bold">
-                                    🌊
+                        <!-- 主成分分析（PCA） -->
+                        <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
+                            <button
+                                class="analysis-detail-btn w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                                data-analysis="pca">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold">
+                                        📊
+                                    </div>
+                                    <div class="text-left">
+                                        <h3 class="font-bold text-gray-800">主成分分析（PCA）</h3>
+                                        <p class="text-xs text-gray-600">データ構造の次元削減と可視化</p>
+                                    </div>
                                 </div>
-                                <div class="text-left">
-                                    <h3 class="font-bold text-gray-800">ウェーブレット変換</h3>
-                                    <p class="text-xs text-gray-600">時間-周波数解析によるパターン検出</p>
-                                </div>
-                            </div>
-                            <svg class="w-5 h-5 text-gray-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                            </svg>
-                        </button>
-                        <div id="detail-wavelet" class="analysis-detail-content hidden mt-4"></div>
-                    </div>
+                                <svg class="w-5 h-5 text-gray-400 transform transition-transform" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div id="detail-pca" class="analysis-detail-content hidden mt-4"></div>
+                        </div>
 
-                    <!-- 主成分分析（PCA） -->
-                    <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
-                        <button class="analysis-detail-btn w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors" data-analysis="pca">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-500 flex items-center justify-center text-white font-bold">
-                                    📊
+                        <!-- t-SNE -->
+                        <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
+                            <button
+                                class="analysis-detail-btn w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                                data-analysis="tsne">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-10 h-10 rounded-lg bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center text-white font-bold">
+                                        🎨
+                                    </div>
+                                    <div class="text-left">
+                                        <h3 class="font-bold text-gray-800">t-SNE可視化</h3>
+                                        <p class="text-xs text-gray-600">高次元データの2次元可視化</p>
+                                    </div>
                                 </div>
-                                <div class="text-left">
-                                    <h3 class="font-bold text-gray-800">主成分分析（PCA）</h3>
-                                    <p class="text-xs text-gray-600">データ構造の次元削減と可視化</p>
-                                </div>
-                            </div>
-                            <svg class="w-5 h-5 text-gray-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                            </svg>
-                        </button>
-                        <div id="detail-pca" class="analysis-detail-content hidden mt-4"></div>
-                    </div>
+                                <svg class="w-5 h-5 text-gray-400 transform transition-transform" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div id="detail-tsne" class="analysis-detail-content hidden mt-4"></div>
+                        </div>
 
-                    <!-- t-SNE -->
-                    <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
-                        <button class="analysis-detail-btn w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors" data-analysis="tsne">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-pink-500 to-rose-500 flex items-center justify-center text-white font-bold">
-                                    🎨
+                        <!-- 連続性分析 -->
+                        <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
+                            <button
+                                class="analysis-detail-btn w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                                data-analysis="continuity">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-10 h-10 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center text-white font-bold">
+                                        🔄
+                                    </div>
+                                    <div class="text-left">
+                                        <h3 class="font-bold text-gray-800">連続性分析</h3>
+                                        <p class="text-xs text-gray-600">連続出現・交互出現パターンの検出</p>
+                                    </div>
                                 </div>
-                                <div class="text-left">
-                                    <h3 class="font-bold text-gray-800">t-SNE可視化</h3>
-                                    <p class="text-xs text-gray-600">高次元データの2次元可視化</p>
-                                </div>
-                            </div>
-                            <svg class="w-5 h-5 text-gray-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                            </svg>
-                        </button>
-                        <div id="detail-tsne" class="analysis-detail-content hidden mt-4"></div>
-                    </div>
+                                <svg class="w-5 h-5 text-gray-400 transform transition-transform" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div id="detail-continuity" class="analysis-detail-content hidden mt-4"></div>
+                        </div>
 
-                    <!-- 連続性分析 -->
-                    <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
-                        <button class="analysis-detail-btn w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors" data-analysis="continuity">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center text-white font-bold">
-                                    🔄
+                        <!-- 変化点検出 -->
+                        <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
+                            <button
+                                class="analysis-detail-btn w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                                data-analysis="change_points">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-10 h-10 rounded-lg bg-gradient-to-br from-red-500 to-pink-500 flex items-center justify-center text-white font-bold">
+                                        ⚡
+                                    </div>
+                                    <div class="text-left">
+                                        <h3 class="font-bold text-gray-800">変化点検出</h3>
+                                        <p class="text-xs text-gray-600">トレンド変化・レジーム変化の検出</p>
+                                    </div>
                                 </div>
-                                <div class="text-left">
-                                    <h3 class="font-bold text-gray-800">連続性分析</h3>
-                                    <p class="text-xs text-gray-600">連続出現・交互出現パターンの検出</p>
-                                </div>
-                            </div>
-                            <svg class="w-5 h-5 text-gray-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                            </svg>
-                        </button>
-                        <div id="detail-continuity" class="analysis-detail-content hidden mt-4"></div>
-                    </div>
+                                <svg class="w-5 h-5 text-gray-400 transform transition-transform" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div id="detail-change_points" class="analysis-detail-content hidden mt-4"></div>
+                        </div>
 
-                    <!-- 変化点検出 -->
-                    <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
-                        <button class="analysis-detail-btn w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors" data-analysis="change_points">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-red-500 to-pink-500 flex items-center justify-center text-white font-bold">
-                                    ⚡
+                        <!-- ネットワーク分析 -->
+                        <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
+                            <button
+                                class="analysis-detail-btn w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                                data-analysis="network">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-white font-bold">
+                                        🕸️
+                                    </div>
+                                    <div class="text-left">
+                                        <h3 class="font-bold text-gray-800">ネットワーク分析</h3>
+                                        <p class="text-xs text-gray-600">グラフ理論による数字遷移の分析</p>
+                                    </div>
                                 </div>
-                                <div class="text-left">
-                                    <h3 class="font-bold text-gray-800">変化点検出</h3>
-                                    <p class="text-xs text-gray-600">トレンド変化・レジーム変化の検出</p>
-                                </div>
-                            </div>
-                            <svg class="w-5 h-5 text-gray-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                            </svg>
-                        </button>
-                        <div id="detail-change_points" class="analysis-detail-content hidden mt-4"></div>
-                    </div>
+                                <svg class="w-5 h-5 text-gray-400 transform transition-transform" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div id="detail-network" class="analysis-detail-content hidden mt-4"></div>
+                        </div>
 
-                    <!-- ネットワーク分析 -->
-                    <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
-                        <button class="analysis-detail-btn w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors" data-analysis="network">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center text-white font-bold">
-                                    🕸️
+                        <!-- 遺伝的アルゴリズム最適化 -->
+                        <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
+                            <button
+                                class="analysis-detail-btn w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors"
+                                data-analysis="genetic">
+                                <div class="flex items-center gap-3">
+                                    <div
+                                        class="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-500 to-yellow-500 flex items-center justify-center text-white font-bold">
+                                        🧬
+                                    </div>
+                                    <div class="text-left">
+                                        <h3 class="font-bold text-gray-800">遺伝的アルゴリズム最適化</h3>
+                                        <p class="text-xs text-gray-600">予測手法の重み最適化</p>
+                                    </div>
                                 </div>
-                                <div class="text-left">
-                                    <h3 class="font-bold text-gray-800">ネットワーク分析</h3>
-                                    <p class="text-xs text-gray-600">グラフ理論による数字遷移の分析</p>
-                                </div>
-                            </div>
-                            <svg class="w-5 h-5 text-gray-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                            </svg>
-                        </button>
-                        <div id="detail-network" class="analysis-detail-content hidden mt-4"></div>
-                    </div>
-
-                    <!-- 遺伝的アルゴリズム最適化 -->
-                    <div class="bg-white/60 backdrop-blur-sm rounded-xl p-4 border border-gray-200">
-                        <button class="analysis-detail-btn w-full flex items-center justify-between p-3 hover:bg-gray-50 rounded-lg transition-colors" data-analysis="genetic">
-                            <div class="flex items-center gap-3">
-                                <div class="w-10 h-10 rounded-lg bg-gradient-to-br from-amber-500 to-yellow-500 flex items-center justify-center text-white font-bold">
-                                    🧬
-                                </div>
-                                <div class="text-left">
-                                    <h3 class="font-bold text-gray-800">遺伝的アルゴリズム最適化</h3>
-                                    <p class="text-xs text-gray-600">予測手法の重み最適化</p>
-                                </div>
-                            </div>
-                            <svg class="w-5 h-5 text-gray-400 transform transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
-                            </svg>
-                        </button>
-                        <div id="detail-genetic" class="analysis-detail-content hidden mt-4"></div>
+                                <svg class="w-5 h-5 text-gray-400 transform transition-transform" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M19 9l-7 7-7-7"></path>
+                                </svg>
+                            </button>
+                            <div id="detail-genetic" class="analysis-detail-content hidden mt-4"></div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
     </div>
 
     <script src="app.js"></script>
@@ -541,25 +705,25 @@
         const sidebar = document.getElementById('sidebar');
         const sidebarOverlay = document.getElementById('sidebarOverlay');
         const closeSidebarBtn = document.getElementById('closeSidebarBtn');
-        
+
         function openSidebar() {
             sidebar.classList.add('open');
             sidebarOverlay.classList.add('open');
         }
-        
+
         function closeSidebar() {
             sidebar.classList.remove('open');
             sidebarOverlay.classList.remove('open');
         }
-        
+
         if (mobileMenuBtn && sidebar) {
             mobileMenuBtn.addEventListener('click', openSidebar);
         }
-        
+
         if (closeSidebarBtn) {
             closeSidebarBtn.addEventListener('click', closeSidebar);
         }
-        
+
         if (sidebarOverlay) {
             sidebarOverlay.addEventListener('click', closeSidebar);
         }
@@ -570,15 +734,15 @@
                 e.preventDefault();
                 const targetId = link.getAttribute('href').substring(1);
                 const targetElement = document.getElementById(targetId);
-                
+
                 if (targetElement) {
                     // アクティブ状態を更新
                     document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
                     link.classList.add('active');
-                    
+
                     // スムーズスクロール
                     targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    
+
                     // モバイルでメニューを閉じる
                     if (window.innerWidth < 768) {
                         sidebar.classList.remove('open');
@@ -590,7 +754,7 @@
         // スクロール時にアクティブなセクションを更新
         const sections = document.querySelectorAll('.section-content');
         const sidebarLinks = document.querySelectorAll('.sidebar-link');
-        
+
         function updateActiveSection() {
             let current = '';
             sections.forEach(section => {
@@ -613,5 +777,5 @@
         updateActiveSection(); // 初期状態を設定
     </script>
 </body>
-</html>
 
+</html>
