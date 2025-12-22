@@ -731,21 +731,25 @@
         // サイドバーリンクのクリック処理
         document.querySelectorAll('.sidebar-link').forEach(link => {
             link.addEventListener('click', (e) => {
-                e.preventDefault();
-                const targetId = link.getAttribute('href').substring(1);
-                const targetElement = document.getElementById(targetId);
+                const href = link.getAttribute('href');
+                // ページ内リンク(#始まり)のみスムーズスクロールを適用
+                if (href.startsWith('#')) {
+                    e.preventDefault();
+                    const targetId = href.substring(1);
+                    const targetElement = document.getElementById(targetId);
 
-                if (targetElement) {
-                    // アクティブ状態を更新
-                    document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
-                    link.classList.add('active');
+                    if (targetElement) {
+                        // アクティブ状態を更新
+                        document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+                        link.classList.add('active');
 
-                    // スムーズスクロール
-                    targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        // スムーズスクロール
+                        targetElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-                    // モバイルでメニューを閉じる
-                    if (window.innerWidth < 768) {
-                        sidebar.classList.remove('open');
+                        // モバイルでメニューを閉じる
+                        if (window.innerWidth < 768) {
+                            sidebar.classList.remove('open');
+                        }
                     }
                 }
             });
