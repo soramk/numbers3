@@ -1,4 +1,4 @@
-const CACHE_NAME = 'numbers3-analysis-v1';
+const CACHE_NAME = 'numbers3-analysis-v2';
 const ASSETS = [
     './search/index.html',
     './search/app.js',
@@ -14,6 +14,7 @@ self.addEventListener('install', (event) => {
             return cache.addAll(ASSETS);
         })
     );
+    self.skipWaiting();
 });
 
 self.addEventListener('fetch', (event) => {
