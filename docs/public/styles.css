@@ -209,7 +209,7 @@ h1 {
     color: var(--muted-text);
 }
 
-input {
+input:not([type="checkbox"]):not([type="radio"]) {
     background: #ffffff;
     border: 1px solid var(--border-color);
     color: var(--text-color);
@@ -221,6 +221,12 @@ input {
     width: 100%;
     -webkit-appearance: none;
     appearance: none;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+    accent-color: var(--accent-color);
+    cursor: pointer;
 }
 
 input::placeholder {
