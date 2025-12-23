@@ -21,7 +21,7 @@ jobs:
     permissions:
       contents: write
     
-    timeout-minutes: 240  # 暴走防止のため240分でタイムアウト
+    timeout-minutes: 360  # 暴走防止のため360分でタイムアウト
 
     steps:
       - name: Checkout repository
