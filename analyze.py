@@ -341,11 +341,11 @@ class NumbersAnalyzer:
     # 学習に使用するデータ件数（最新N件のみを使用して高速化）
     # ★重要: これを増やすと、RandomForest, XGBoost, LightGBM, LSTMなど全ての学習時間が比例して伸びます。
     # 影響度: ★★☆（全モデルの学習時間に影響）
-    PREDICTION_MAX_TRAINING_SAMPLES = 200
+    PREDICTION_MAX_TRAINING_SAMPLES = 100  
     
     # --- LSTM専用設定（Fullモードのみ） ---
     # LSTMは計算コストが非常に高いです。
-    LSTM_WINDOW_SIZE = 30  # LSTMで使用するシーケンス長（過去30回のデータ）
+    LSTM_WINDOW_SIZE = 10  # LSTMで使用するシーケンス長（過去10回のデータ）
     # LSTMの学習エポック数（高速化のため5）
     # 影響度: ★★★（増やしすぎると学習時間が激増します。通常は50-100必要ですが5に制限中）
     LSTM_EPOCHS = 5
@@ -1964,9 +1964,9 @@ class NumbersAnalyzer:
             return None
         
         try:
-            # データ量を制限（最新250件のみ使用、計算時間を大幅に短縮）
+            # データ量を制限（最新50件のみ使用、計算時間を大幅に短縮）
             # データ量が少ない場合は全データを使用
-            max_data_points = 250
+            max_data_points = 50
             if len(self.df) <= max_data_points:
                 df_for_pca = self.df
                 print(f"[analyze_pca] データ量が{len(self.df)}件のため、全データを使用します")
@@ -2017,7 +2017,7 @@ class NumbersAnalyzer:
             print(f"[analyze_pca] PCA解析に失敗: {e}")
             return None
     
-    def analyze_tsne(self, max_data_points: int = 250) -> Dict[str, any]:
+    def analyze_tsne(self, max_data_points: int = 50) -> Dict[str, any]:
         """
         t-SNEによる高次元データの可視化
         
