@@ -24,9 +24,17 @@
         }
 
         @keyframes gradientShift {
-            0% { background-position: 0% 50%; }
-            50% { background-position: 100% 50%; }
-            100% { background-position: 0% 50%; }
+            0% {
+                background-position: 0% 50%;
+            }
+
+            50% {
+                background-position: 100% 50%;
+            }
+
+            100% {
+                background-position: 0% 50%;
+            }
         }
 
         .glass-card {
@@ -55,8 +63,15 @@
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .matching-ball {
@@ -70,10 +85,25 @@
             margin: 0 2px;
         }
 
-        .hit-set { background-color: #ef4444; color: white; }
-        .hit-box { background-color: #f59e0b; color: white; }
-        .hit-mini { background-color: #10b981; color: white; }
-        .no-hit { background-color: #e5e7eb; color: #4b5563; }
+        .hit-set {
+            background-color: #ef4444;
+            color: white;
+        }
+
+        .hit-box {
+            background-color: #f59e0b;
+            color: white;
+        }
+
+        .hit-mini {
+            background-color: #10b981;
+            color: white;
+        }
+
+        .no-hit {
+            background-color: #e5e7eb;
+            color: #4b5563;
+        }
     </style>
 </head>
 
@@ -92,27 +122,37 @@
         <div class="p-6">
             <div class="mb-8 flex items-center justify-between">
                 <div>
-                    <h1 class="text-2xl font-extrabold bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">ナンバーズ3</h1>
+                    <h1
+                        class="text-2xl font-extrabold bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                        ナンバーズ3</h1>
                     <p class="text-sm text-gray-600 mt-1">予測ツール</p>
                 </div>
             </div>
 
             <nav class="space-y-2">
-                <a href="index.html" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 font-medium">
+                <a href="index.html"
+                    class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 font-medium">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6">
+                        </path>
                     </svg>
                     トップ・統合予測
                 </a>
-                <a href="history.html" class="sidebar-link active flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 font-medium">
+                <a href="history.html"
+                    class="sidebar-link active flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 font-medium">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01">
+                        </path>
                     </svg>
                     勝敗履歴
                 </a>
-                <a href="search/index.html" class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 font-medium">
+                <a href="search/index.html"
+                    class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 font-medium">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                     </svg>
                     過去データ検索・分析
                 </a>
@@ -125,7 +165,8 @@
         <div class="w-full max-w-full px-4 py-6 md:py-8">
             <header class="text-center mb-8 fade-in">
                 <div class="glass-card rounded-2xl p-6 md:p-8 w-full">
-                    <h1 class="text-3xl md:text-4xl font-extrabold mb-2 bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                    <h1
+                        class="text-3xl md:text-4xl font-extrabold mb-2 bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
                         勝敗履歴一覧
                     </h1>
                     <p class="text-gray-600">過去の予測と実際の当選番号の照合結果</p>
@@ -133,7 +174,9 @@
             </header>
 
             <div id="loading" class="text-center py-20 fade-in">
-                <div class="animate-spin rounded-full h-12 w-12 border-4 border-purple-600 border-t-transparent inline-block"></div>
+                <div
+                    class="animate-spin rounded-full h-12 w-12 border-4 border-purple-600 border-t-transparent inline-block">
+                </div>
                 <p class="mt-4 text-white font-medium">履歴データを照合中...</p>
             </div>
 
@@ -160,8 +203,8 @@
                         <table class="w-full text-left border-collapse">
                             <thead>
                                 <tr class="bg-gray-50/50">
-                                    <th class="px-6 py-4 text-sm font-bold text-gray-700 border-b">予測日</th>
-                                    <th class="px-6 py-4 text-sm font-bold text-gray-700 border-b">対象回結果</th>
+                                    <th class="px-6 py-4 text-sm font-bold text-gray-700 border-b">予測対象日</th>
+                                    <th class="px-6 py-4 text-sm font-bold text-gray-700 border-b">当選番号 (結果)</th>
                                     <th class="px-6 py-4 text-sm font-bold text-gray-700 border-b">統合予測（セット）</th>
                                     <th class="px-6 py-4 text-sm font-bold text-gray-700 border-b">統合予測（ミニ）</th>
                                     <th class="px-6 py-4 text-sm font-bold text-gray-700 border-b">判定</th>
@@ -179,4 +222,5 @@
 
     <script src="history.js"></script>
 </body>
+
 </html>

@@ -20,47 +20,60 @@ async function initHistory() {
     if (!historyResponse.ok) throw new Error('History list not found');
     const historyList = await historyResponse.json();
 
-    // 最新の20件程度を対象にする（多すぎると負荷がかかるため）
-    const targetHistory = historyList.slice(0, 30);
+    // 1. 同日の重複を排除 (最新のみ残す)
+    const uniqueHistory = [];
+    const seenDates = new Set();
+    for (const item of historyList) {
+        if (!seenDates.has(item.date)) {
+            uniqueHistory.push(item);
+            seenDates.add(item.date);
+        }
+    }
+
+    // 最新の30日分を対象にする
+    const targetHistory = uniqueHistory.slice(0, 30);
 
     // 各予測の詳細データを取得
     const predictionDetails = await Promise.all(
         targetHistory.map(async (item) => {
             try {
+                // 当選番号の特定: 
+                // この予測日 (item.date) の結果は、historyList のどこかの statistics.last_date に記録されている
+                const resultEntry = historyList.find(h => h.statistics.last_date === item.date);
+
                 const res = await fetch(`data/${item.file}`);
                 if (!res.ok) return null;
-                return { ...item, data: await res.json() };
+                return {
+                    ...item,
+                    data: await res.json(),
+                    actualResult: resultEntry ? resultEntry.statistics.last_number : null
+                };
             } catch (e) {
                 return null;
             }
         })
     );
 
-    renderHistory(predictionDetails, targetHistory);
+    renderHistory(predictionDetails);
 }
 
-function renderHistory(predictionDetails, rawHistory) {
+function renderHistory(predictionDetails) {
     const tableBody = document.getElementById('historyTableBody');
     const loading = document.getElementById('loading');
     const container = document.getElementById('historyContainer');
 
-    loading.classList.add('hidden');
-    container.classList.remove('hidden');
+    if (loading) loading.classList.add('hidden');
+    if (container) container.classList.remove('hidden');
+    if (tableBody) tableBody.innerHTML = ''; // クリア
 
     let totalChecked = 0;
     let setBoxHits = 0;
     let miniHits = 0;
 
-    predictionDetails.forEach((entry, index) => {
+    predictionDetails.forEach((entry) => {
         if (!entry || !entry.data) return;
 
-        // 当選番号の特定: 
-        // predictionDetails[index] が予測した回の結果は、その1つ前の履歴（index-1）の statistics.last_number にある
-        // ただし、リストは降順（最新が0）なので、i番目の予測の結果は i-1 番目に記録されている。
-        let actualResult = null;
-        if (index > 0) {
-            actualResult = predictionDetails[index - 1].statistics.last_number;
-        }
+        const actualResult = entry.actualResult;
 
         const row = document.createElement('tr');
         row.className = 'hover:bg-gray-50/50 transition-colors border-b last:border-0';
@@ -75,16 +88,16 @@ function renderHistory(predictionDetails, rawHistory) {
 
         if (actualResult) {
             totalChecked++;
-            const { hitType, hitValue } = checkHitLevel(actualResult, setPredictions, miniPredictions);
+            const { hitType } = checkHitLevel(actualResult, setPredictions, miniPredictions);
 
             if (hitType === 'set') {
-                judgementHtml = '<span class="px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold">セット的中！</span>';
+                judgementHtml = '<span class="px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold whitespace-nowrap">セット的中！</span>';
                 setBoxHits++;
             } else if (hitType === 'box') {
-                judgementHtml = '<span class="px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold">ボックス的中！</span>';
+                judgementHtml = '<span class="px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold whitespace-nowrap">ボックス的中！</span>';
                 setBoxHits++;
             } else if (hitType === 'mini') {
-                judgementHtml = '<span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold">ミニ的中！</span>';
+                judgementHtml = '<span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold whitespace-nowrap">ミニ的中！</span>';
                 miniHits++;
             } else {
                 judgementHtml = '<span class="text-gray-400">残念</span>';
@@ -95,33 +108,40 @@ function renderHistory(predictionDetails, rawHistory) {
             miniHtml = highlightMatches(miniPredictions, actualResult.substring(1), 'mini');
         }
 
-        row.innerHTML = `
-            <td class="px-6 py-4 text-sm text-gray-600">
-                <div class="font-bold">${entry.date}</div>
-                <div class="text-xs opacity-60">${entry.time}</div>
-            </td>
-            <td class="px-6 py-4">
-                <div class="flex items-center gap-1">
-                    ${renderNumbers(actualResult || '???')}
-                </div>
-            </td>
-            <td class="px-6 py-4 text-sm">
-                <div class="flex flex-wrap gap-2">${setHtml}</div>
-            </td>
-            <td class="px-6 py-4 text-sm">
-                <div class="flex flex-wrap gap-2">${miniHtml}</div>
-            </td>
-            <td class="px-6 py-4">
-                ${judgementHtml}
-            </td>
-        `;
-        tableBody.appendChild(row);
+        if (tableBody) {
+            row.innerHTML = `
+                <td class="px-6 py-4 text-sm text-gray-600">
+                    <div class="font-bold">${entry.date}</div>
+                    <div class="text-xs opacity-60">予測時刻: ${entry.time}</div>
+                </td>
+                <td class="px-6 py-4">
+                    <div class="flex items-center gap-1">
+                        ${renderNumbers(actualResult || '???')}
+                    </div>
+                    ${actualResult ? `<div class="text-[10px] text-gray-400 mt-1">${entry.date} の結果</div>` : ''}
+                </td>
+                <td class="px-6 py-4 text-sm">
+                    <div class="flex flex-wrap gap-2">${setHtml}</div>
+                </td>
+                <td class="px-6 py-4 text-sm">
+                    <div class="flex flex-wrap gap-2">${miniHtml}</div>
+                </td>
+                <td class="px-6 py-4">
+                    ${judgementHtml}
+                </td>
+            `;
+            tableBody.appendChild(row);
+        }
     });
 
     // 統計更新
-    document.getElementById('statTotal').textContent = totalChecked + '回';
-    document.getElementById('statHits').textContent = setBoxHits + '回';
-    document.getElementById('statMiniHits').textContent = miniHits + '回';
+    const statTotal = document.getElementById('statTotal');
+    const statHits = document.getElementById('statHits');
+    const statMiniHits = document.getElementById('statMiniHits');
+
+    if (statTotal) statTotal.textContent = totalChecked + '回';
+    if (statHits) statHits.textContent = setBoxHits + '回';
+    if (statMiniHits) statMiniHits.textContent = miniHits + '回';
 }
 
 function checkHitLevel(actual, setPreds, miniPreds) {
@@ -146,26 +166,22 @@ function highlightMatches(preds, actual, type) {
     }
 
     return preds.map(p => {
-        let isHit = false;
         let bgColor = 'bg-white';
         let textColor = 'text-gray-600';
         let borderColor = 'border-gray-200';
 
         if (type === 'set') {
             if (p.number === actual) {
-                isHit = true;
                 bgColor = 'bg-red-500';
                 textColor = 'text-white';
                 borderColor = 'border-red-600';
             } else if (p.number.split('').sort().join('') === actual.split('').sort().join('')) {
-                isHit = true;
                 bgColor = 'bg-amber-400';
                 textColor = 'text-white';
                 borderColor = 'border-amber-500';
             }
         } else if (type === 'mini') {
             if (p.number === actual) {
-                isHit = true;
                 bgColor = 'bg-green-500';
                 textColor = 'text-white';
                 borderColor = 'border-green-600';
