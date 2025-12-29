@@ -1723,7 +1723,10 @@ class NumbersAnalyzer:
         for pos in ['hundred', 'ten', 'one']:
             try:
                 # データを正規化（0-9を0-1に）
-                data = self.df[pos].values.astype(float) / 9.0
+                # 学習データを最新1000件に制限して高速化
+                max_samples = 1000
+                start_idx = max(0, len(self.df) - max_samples - window_size)
+                data = self.df[pos].iloc[start_idx:].values.astype(float) / 9.0
                 
                 # シーケンスデータを作成
                 X, y = [], []
