@@ -6,10 +6,89 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <title>Numbers3 Neural Equation Solver</title>
-    <!-- docs/ 配下から public/ へのパス -->
-    <link rel="stylesheet" href="public/styles.css">
+    <title>詳細分析ツール - ナンバーズ3予測</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="./public/styles.css">
+    <style>
+        * {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: #111827;
+            background-image:
+                radial-gradient(circle at 50% 50%, rgba(17, 24, 39, 0.7) 0%, rgba(17, 24, 39, 1) 100%),
+                url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%236b7280' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2v-4h4v-2h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2v-4h4v-2H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+        }
+
+        .glass-card {
+            background: rgba(31, 41, 55, 0.8);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .sidebar-link {
+            transition: all 0.2s ease;
+        }
+
+        .sidebar-link:hover {
+            background: rgba(99, 102, 241, 0.1);
+            transform: translateX(4px);
+        }
+
+        .sidebar-link.active {
+            background: rgba(99, 102, 241, 0.15);
+            border-left: 3px solid rgb(99, 102, 241);
+        }
+
+        .fade-in {
+            animation: fadeIn 0.6s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 30;
+        }
+
+        .sidebar-overlay.open {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease;
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+        }
+    </style>
 </head>
 
 <body class="min-h-screen">
@@ -21,13 +100,16 @@
         </svg>
     </button>
 
+    <!-- サイドバーオーバーレイ（モバイル用） -->
+    <div id="sidebarOverlay" class="sidebar-overlay"></div>
+
     <!-- サイドバー -->
     <aside id="sidebar"
         class="fixed left-0 top-0 h-full w-64 bg-gray-900/95 backdrop-blur-sm shadow-xl z-40 sidebar overflow-y-auto">
         <div class="p-6">
             <div class="mb-8 flex items-center justify-between">
                 <div class="flex flex-col items-center">
-                    <img src="public/numberslogo_02.png" alt="NUMBERS3 PREDICT" class="w-48 mb-2">
+                    <img src="./public/numberslogo_02.png" alt="NUMBERS3 PREDICT" class="w-48 mb-2">
                 </div>
                 <button id="closeSidebarBtn" class="md:hidden text-gray-500 hover:text-gray-300">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -62,19 +144,23 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                     </svg>
-                    過去データ検索
+                    過去データ検索・分析
                 </a>
+            </nav>
+
+            <div class="mt-8 pt-8 border-t border-gray-200">
                 <a href="analyzer.html"
-                    class="sidebar-link active flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 font-medium">
-                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    class="sidebar-link active flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-purple-500 to-indigo-500 text-white rounded-lg font-semibold hover:from-purple-600 hover:to-indigo-600 transition-all duration-300 text-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path>
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
+                        </path>
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path>
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                     </svg>
                     詳細分析ツール
                 </a>
-            </nav>
+            </div>
         </div>
     </aside>
 
@@ -276,30 +362,37 @@
 
     <!-- スクリプト読み込み -->
     <script>
-        // サイドバー制御
-        const sidebar = document.getElementById('sidebar');
+        // モバイルメニューの開閉
         const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const sidebar = document.getElementById('sidebar');
+        const sidebarOverlay = document.getElementById('sidebarOverlay');
         const closeSidebarBtn = document.getElementById('closeSidebarBtn');
 
-        mobileMenuBtn.addEventListener('click', () => {
-            sidebar.classList.add('active');
-        });
+        function openSidebar() {
+            sidebar.classList.add('open');
+            sidebarOverlay.classList.add('open');
+        }
 
-        closeSidebarBtn.addEventListener('click', () => {
-            sidebar.classList.remove('active');
-        });
+        function closeSidebar() {
+            sidebar.classList.remove('open');
+            sidebarOverlay.classList.remove('open');
+        }
 
-        // 外側をクリックして閉じる
-        document.addEventListener('click', (e) => {
-            if (sidebar.classList.contains('active') &&
-                !sidebar.contains(e.target) &&
-                !mobileMenuBtn.contains(e.target)) {
-                sidebar.classList.remove('active');
-            }
-        });
+        if (mobileMenuBtn && sidebar) {
+            mobileMenuBtn.addEventListener('click', openSidebar);
+        }
+
+        if (closeSidebarBtn) {
+            closeSidebarBtn.addEventListener('click', closeSidebar);
+        }
+
+        if (sidebarOverlay) {
+            sidebarOverlay.addEventListener('click', closeSidebar);
+        }
     </script>
     <script type="module" src="public/js/app.js"></script>
     <script src="analyzer.js"></script>
 </body>
 
 </html>
+```
