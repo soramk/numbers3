@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             });
         }
-        
+
         // 履歴リストを読み込んでから最新の予測を読み込む
         await loadPredictionHistory();
         await loadPredictionData('latest');
@@ -63,19 +63,19 @@ async function loadPredictionHistory() {
 function populateHistorySelect() {
     const historySelect = document.getElementById('historySelect');
     if (!historySelect) return;
-    
+
     // 既存のオプションをクリア（「最新の予測」は残す）
     const latestOption = historySelect.querySelector('option[value="latest"]');
     historySelect.innerHTML = '';
     if (latestOption) {
         historySelect.appendChild(latestOption);
     }
-    
+
     // 履歴を追加（時刻も表示）
     predictionHistory.forEach(entry => {
         const option = document.createElement('option');
         option.value = entry.file;
-        
+
         // タイムスタンプから日時を取得
         let date;
         if (entry.timestamp) {
@@ -91,13 +91,13 @@ function populateHistorySelect() {
         } else {
             date = new Date(entry.date);
         }
-        
+
         const dateStr = date.toLocaleDateString('ja-JP', {
             year: 'numeric',
             month: '2-digit',
             day: '2-digit'
         });
-        
+
         // 時刻情報を取得（entry.timeがある場合はそれを使用、なければタイムスタンプから）
         let timeStr = '';
         if (entry.time) {
@@ -113,12 +113,12 @@ function populateHistorySelect() {
                 second: '2-digit'
             });
         }
-        
+
         // 同じ日付の複数の予測を区別できるように時刻も表示
         option.textContent = `${dateStr} ${timeStr}`;
         option.setAttribute('data-date', entry.date || dateStr);
         option.setAttribute('data-time', entry.time || timeStr);
-        
+
         historySelect.appendChild(option);
     });
 }
@@ -128,18 +128,18 @@ function populateHistorySelect() {
  * @param {string} file - ファイル名（'latest' または 'prediction_YYYY-MM-DD_HHMMSS.json'）
  */
 async function loadPredictionData(file = 'latest') {
-    const filePath = file === 'latest' 
+    const filePath = file === 'latest'
         ? 'data/latest_prediction.json'
         : `data/${file}`;
-    
+
     // キャッシュを無効化して最新のデータを取得
     const url = filePath + (file === 'latest' ? '?' + new Date().getTime() : '');
     const response = await fetch(url);
-    
+
     if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText} - ファイル: ${filePath}`);
     }
-    
+
     predictionData = await response.json();
     console.log(`[loadPredictionData] データを読み込みました: ${file}`);
     renderContent();
@@ -159,22 +159,25 @@ function renderContent() {
 
     // 基本情報を表示
     renderBasicInfo();
-    
+
     // セット予測を表示（少し遅延させてアニメーション効果）
     setTimeout(() => renderSetPredictions(), 100);
-    
+
     // ミニ予測を表示
     setTimeout(() => renderMiniPredictions(), 200);
-    
+
     // 位相グラフを描画
     setTimeout(() => {
         renderPhaseChart('all');
         setupPhaseChartTabs();
     }, 300);
-    
+
     // 予測手法の詳細を表示（予測結果も含む）
     setTimeout(() => renderMethodDetails(), 400);
-    
+
+    // 分析パラメータを表示
+    setTimeout(() => renderAnalysisParameters(), 450);
+
     // 詳細分析結果のボタンイベントを設定
     setTimeout(() => setupAnalysisDetailButtons(), 500);
 }
@@ -185,12 +188,12 @@ function renderContent() {
 function setupAnalysisDetailButtons() {
     const buttons = document.querySelectorAll('.analysis-detail-btn');
     console.log(`[setupAnalysisDetailButtons] ${buttons.length} 個のボタンが見つかりました`);
-    
+
     buttons.forEach(btn => {
         // 既存のイベントリスナーを削除（重複を防ぐ）
         const newBtn = btn.cloneNode(true);
         btn.parentNode.replaceChild(newBtn, btn);
-        
+
         newBtn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -207,21 +210,21 @@ function setupAnalysisDetailButtons() {
 function toggleAnalysisDetail(analysisType, btn) {
     const detailDiv = document.getElementById(`detail-${analysisType}`);
     const icon = btn.querySelector('svg');
-    
+
     if (!detailDiv) {
         console.error(`[toggleAnalysisDetail] detail-${analysisType} が見つかりません`);
         return;
     }
-    
+
     const isHidden = detailDiv.classList.contains('hidden');
-    
+
     if (isHidden) {
         // 詳細を表示
         detailDiv.classList.remove('hidden');
         if (icon) {
             icon.style.transform = 'rotate(180deg)';
         }
-        
+
         // 詳細内容を生成（まだ生成されていない場合、または空の場合）
         const contentDiv = detailDiv.querySelector('.analysis-detail-content') || detailDiv;
         if (!contentDiv.innerHTML.trim() || contentDiv.innerHTML === '') {
@@ -242,23 +245,23 @@ function toggleAnalysisDetail(analysisType, btn) {
  */
 function renderAnalysisDetail(analysisType, container) {
     console.log(`[renderAnalysisDetail] ${analysisType} をレンダリング開始`);
-    
+
     if (!predictionData) {
         console.error('[renderAnalysisDetail] predictionData がありません');
         container.innerHTML = '<p class="text-gray-600">予測データが読み込まれていません。</p>';
         return;
     }
-    
+
     if (!predictionData.advanced_analysis) {
         console.warn('[renderAnalysisDetail] advanced_analysis がありません');
         container.innerHTML = '<p class="text-gray-600">詳細分析データがありません。</p>';
         return;
     }
-    
+
     const analysis = predictionData.advanced_analysis;
     console.log(`[renderAnalysisDetail] advanced_analysis:`, Object.keys(analysis));
-    
-    switch(analysisType) {
+
+    switch (analysisType) {
         case 'correlations':
             if (!analysis.correlations) {
                 console.warn('[renderAnalysisDetail] correlations データがありません');
@@ -351,7 +354,7 @@ function renderAnalysisDetail(analysisType, container) {
             console.warn(`[renderAnalysisDetail] 未知の分析タイプ: ${analysisType}`);
             container.innerHTML = '<p class="text-gray-600">詳細情報がありません。</p>';
     }
-    
+
     console.log(`[renderAnalysisDetail] ${analysisType} のレンダリング完了`);
 }
 
@@ -371,6 +374,114 @@ function renderBasicInfo() {
 
     const totalRecords = document.getElementById('totalRecords');
     totalRecords.textContent = predictionData.statistics.total_records.toLocaleString() + '件';
+
+    // モードバッジの設定
+    const modeBadge = document.getElementById('analysis-mode-badge');
+    if (modeBadge && predictionData.mode) {
+        modeBadge.classList.remove('hidden');
+        const badgeSpan = modeBadge.querySelector('span');
+        badgeSpan.textContent = predictionData.mode === 'full' ? 'FULL ANALYSIS MODE' : 'LIGHT ANALYSIS MODE';
+        if (predictionData.mode === 'full') {
+            badgeSpan.classList.replace('bg-indigo-500/20', 'bg-purple-500/20');
+            badgeSpan.classList.replace('text-indigo-400', 'text-purple-400');
+            badgeSpan.classList.replace('border-indigo-500/30', 'border-purple-500/30');
+        } else {
+            badgeSpan.classList.replace('bg-purple-500/20', 'bg-indigo-500/20');
+            badgeSpan.classList.replace('text-purple-400', 'text-indigo-400');
+            badgeSpan.classList.replace('border-purple-500/30', 'border-indigo-500/30');
+        }
+    }
+}
+
+/**
+ * 分析パラメータを表示
+ */
+function renderAnalysisParameters() {
+    const container = document.getElementById('parameters-content');
+    if (!container || !predictionData.parameters) return;
+
+    const params = predictionData.parameters;
+    container.innerHTML = '';
+
+    // 共通設定
+    const commonCard = createParameterCard('共通設定', '📋', [
+        { label: '過去データ窓幅', value: params.common.past_window_size + '件' },
+        { label: '学習サンプル数', value: params.common.max_training_samples + '件' }
+    ], 'from-blue-500 to-indigo-600');
+    container.appendChild(commonCard);
+
+    // 機械学習モデル (RF, XGB, LGBM)
+    const mlCard = createParameterCard('機械学習モデル', '🤖', [
+        { label: 'Random Forest', value: `木: ${params.models.random_forest.n_estimators}, 深さ: ${params.models.random_forest.max_depth}` },
+        { label: 'XGBoost', value: `木: ${params.models.xgboost.n_estimators}, 学習率: ${params.models.xgboost.learning_rate}` },
+        { label: 'LightGBM', value: `木: ${params.models.lightgbm.n_estimators}, 学習率: ${params.models.lightgbm.learning_rate}` }
+    ], 'from-emerald-500 to-teal-600');
+    container.appendChild(mlCard);
+
+    // 時系列・統計モデル
+    const statItems = [
+        { label: 'ARIMA', value: `階数: (${params.models.arima.order.join(',')})` },
+        { label: 'カルマンフィルタ', value: `観測ノイズ: ${params.models.kalman.r}` },
+        { label: 'HMM (隠れマルコフ)', value: `状態数: ${params.models.hmm.n_components}` }
+    ];
+    const statCard = createParameterCard('時系列・統計', '📈', statItems, 'from-orange-400 to-rose-500');
+    container.appendChild(statCard);
+
+    // 高度な分析 (Fullモードのみの項目を含む)
+    const advancedItems = [];
+    if (params.models.lstm) {
+        advancedItems.push({ label: 'LSTM', value: `回数: ${params.models.lstm.epochs}, 最大学習: ${params.models.lstm.max_training_samples}` });
+    }
+    if (params.models.stacking) {
+        advancedItems.push({ label: 'Stacking', value: `分割数: ${params.models.stacking.cv}, 特徴量重視` });
+    }
+    if (params.models.genetic) {
+        advancedItems.push({ label: '遺伝的最適化', value: `個体: ${params.models.genetic.population}, 世代: ${params.models.genetic.generations}` });
+    }
+
+    if (advancedItems.length > 0) {
+        const advancedCard = createParameterCard('高度な分析・最適化', '🧠', advancedItems, 'from-purple-500 to-pink-600');
+        container.appendChild(advancedCard);
+    }
+
+    // 次元削減・可視化
+    const visualItems = [
+        { label: 't-SNE', value: `${params.models.tsne.max_data_points}地点` }
+    ];
+    if (params.models.pca) {
+        visualItems.push({ label: 'PCA (主成分分析)', value: `${params.models.pca.max_data_points}地点` });
+    }
+    const visualCard = createParameterCard('可視化・次元削減', '🔭', visualItems, 'from-cyan-500 to-blue-500');
+    container.appendChild(visualCard);
+}
+
+/**
+ * パラメータカードのHTML要素を作成
+ */
+function createParameterCard(title, icon, items, gradient) {
+    const div = document.createElement('div');
+    div.className = 'bg-gray-800/40 backdrop-blur-md rounded-xl p-5 border border-gray-700/50 hover:border-gray-600 transition-all duration-300';
+
+    let itemsHtml = items.map(item => `
+        <div class="flex justify-between items-center py-2 border-b border-gray-700/30 last:border-0">
+            <span class="text-xs text-gray-400 font-medium">${item.label}</span>
+            <span class="text-sm text-gray-200 font-bold">${item.value}</span>
+        </div>
+    `).join('');
+
+    div.innerHTML = `
+        <div class="flex items-center gap-3 mb-4">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br ${gradient} flex items-center justify-center text-sm">
+                ${icon}
+            </div>
+            <h3 class="font-bold text-white text-base">${title}</h3>
+        </div>
+        <div class="space-y-1">
+            ${itemsHtml}
+        </div>
+    `;
+
+    return div;
 }
 
 /**
@@ -385,7 +496,7 @@ function renderSetPredictions() {
         card.style.opacity = '0';
         card.style.transform = 'translateY(20px)';
         container.appendChild(card);
-        
+
         // アニメーションで表示
         setTimeout(() => {
             card.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
@@ -407,7 +518,7 @@ function renderMiniPredictions() {
         card.style.opacity = '0';
         card.style.transform = 'translateY(20px)';
         container.appendChild(card);
-        
+
         // アニメーションで表示
         setTimeout(() => {
             card.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
@@ -423,7 +534,7 @@ function renderMiniPredictions() {
  */
 function createPredictionCard(prediction, rank, color, type = 'set') {
     const card = document.createElement('div');
-    
+
     // カラーマッピング（より洗練されたグラデーション）
     const colorMap = {
         'blue': {
@@ -443,24 +554,24 @@ function createPredictionCard(prediction, rank, color, type = 'set') {
             rankBg: 'bg-green-100'
         }
     };
-    
+
     const colors = colorMap[color] || colorMap.blue;
     card.className = `prediction-card ${colors.bgLight} rounded-2xl p-6 border-2 ${colors.border} shadow-lg ${colors.shadow} hover:shadow-2xl`;
-    
+
     const confidencePercent = (prediction.confidence * 100).toFixed(1);
-    const confidenceColor = prediction.confidence >= 0.7 ? 'text-emerald-600' : 
-                           prediction.confidence >= 0.6 ? 'text-yellow-500' : 'text-orange-500';
-    
+    const confidenceColor = prediction.confidence >= 0.7 ? 'text-emerald-600' :
+        prediction.confidence >= 0.6 ? 'text-yellow-500' : 'text-orange-500';
+
     // ランクバッジのスタイル
     const rankBadgeStyle = rank === 1 ? 'bg-gradient-to-r from-yellow-400 to-orange-400 text-white' :
-                          rank === 2 ? 'bg-gradient-to-r from-gray-300 to-gray-400 text-white' :
-                          rank === 3 ? 'bg-gradient-to-r from-orange-300 to-orange-400 text-white' :
-                          rank === 4 ? 'bg-gradient-to-r from-blue-300 to-blue-400 text-white' :
-                          'bg-gradient-to-r from-purple-300 to-purple-400 text-white';
-    
+        rank === 2 ? 'bg-gradient-to-r from-gray-300 to-gray-400 text-white' :
+            rank === 3 ? 'bg-gradient-to-r from-orange-300 to-orange-400 text-white' :
+                rank === 4 ? 'bg-gradient-to-r from-blue-300 to-blue-400 text-white' :
+                    'bg-gradient-to-r from-purple-300 to-purple-400 text-white';
+
     // 関連する予測手法を見つける
     const relatedMethods = findRelatedMethods(prediction.number, type);
-    
+
     // 関連手法のアイコンを生成
     let relatedMethodsIcons = '';
     if (relatedMethods.length > 0) {
@@ -480,7 +591,7 @@ function createPredictionCard(prediction, rank, color, type = 'set') {
             'conformal': `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`,
             'kalman': `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>`
         };
-        
+
         const methodColorClasses = {
             'chaos': 'bg-purple-100 text-purple-700',
             'markov': 'bg-blue-100 text-blue-700',
@@ -497,7 +608,7 @@ function createPredictionCard(prediction, rank, color, type = 'set') {
             'conformal': 'bg-lime-100 text-lime-700',
             'kalman': 'bg-sky-100 text-sky-700'
         };
-        
+
         relatedMethodsIcons = `
             <div class="mt-3 pt-3 border-t border-gray-200">
                 <p class="text-xs font-semibold text-gray-600 mb-2">関連する予測手法</p>
@@ -513,7 +624,7 @@ function createPredictionCard(prediction, rank, color, type = 'set') {
             </div>
         `;
     }
-    
+
     card.innerHTML = `
         <div class="flex items-center justify-center mb-4">
             <span class="px-3 py-1 ${rankBadgeStyle} rounded-full text-xs font-bold shadow-md">第${rank}候補</span>
@@ -538,7 +649,7 @@ function createPredictionCard(prediction, rank, color, type = 'set') {
         </div>
         ${relatedMethodsIcons}
     `;
-    
+
     return card;
 }
 
@@ -549,20 +660,20 @@ function findRelatedMethods(predictionNumber, type) {
     if (!predictionData || !predictionData.methods) {
         return [];
     }
-    
+
     const relatedMethods = [];
     const methods = predictionData.methods;
-    
+
     Object.keys(methods).forEach(methodKey => {
         const method = methods[methodKey];
         if (!method) return;
-        
+
         const methodPrediction = type === 'set' ? method.set_prediction : method.mini_prediction;
         if (methodPrediction === predictionNumber) {
             relatedMethods.push(methodKey);
         }
     });
-    
+
     return relatedMethods;
 }
 
@@ -621,10 +732,10 @@ let currentPhaseView = 'all';
 function renderPhaseChart(viewPos = 'all') {
     const ctx = document.getElementById('phaseChart');
     if (!ctx) return;
-    
+
     const ctx2d = ctx.getContext('2d');
     const phases = predictionData.recent_phases;
-    
+
     if (!phases || Object.keys(phases).length === 0) {
         return;
     }
@@ -634,7 +745,7 @@ function renderPhaseChart(viewPos = 'all') {
     let dataLength = phases.hundred.length;
     let step = 1;
     let labels = [];
-    
+
     if (dataLength > maxDataPoints) {
         step = Math.ceil(dataLength / maxDataPoints);
         labels = Array.from({ length: Math.ceil(dataLength / step) }, (_, i) => {
@@ -644,7 +755,7 @@ function renderPhaseChart(viewPos = 'all') {
     } else {
         labels = Array.from({ length: dataLength }, (_, i) => `回${i + 1}`);
     }
-    
+
     // データを間引き
     const getSampledData = (data) => {
         if (dataLength <= maxDataPoints) return data;
@@ -654,7 +765,7 @@ function renderPhaseChart(viewPos = 'all') {
         }
         return sampled;
     };
-    
+
     // 既存のチャートを破棄
     if (phaseChart) {
         phaseChart.destroy();
@@ -662,7 +773,7 @@ function renderPhaseChart(viewPos = 'all') {
 
     // 表示するデータセットを決定
     const datasets = [];
-    
+
     if (viewPos === 'all') {
         // 全て表示（透明度を上げて見やすく）
         datasets.push(
@@ -731,7 +842,7 @@ function renderPhaseChart(viewPos = 'all') {
                 data: phases.one
             }
         };
-        
+
         const config = configs[viewPos];
         if (config) {
             datasets.push({
@@ -752,9 +863,9 @@ function renderPhaseChart(viewPos = 'all') {
     }
 
     // Chart.jsのズームプラグインが利用可能かチェック
-    const zoomPlugin = window.Chart && window.Chart.register ? 
+    const zoomPlugin = window.Chart && window.Chart.register ?
         (window.chartjsZoom || {}) : null;
-    
+
     phaseChart = new Chart(ctx2d, {
         type: 'line',
         data: {
@@ -809,7 +920,7 @@ function renderPhaseChart(viewPos = 'all') {
                     cornerRadius: 8,
                     displayColors: true,
                     callbacks: {
-                        label: function(context) {
+                        label: function (context) {
                             return `${context.dataset.label}: ${context.parsed.y.toFixed(3)}`;
                         }
                     }
@@ -874,7 +985,7 @@ function renderPhaseChart(viewPos = 'all') {
             }
         }
     });
-    
+
     currentPhaseView = viewPos;
 }
 
@@ -887,7 +998,7 @@ function setupPhaseChartTabs() {
         tab.addEventListener('click', (e) => {
             e.preventDefault();
             const pos = tab.getAttribute('data-pos');
-            
+
             // アクティブ状態を更新
             tabs.forEach(t => {
                 t.classList.remove('active', 'border-indigo-600', 'text-indigo-600');
@@ -895,7 +1006,7 @@ function setupPhaseChartTabs() {
             });
             tab.classList.add('active', 'border-indigo-600', 'text-indigo-600');
             tab.classList.remove('text-gray-600');
-            
+
             // グラフを再描画
             renderPhaseChart(pos);
         });
@@ -1079,18 +1190,18 @@ function renderMethodDetails() {
             console.warn(`[renderMethodDetails] メソッド ${methodKey} が undefined です`);
             return;
         }
-        
+
         const card = document.createElement('div');
         const colorClasses = methodColorClasses[methodKey] || methodColorClasses.chaos;
         const methodName = methodNames[methodKey] || methodKey;
-        
+
         card.className = `${colorClasses.bg} rounded-2xl p-6 border-2 ${colorClasses.border} shadow-lg hover:shadow-xl transition-all duration-300 hover:-translate-y-1`;
-        
+
         const confidencePercent = (method.confidence * 100).toFixed(1);
-        
+
         // データ利用件数のバッジを取得
         const dataUsageBadge = getMethodDataUsageBadgeHtml(methodKey);
-        
+
         card.innerHTML = `
             <div class="flex items-start justify-between mb-4">
                 <div class="flex items-center gap-3">
@@ -1137,10 +1248,10 @@ function renderMethodDetails() {
                 <div class="method-theory-content"></div>
             </div>
         `;
-        
+
         container.appendChild(card);
     });
-    
+
     // 詳細ボタンのイベントリスナーを設定
     document.querySelectorAll('.detail-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -1148,7 +1259,7 @@ function renderMethodDetails() {
             toggleMethodDetail(methodKey);
         });
     });
-    
+
     // 学術的説明ボタンのイベントリスナーを設定
     document.querySelectorAll('.theory-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
@@ -1164,16 +1275,16 @@ function renderMethodDetails() {
 function toggleMethodDetail(methodKey) {
     const detailDiv = document.getElementById(`detail-${methodKey}`);
     const btn = document.querySelector(`.detail-btn[data-method="${methodKey}"]`);
-    
+
     if (!detailDiv || !btn) return;
-    
+
     const isHidden = detailDiv.classList.contains('hidden');
-    
+
     if (isHidden) {
         // 詳細を表示
         detailDiv.classList.remove('hidden');
         btn.textContent = '📊 分析過程を閉じる';
-        
+
         // 詳細内容を生成（まだ生成されていない場合）
         const contentDiv = detailDiv.querySelector('.method-detail-content');
         if (contentDiv && contentDiv.innerHTML === '') {
@@ -1192,16 +1303,16 @@ function toggleMethodDetail(methodKey) {
 function toggleMethodTheory(methodKey) {
     const theoryDiv = document.getElementById(`theory-${methodKey}`);
     const btn = document.querySelector(`.theory-btn[data-method="${methodKey}"]`);
-    
+
     if (!theoryDiv || !btn) return;
-    
+
     const isHidden = theoryDiv.classList.contains('hidden');
-    
+
     if (isHidden) {
         // 説明を表示
         theoryDiv.classList.remove('hidden');
         btn.textContent = '📚 説明を閉じる';
-        
+
         // 説明内容を生成（まだ生成されていない場合）
         const contentDiv = theoryDiv.querySelector('.method-theory-content');
         if (contentDiv && contentDiv.innerHTML === '') {
@@ -1219,8 +1330,8 @@ function toggleMethodTheory(methodKey) {
  */
 function renderMethodTheoryContent(methodKey, container) {
     let html = '';
-    
-    switch(methodKey) {
+
+    switch (methodKey) {
         case 'chaos':
             html = `
                 <div class="space-y-4">
@@ -1261,7 +1372,7 @@ function renderMethodTheoryContent(methodKey, container) {
                 </div>
             `;
             break;
-            
+
         case 'markov':
             html = `
                 <div class="space-y-4">
@@ -1302,7 +1413,7 @@ function renderMethodTheoryContent(methodKey, container) {
                 </div>
             `;
             break;
-            
+
         case 'bayesian':
             html = `
                 <div class="space-y-4">
@@ -1344,7 +1455,7 @@ function renderMethodTheoryContent(methodKey, container) {
                 </div>
             `;
             break;
-            
+
         case 'periodicity':
             html = `
                 <div class="space-y-4">
@@ -1385,7 +1496,7 @@ function renderMethodTheoryContent(methodKey, container) {
                 </div>
             `;
             break;
-            
+
         case 'pattern':
             html = `
                 <div class="space-y-4">
@@ -1426,7 +1537,7 @@ function renderMethodTheoryContent(methodKey, container) {
                 </div>
             `;
             break;
-            
+
         case 'random_forest':
             html = `
                 <div class="space-y-4">
@@ -1481,7 +1592,7 @@ function renderMethodTheoryContent(methodKey, container) {
                 </div>
             `;
             break;
-            
+
         case 'xgboost':
             html = `
                 <div class="space-y-4">
@@ -1537,7 +1648,7 @@ function renderMethodTheoryContent(methodKey, container) {
                 </div>
             `;
             break;
-            
+
         case 'lightgbm':
             html = `
                 <div class="space-y-4">
@@ -1593,7 +1704,7 @@ function renderMethodTheoryContent(methodKey, container) {
                 </div>
             `;
             break;
-            
+
         case 'arima':
             html = `
                 <div class="space-y-4">
@@ -1651,7 +1762,7 @@ function renderMethodTheoryContent(methodKey, container) {
                 </div>
             `;
             break;
-            
+
         case 'stacking':
             html = `
                 <div class="space-y-4">
@@ -1710,7 +1821,7 @@ function renderMethodTheoryContent(methodKey, container) {
                 </div>
             `;
             break;
-            
+
         case 'hmm':
             html = `
                 <div class="space-y-4">
@@ -1752,7 +1863,7 @@ function renderMethodTheoryContent(methodKey, container) {
                 </div>
             `;
             break;
-            
+
         case 'lstm':
             html = `
                 <div class="space-y-4">
@@ -1795,7 +1906,7 @@ function renderMethodTheoryContent(methodKey, container) {
                 </div>
             `;
             break;
-            
+
         case 'conformal':
             html = `
                 <div class="space-y-4">
@@ -1837,7 +1948,7 @@ function renderMethodTheoryContent(methodKey, container) {
                 </div>
             `;
             break;
-            
+
         case 'kalman':
             html = `
                 <div class="space-y-4">
@@ -1879,11 +1990,11 @@ function renderMethodTheoryContent(methodKey, container) {
                 </div>
             `;
             break;
-            
+
         default:
             html = '<p class="text-gray-600">学術的説明がありません。</p>';
     }
-    
+
     container.innerHTML = html;
 }
 
@@ -1957,14 +2068,14 @@ function renderMethodDetailContent(methodKey, container) {
         container.innerHTML = '<p class="text-gray-600">詳細データがありません。</p>';
         return;
     }
-    
+
     const method = predictionData.methods[methodKey];
     const analysis = predictionData.advanced_analysis;
-    
+
     let html = '';
-    
+
     // 手法ごとの詳細情報を表示
-    switch(methodKey) {
+    switch (methodKey) {
         case 'chaos':
             html = renderChaosDetail(method, analysis);
             break;
@@ -2010,7 +2121,7 @@ function renderMethodDetailContent(methodKey, container) {
         default:
             html = '<p class="text-gray-600">詳細情報がありません。</p>';
     }
-    
+
     container.innerHTML = html;
 }
 
@@ -2020,7 +2131,7 @@ function renderMethodDetailContent(methodKey, container) {
 function renderChaosDetail(method, analysis) {
     const trends = analysis.trends || {};
     let html = '<div class="space-y-4">';
-    
+
     // 利用データ数
     html += getMethodDataUsageBadgeHtml('chaos');
 
@@ -2031,9 +2142,9 @@ function renderChaosDetail(method, analysis) {
     html += '<li><strong>トレンド分析</strong>: 位相空間における短期・中期・長期トレンドを分析</li>';
     html += '</ul>';
     html += '</div>';
-    
+
     html += '<h4 class="font-bold text-lg text-gray-800 mb-3">位相トレンド分析</h4>';
-    
+
     // 分析過程の説明
     html += '<div class="bg-white rounded-lg p-4 mb-4">';
     html += '<h5 class="font-semibold text-gray-700 mb-3">分析プロセス</h5>';
@@ -2044,7 +2155,7 @@ function renderChaosDetail(method, analysis) {
     html += '<li><strong>予測値の生成</strong>: 各桁の予測値を組み合わせて3桁の数字を生成</li>';
     html += '</ol>';
     html += '</div>';
-    
+
     // 位相データの統計
     if (predictionData.recent_phases) {
         const phases = predictionData.recent_phases;
@@ -2052,7 +2163,7 @@ function renderChaosDetail(method, analysis) {
         html += '<h5 class="font-semibold text-gray-700 mb-3">位相データ統計</h5>';
         html += '<div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">';
         for (const [pos, posPhases] of Object.entries(phases)) {
-            const posName = {'hundred': '百の位', 'ten': '十の位', 'one': '一の位'}[pos] || pos;
+            const posName = { 'hundred': '百の位', 'ten': '十の位', 'one': '一の位' }[pos] || pos;
             if (posPhases && posPhases.length > 0) {
                 const mean = posPhases.reduce((a, b) => a + b, 0) / posPhases.length;
                 const min = Math.min(...posPhases);
@@ -2068,7 +2179,7 @@ function renderChaosDetail(method, analysis) {
         html += '</div>';
         html += '</div>';
     }
-    
+
     html += '</div>';
     return html;
 }
@@ -2079,7 +2190,7 @@ function renderChaosDetail(method, analysis) {
 function renderMarkovDetail(method, analysis) {
     const correlations = analysis.correlations || {};
     let html = '<div class="space-y-4">';
-    
+
     // 利用データ数
     html += getMethodDataUsageBadgeHtml('markov');
 
@@ -2090,9 +2201,9 @@ function renderMarkovDetail(method, analysis) {
     html += '<li><strong>相関分析</strong>: 桁間相関と自己相関を分析し、遷移確率の補正に使用</li>';
     html += '</ul>';
     html += '</div>';
-    
+
     html += '<h4 class="font-bold text-lg text-gray-800 mb-3">遷移確率分析</h4>';
-    
+
     // 分析過程の説明
     html += '<div class="bg-white rounded-lg p-4 mb-4">';
     html += '<h5 class="font-semibold text-gray-700 mb-3">分析プロセス</h5>';
@@ -2103,7 +2214,7 @@ function renderMarkovDetail(method, analysis) {
     html += '<li><strong>各桁の独立予測</strong>: 百の位、十の位、一の位をそれぞれ独立したマルコフ連鎖として予測</li>';
     html += '</ol>';
     html += '</div>';
-    
+
     // 自己相関の表示
     html += '<div class="bg-white rounded-lg p-3 mb-4">';
     html += '<p class="text-sm text-gray-700 mb-2 font-semibold">自己相関（前回との相関）:</p>';
@@ -2120,7 +2231,7 @@ function renderMarkovDetail(method, analysis) {
     html += `</ul>`;
     html += '<p class="text-xs text-gray-500 mt-2">※自己相関が高いほど、前回の値が次回の値に影響を与えやすい</p>';
     html += '</div>';
-    
+
     html += '</div>';
     return html;
 }
@@ -2136,7 +2247,7 @@ function renderBayesianDetail(method, analysis) {
 
     // 利用データ数
     html += getMethodDataUsageBadgeHtml('bayesian');
-    
+
     // 使用している分析結果を表示
     html += '<div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">';
     html += '<h5 class="font-semibold text-blue-800 mb-2">📊 使用している分析結果</h5>';
@@ -2145,9 +2256,9 @@ function renderBayesianDetail(method, analysis) {
     html += '<li><strong>トレンド分析</strong>: 最新のトレンドを尤度として組み合わせ</li>';
     html += '</ul>';
     html += '</div>';
-    
+
     html += '<h4 class="font-bold text-lg text-gray-800 mb-3">ベイズ更新分析</h4>';
-    
+
     // 分析過程の説明
     html += '<div class="bg-white rounded-lg p-4 mb-4">';
     html += '<h5 class="font-semibold text-gray-700 mb-3">分析プロセス</h5>';
@@ -2163,7 +2274,7 @@ function renderBayesianDetail(method, analysis) {
     html += '<p class="text-xs text-blue-600 mt-2">※本実装では、重み付き平均により簡易的に事後確率を計算</p>';
     html += '</div>';
     html += '</div>';
-    
+
     // 頻出パターン（事前確率の参考）
     if (patterns.set_top && Object.keys(patterns.set_top).length > 0) {
         html += '<div class="bg-white rounded-lg p-4 mb-4">';
@@ -2176,17 +2287,17 @@ function renderBayesianDetail(method, analysis) {
         html += '</ul>';
         html += '</div>';
     }
-    
+
     // トレンド分析（尤度の参考）
     if (trends && Object.keys(trends).length > 0) {
         html += '<div class="bg-white rounded-lg p-4 mb-4">';
         html += '<h5 class="font-semibold text-gray-700 mb-3">尤度の参考（最新トレンド）</h5>';
-        
+
         for (const [pos, posTrends] of Object.entries(trends)) {
-            const posName = {'hundred': '百の位', 'ten': '十の位', 'one': '一の位'}[pos] || pos;
+            const posName = { 'hundred': '百の位', 'ten': '十の位', 'one': '一の位' }[pos] || pos;
             html += `<div class="mb-3">`;
             html += `<p class="text-sm font-medium text-gray-700 mb-1">${posName}</p>`;
-            
+
             if (posTrends.short) {
                 const trendIcon = posTrends.short.trend > 0 ? '📈' : posTrends.short.trend < 0 ? '📉' : '➡️';
                 html += `<p class="text-xs text-gray-600">短期トレンド（直近10回）: ${trendIcon} 平均 ${posTrends.short.mean.toFixed(2)}, 傾き ${posTrends.short.trend > 0 ? '+' : ''}${posTrends.short.trend.toFixed(3)}</p>`;
@@ -2199,12 +2310,12 @@ function renderBayesianDetail(method, analysis) {
         }
         html += '</div>';
     }
-    
+
     // 相関分析（補助情報）
     if (correlations && Object.keys(correlations).length > 0) {
         html += '<div class="bg-white rounded-lg p-4 mb-4">';
         html += '<h5 class="font-semibold text-gray-700 mb-3">補助情報（相関分析）</h5>';
-        
+
         if (correlations.hundred_sum !== undefined) {
             html += '<div class="mb-2">';
             html += '<p class="text-sm text-gray-700 mb-1">合計値との相関:</p>';
@@ -2215,7 +2326,7 @@ function renderBayesianDetail(method, analysis) {
             html += `</ul>`;
             html += '</div>';
         }
-        
+
         if (correlations.hundred_lag1 !== undefined) {
             html += '<div class="mb-2">';
             html += '<p class="text-sm text-gray-700 mb-1">自己相関（前回との相関）:</p>';
@@ -2226,10 +2337,10 @@ function renderBayesianDetail(method, analysis) {
             html += `</ul>`;
             html += '</div>';
         }
-        
+
         html += '</div>';
     }
-    
+
     html += '</div>';
     return html;
 }
@@ -2244,7 +2355,7 @@ function renderPeriodicityDetail(method, analysis) {
 
     // 利用データ数
     html += getMethodDataUsageBadgeHtml('periodicity');
-    
+
     // 使用している分析結果を表示
     html += '<div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">';
     html += '<h5 class="font-semibold text-blue-800 mb-2">📊 使用している分析結果</h5>';
@@ -2255,84 +2366,84 @@ function renderPeriodicityDetail(method, analysis) {
     }
     html += '</ul>';
     html += '</div>';
-    
+
     html += '<h4 class="font-bold text-lg text-gray-800 mb-3">周期性パターン分析</h4>';
-    
+
     // 現在の日付情報を取得
     const lastDate = predictionData.statistics?.last_date ? new Date(predictionData.statistics.last_date) : new Date();
     const currentWeekday = lastDate.getDay(); // 0=日曜日, 6=土曜日
     const currentMonth = lastDate.getMonth() + 1; // 1-12
     const currentQuarter = Math.floor((currentMonth - 1) / 3) + 1; // 1-4
-    
+
     const weekdayNames = ['日', '月', '火', '水', '木', '金', '土'];
-    
+
     // 曜日パターンのグラフ
     if (periodicity.weekday) {
         html += '<div class="bg-white rounded-lg p-4 mb-4">';
         html += '<h5 class="font-semibold text-gray-700 mb-3">曜日別出現傾向</h5>';
-        
+
         for (const [pos, posPatterns] of Object.entries(periodicity.weekday)) {
-            const posName = {'hundred': '百の位', 'ten': '十の位', 'one': '一の位'}[pos] || pos;
+            const posName = { 'hundred': '百の位', 'ten': '十の位', 'one': '一の位' }[pos] || pos;
             html += `<div class="mb-4">`;
             html += `<p class="text-sm font-medium text-gray-600 mb-2">${posName}</p>`;
             html += `<div class="h-48">`;
             html += `<canvas id="periodicity-weekday-${pos}"></canvas>`;
             html += `</div>`;
             html += `</div>`;
-            
+
             // グラフを描画（少し遅延させてDOMに追加された後に実行）
             setTimeout(() => {
                 renderPeriodicityChart(`periodicity-weekday-${pos}`, posPatterns, weekdayNames, '曜日', pos);
             }, 200);
         }
-        
+
         html += '</div>';
     }
-    
+
     // 月次パターンのグラフ
     if (periodicity.monthly) {
         html += '<div class="bg-white rounded-lg p-4 mb-4">';
         html += '<h5 class="font-semibold text-gray-700 mb-3">月別出現傾向</h5>';
-        
+
         for (const [pos, posPatterns] of Object.entries(periodicity.monthly)) {
-            const posName = {'hundred': '百の位', 'ten': '十の位', 'one': '一の位'}[pos] || pos;
+            const posName = { 'hundred': '百の位', 'ten': '十の位', 'one': '一の位' }[pos] || pos;
             html += `<div class="mb-4">`;
             html += `<p class="text-sm font-medium text-gray-600 mb-2">${posName}</p>`;
             html += `<div class="h-48">`;
             html += `<canvas id="periodicity-monthly-${pos}"></canvas>`;
             html += `</div>`;
             html += `</div>`;
-            
+
             setTimeout(() => {
-                renderPeriodicityChart(`periodicity-monthly-${pos}`, posPatterns, Array.from({length: 12}, (_, i) => `${i+1}月`), '月', pos);
+                renderPeriodicityChart(`periodicity-monthly-${pos}`, posPatterns, Array.from({ length: 12 }, (_, i) => `${i + 1}月`), '月', pos);
             }, 200);
         }
-        
+
         html += '</div>';
     }
-    
+
     // 四半期パターンのグラフ
     if (periodicity.quarterly) {
         html += '<div class="bg-white rounded-lg p-4">';
         html += '<h5 class="font-semibold text-gray-700 mb-3">四半期別出現傾向</h5>';
-        
+
         for (const [pos, posPatterns] of Object.entries(periodicity.quarterly)) {
-            const posName = {'hundred': '百の位', 'ten': '十の位', 'one': '一の位'}[pos] || pos;
+            const posName = { 'hundred': '百の位', 'ten': '十の位', 'one': '一の位' }[pos] || pos;
             html += `<div class="mb-4">`;
             html += `<p class="text-sm font-medium text-gray-600 mb-2">${posName}</p>`;
             html += `<div class="h-48">`;
             html += `<canvas id="periodicity-quarterly-${pos}"></canvas>`;
             html += `</div>`;
             html += `</div>`;
-            
+
             setTimeout(() => {
                 renderPeriodicityChart(`periodicity-quarterly-${pos}`, posPatterns, ['Q1', 'Q2', 'Q3', 'Q4'], '四半期', pos);
             }, 200);
         }
-        
+
         html += '</div>';
     }
-    
+
     html += '</div>';
     return html;
 }
@@ -2346,15 +2457,15 @@ function renderPeriodicityChart(canvasId, patterns, labels, labelType, pos) {
         console.warn(`[renderPeriodicityChart] キャンバスが見つかりません: ${canvasId}`);
         return;
     }
-    
+
     // 既存のグラフを破棄
     if (periodicityCharts[canvasId]) {
         periodicityCharts[canvasId].destroy();
         delete periodicityCharts[canvasId];
     }
-    
+
     const ctx = canvas.getContext('2d');
-    
+
     // 各数字（0-9）ごとの出現確率を計算
     const datasets = [];
     const colors = [
@@ -2363,7 +2474,7 @@ function renderPeriodicityChart(canvasId, patterns, labels, labelType, pos) {
         'rgb(59, 130, 246)', 'rgb(34, 197, 94)', 'rgb(245, 158, 11)',
         'rgb(139, 92, 246)'
     ];
-    
+
     for (let digit = 0; digit < 10; digit++) {
         const data = labels.map((label, index) => {
             // キーの取得方法を修正
@@ -2375,17 +2486,17 @@ function renderPeriodicityChart(canvasId, patterns, labels, labelType, pos) {
             } else {
                 periodKey = index + 1; // 1-4
             }
-            
+
             const periodData = patterns[periodKey];
             if (!periodData) return 0;
-            
+
             // 数字のキーを確認（文字列または数値の可能性）
-            const prob = periodData[String(digit)] !== undefined ? periodData[String(digit)] : 
-                        periodData[digit] !== undefined ? periodData[digit] : 0;
-            
+            const prob = periodData[String(digit)] !== undefined ? periodData[String(digit)] :
+                periodData[digit] !== undefined ? periodData[digit] : 0;
+
             return prob !== undefined && prob !== null ? parseFloat((prob * 100).toFixed(2)) : 0;
         });
-        
+
         datasets.push({
             label: `数字${digit}`,
             data: data,
@@ -2398,7 +2509,7 @@ function renderPeriodicityChart(canvasId, patterns, labels, labelType, pos) {
             pointHoverRadius: 5
         });
     }
-    
+
     const chart = new Chart(ctx, {
         type: 'line',
         data: {
@@ -2424,7 +2535,7 @@ function renderPeriodicityChart(canvasId, patterns, labels, labelType, pos) {
                     mode: 'index',
                     intersect: false,
                     callbacks: {
-                        label: function(context) {
+                        label: function (context) {
                             return `${context.dataset.label}: ${context.parsed.y.toFixed(2)}%`;
                         }
                     }
@@ -2439,7 +2550,7 @@ function renderPeriodicityChart(canvasId, patterns, labels, labelType, pos) {
                         text: '出現確率 (%)'
                     },
                     ticks: {
-                        callback: function(value) {
+                        callback: function (value) {
                             return value + '%';
                         }
                     }
@@ -2453,7 +2564,7 @@ function renderPeriodicityChart(canvasId, patterns, labels, labelType, pos) {
             }
         }
     });
-    
+
     // グラフインスタンスを保存
     periodicityCharts[canvasId] = chart;
 }
@@ -2466,9 +2577,9 @@ function renderCorrelationsDetail(correlations, container) {
         container.innerHTML = '<p class="text-gray-600">相関分析データがありません。</p>';
         return;
     }
-    
+
     let html = '<div class="space-y-4">';
-    
+
     // 桁間相関
     html += '<div class="bg-white rounded-lg p-4">';
     html += '<h4 class="font-bold text-gray-800 mb-3">桁間相関</h4>';
@@ -2487,14 +2598,14 @@ function renderCorrelationsDetail(correlations, container) {
     html += `</div>`;
     html += '</div>';
     html += '</div>';
-    
+
     // 自己相関（ラグ分析）
     html += '<div class="bg-white rounded-lg p-4">';
     html += '<h4 class="font-bold text-gray-800 mb-3">自己相関（ラグ分析）</h4>';
     html += '<div class="space-y-3">';
-    
+
     for (const pos of ['hundred', 'ten', 'one']) {
-        const posName = {'hundred': '百の位', 'ten': '十の位', 'one': '一の位'}[pos];
+        const posName = { 'hundred': '百の位', 'ten': '十の位', 'one': '一の位' }[pos];
         html += `<div class="border-l-4 border-blue-500 pl-3">`;
         html += `<p class="font-semibold text-gray-700 mb-2">${posName}</p>`;
         html += '<div class="grid grid-cols-5 gap-2 text-sm">';
@@ -2510,10 +2621,10 @@ function renderCorrelationsDetail(correlations, container) {
         html += '</div>';
         html += `</div>`;
     }
-    
+
     html += '</div>';
     html += '</div>';
-    
+
     // 合計値との相関
     html += '<div class="bg-white rounded-lg p-4">';
     html += '<h4 class="font-bold text-gray-800 mb-3">合計値との相関</h4>';
@@ -2532,7 +2643,7 @@ function renderCorrelationsDetail(correlations, container) {
     html += `</div>`;
     html += '</div>';
     html += '</div>';
-    
+
     html += '</div>';
     container.innerHTML = html;
 }
@@ -2545,19 +2656,19 @@ function renderTrendsDetail(trends, container) {
         container.innerHTML = '<p class="text-gray-600">トレンド分析データがありません。</p>';
         return;
     }
-    
+
     let html = '<div class="space-y-4">';
-    
+
     for (const [pos, posTrends] of Object.entries(trends)) {
-        const posName = {'hundred': '百の位', 'ten': '十の位', 'one': '一の位'}[pos] || pos;
+        const posName = { 'hundred': '百の位', 'ten': '十の位', 'one': '一の位' }[pos] || pos;
         html += '<div class="bg-white rounded-lg p-4">';
         html += `<h4 class="font-bold text-gray-800 mb-3">${posName}</h4>`;
-        
+
         // グラフ用のキャンバス
         html += `<div class="h-64 mb-4">`;
         html += `<canvas id="trend-chart-${pos}"></canvas>`;
         html += `</div>`;
-        
+
         // トレンド情報のテーブル
         html += '<div class="overflow-x-auto">';
         html += '<table class="w-full text-sm">';
@@ -2568,9 +2679,9 @@ function renderTrendsDetail(trends, container) {
         html += '<th class="px-4 py-2 text-center">ボラティリティ</th>';
         html += '</tr></thead>';
         html += '<tbody>';
-        
+
         for (const [period, data] of Object.entries(posTrends)) {
-            const periodName = {'short': '短期（直近10回）', 'mid': '中期（直近50回）', 'long': '長期（直近200回）'}[period] || period;
+            const periodName = { 'short': '短期（直近10回）', 'mid': '中期（直近50回）', 'long': '長期（直近200回）' }[period] || period;
             const trendIcon = data.trend > 0 ? '📈' : data.trend < 0 ? '📉' : '➡️';
             html += '<tr class="border-b">';
             html += `<td class="px-4 py-2">${periodName}</td>`;
@@ -2579,18 +2690,18 @@ function renderTrendsDetail(trends, container) {
             html += `<td class="px-4 py-2 text-center">${data.volatility.toFixed(2)}</td>`;
             html += '</tr>';
         }
-        
+
         html += '</tbody>';
         html += '</table>';
         html += '</div>';
         html += '</div>';
-        
+
         // グラフを描画
         setTimeout(() => {
             renderTrendChart(`trend-chart-${pos}`, posTrends);
         }, 200);
     }
-    
+
     html += '</div>';
     container.innerHTML = html;
 }
@@ -2601,20 +2712,20 @@ function renderTrendsDetail(trends, container) {
 function renderTrendChart(canvasId, trends) {
     const canvas = document.getElementById(canvasId);
     if (!canvas) return;
-    
+
     const ctx = canvas.getContext('2d');
-    
+
     const labels = [];
     const meanData = [];
     const trendData = [];
-    
+
     for (const [period, data] of Object.entries(trends)) {
-        const periodName = {'short': '短期', 'mid': '中期', 'long': '長期'}[period] || period;
+        const periodName = { 'short': '短期', 'mid': '中期', 'long': '長期' }[period] || period;
         labels.push(periodName);
         meanData.push(data.mean);
         trendData.push(data.trend * 10 + 5); // スケール調整
     }
-    
+
     new Chart(ctx, {
         type: 'bar',
         data: {
@@ -2669,14 +2780,14 @@ function renderClusteringDetail(clustering, container) {
         container.innerHTML = '<p class="text-gray-600">クラスタリング分析データがありません。</p>';
         return;
     }
-    
+
     let html = '<div class="space-y-4">';
-    
+
     html += '<div class="bg-white rounded-lg p-4">';
     html += `<p class="text-sm text-gray-700 mb-3">データは <span class="font-bold text-purple-600">${clustering.n_clusters}</span> 個のクラスタに分類されました。</p>`;
     html += `<p class="text-sm text-gray-700 mb-4">最新データは <span class="font-bold text-blue-600">クラスタ ${clustering.latest_cluster}</span> に属しています。</p>`;
     html += '</div>';
-    
+
     // 各クラスタの特徴
     html += '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
     for (const [clusterId, clusterData] of Object.entries(clustering.cluster_analysis)) {
@@ -2689,7 +2800,7 @@ function renderClusteringDetail(clustering, container) {
         html += `<p>一の位平均: <span class="font-semibold">${clusterData.one_mean.toFixed(2)}</span></p>`;
         html += `<p>合計平均: <span class="font-semibold">${clusterData.sum_mean.toFixed(2)}</span></p>`;
         html += '</div>';
-        
+
         // 頻出パターン
         if (clusterData.most_common_set && Object.keys(clusterData.most_common_set).length > 0) {
             html += '<div class="mt-3 pt-3 border-t border-gray-200">';
@@ -2702,11 +2813,11 @@ function renderClusteringDetail(clustering, container) {
             html += '</div>';
             html += '</div>';
         }
-        
+
         html += '</div>';
     }
     html += '</div>';
-    
+
     html += '</div>';
     container.innerHTML = html;
 }
@@ -2721,7 +2832,7 @@ function renderPatternDetail(method, analysis) {
 
     // 利用データ数
     html += getMethodDataUsageBadgeHtml('pattern');
-    
+
     // 使用している分析結果を表示
     html += '<div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">';
     html += '<h5 class="font-semibold text-blue-800 mb-2">📊 使用している分析結果</h5>';
@@ -2730,9 +2841,9 @@ function renderPatternDetail(method, analysis) {
     html += '<li><strong>相関分析</strong>: 桁間相関を考慮したパターン選択</li>';
     html += '</ul>';
     html += '</div>';
-    
+
     html += '<h4 class="font-bold text-lg text-gray-800 mb-3">頻出パターン分析</h4>';
-    
+
     // 分析過程の説明
     html += '<div class="bg-white rounded-lg p-4 mb-4">';
     html += '<h5 class="font-semibold text-gray-700 mb-3">分析プロセス</h5>';
@@ -2743,7 +2854,7 @@ function renderPatternDetail(method, analysis) {
     html += '<li><strong>予測値の生成</strong>: 各桁の予測値を組み合わせて3桁の数字を生成</li>';
     html += '</ol>';
     html += '</div>';
-    
+
     if (patterns.set_top) {
         html += '<div class="bg-white rounded-lg p-3 mb-2">';
         html += '<p class="text-sm font-semibold text-gray-700 mb-2">頻出3桁コンボ（上位5件）:</p>';
@@ -2755,7 +2866,7 @@ function renderPatternDetail(method, analysis) {
         html += '</ul>';
         html += '</div>';
     }
-    
+
     if (patterns.mini_top) {
         html += '<div class="bg-white rounded-lg p-3">';
         html += '<p class="text-sm font-semibold text-gray-700 mb-2">頻出2桁コンボ（上位5件）:</p>';
@@ -2767,7 +2878,7 @@ function renderPatternDetail(method, analysis) {
         html += '</ul>';
         html += '</div>';
     }
-    
+
     html += '</div>';
     return html;
 }
@@ -2780,7 +2891,7 @@ function renderRandomForestDetail(method, analysis) {
 
     // 利用データ数
     html += getMethodDataUsageBadgeHtml('random_forest');
-    
+
     // 使用している分析結果を表示
     html += '<div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">';
     html += '<h5 class="font-semibold text-blue-800 mb-2">📊 使用している分析結果</h5>';
@@ -2791,13 +2902,13 @@ function renderRandomForestDetail(method, analysis) {
     html += '<li><strong>周波数解析</strong>: 周期性情報を特徴量に使用</li>';
     html += '</ul>';
     html += '</div>';
-    
+
     html += '<h4 class="font-bold text-lg text-gray-800 mb-3">ランダムフォレスト分析</h4>';
-    
+
     html += '<div class="bg-white rounded-lg p-4 mb-4">';
     html += '<p class="text-sm text-gray-700 mb-3">ランダムフォレストは、複数の決定木を組み合わせた機械学習モデルです。過去のデータから学習し、特徴量の重要度を評価しながら予測を行います。</p>';
     html += '</div>';
-    
+
     // 統計情報を表示
     if (method.statistics) {
         html += '<div class="bg-white rounded-lg p-4 mb-4">';
@@ -2811,18 +2922,18 @@ function renderRandomForestDetail(method, analysis) {
         html += '</div>';
         html += '</div>';
     }
-    
+
     // 特徴量の重要度を表示
     if (method.feature_importance_ranked && method.feature_importance_ranked.length > 0) {
         html += '<div class="bg-white rounded-lg p-4 mb-4">';
         html += '<h5 class="font-semibold text-gray-700 mb-3">特徴量の重要度（上位20件）</h5>';
         html += '<div class="space-y-2 max-h-96 overflow-y-auto">';
-        
+
         method.feature_importance_ranked.slice(0, 20).forEach((item, rank) => {
             const percentage = (item.importance * 100).toFixed(2);
             const maxImportance = method.feature_importance_ranked[0].importance;
             const widthPercent = (item.importance / maxImportance * 100).toFixed(1);
-            
+
             html += '<div class="flex items-center gap-3 p-2 hover:bg-gray-50 rounded">';
             html += `<span class="text-xs font-semibold text-gray-600 w-8">${rank + 1}位</span>`;
             html += `<span class="text-xs text-gray-700 flex-1 truncate" title="${item.name}">${item.name}</span>`;
@@ -2832,7 +2943,7 @@ function renderRandomForestDetail(method, analysis) {
             html += `<span class="text-xs font-semibold text-gray-700 w-16 text-right">${percentage}%</span>`;
             html += '</div>';
         });
-        
+
         html += '</div>';
         html += '</div>';
     } else if (method.feature_importance && method.feature_importance.length > 0) {
@@ -2840,10 +2951,10 @@ function renderRandomForestDetail(method, analysis) {
         html += '<div class="bg-white rounded-lg p-4 mb-4">';
         html += '<h5 class="font-semibold text-gray-700 mb-3">特徴量の重要度（上位10件）</h5>';
         html += '<div class="space-y-2">';
-        
+
         const importanceWithIndex = method.feature_importance.map((val, idx) => ({ idx, val }));
         importanceWithIndex.sort((a, b) => b.val - a.val);
-        
+
         importanceWithIndex.slice(0, 10).forEach((item, rank) => {
             const percentage = (item.val * 100).toFixed(2);
             html += '<div class="flex items-center gap-3">';
@@ -2854,11 +2965,11 @@ function renderRandomForestDetail(method, analysis) {
             html += `<span class="text-xs font-semibold text-gray-700 w-16 text-right">${percentage}%</span>`;
             html += '</div>';
         });
-        
+
         html += '</div>';
         html += '</div>';
     }
-    
+
     // 高度な特徴量の説明
     html += '<div class="bg-white rounded-lg p-4">';
     html += '<h5 class="font-semibold text-gray-700 mb-3">使用している特徴量</h5>';
@@ -2872,7 +2983,7 @@ function renderRandomForestDetail(method, analysis) {
     html += '</ul>';
     html += '<p class="text-xs text-gray-500 mt-2">※学習データは全件使用、特徴量の「過去N回の基本データ」は最大100回までに制限</p>';
     html += '</div>';
-    
+
     html += '</div>';
     return html;
 }
@@ -2882,10 +2993,10 @@ function renderRandomForestDetail(method, analysis) {
  */
 function renderXGBoostDetail(method, analysis) {
     let html = '<div class="space-y-4">';
-    
+
     // 利用データ数
     html += getMethodDataUsageBadgeHtml('xgboost');
-    
+
     // 使用している分析結果を表示
     html += '<div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">';
     html += '<h5 class="font-semibold text-blue-800 mb-2">📊 使用している分析結果</h5>';
@@ -2896,27 +3007,27 @@ function renderXGBoostDetail(method, analysis) {
     html += '<li><strong>周波数解析</strong>: 周期性情報を特徴量に使用</li>';
     html += '</ul>';
     html += '</div>';
-    
+
     html += '<h4 class="font-bold text-lg text-gray-800 mb-3">XGBoost分析</h4>';
-    
+
     html += '<div class="bg-white rounded-lg p-4 mb-4">';
     html += '<p class="text-sm text-gray-700 mb-3">XGBoostは、勾配ブースティングによる高精度な機械学習モデルです。各桁を個別に予測し、特徴量の重要度を評価しながら予測を行います。</p>';
     html += '</div>';
-    
+
     // 特徴量の重要度を表示
     if (method.feature_importance && method.feature_importance.length > 0) {
         html += '<div class="bg-white rounded-lg p-4 mb-4">';
         html += '<h5 class="font-semibold text-gray-700 mb-3">特徴量の重要度（上位10件）</h5>';
         html += '<div class="space-y-2">';
-        
+
         const importanceWithIndex = method.feature_importance.map((val, idx) => ({ idx, val }));
         importanceWithIndex.sort((a, b) => b.val - a.val);
-        
+
         importanceWithIndex.slice(0, 10).forEach((item, rank) => {
             const percentage = (item.val * 100).toFixed(2);
             const maxImportance = importanceWithIndex[0].val;
             const widthPercent = (item.val / maxImportance * 100).toFixed(1);
-            
+
             html += '<div class="flex items-center gap-3 p-2 hover:bg-gray-50 rounded">';
             html += `<span class="text-xs font-semibold text-gray-600 w-8">${rank + 1}位</span>`;
             html += '<div class="flex-1 bg-gray-200 rounded-full h-4 relative max-w-xs">';
@@ -2925,11 +3036,11 @@ function renderXGBoostDetail(method, analysis) {
             html += `<span class="text-xs font-semibold text-gray-700 w-16 text-right">${percentage}%</span>`;
             html += '</div>';
         });
-        
+
         html += '</div>';
         html += '</div>';
     }
-    
+
     // 予測の説明
     html += '<div class="bg-white rounded-lg p-4">';
     html += '<h5 class="font-semibold text-gray-700 mb-3">予測プロセス</h5>';
@@ -2941,7 +3052,7 @@ function renderXGBoostDetail(method, analysis) {
     html += '<li><strong>予測の実行</strong>: 最新データから各桁の値を予測し、0-9の範囲に丸めて3桁の数字を生成</li>';
     html += '</ol>';
     html += '</div>';
-    
+
     html += '</div>';
     return html;
 }
@@ -2951,10 +3062,10 @@ function renderXGBoostDetail(method, analysis) {
  */
 function renderLightGBMDetail(method, analysis) {
     let html = '<div class="space-y-4">';
-    
+
     // 利用データ数
     html += getMethodDataUsageBadgeHtml('lightgbm');
-    
+
     // 使用している分析結果を表示
     html += '<div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">';
     html += '<h5 class="font-semibold text-blue-800 mb-2">📊 使用している分析結果</h5>';
@@ -2965,27 +3076,27 @@ function renderLightGBMDetail(method, analysis) {
     html += '<li><strong>周波数解析</strong>: 周期性情報を特徴量に使用</li>';
     html += '</ul>';
     html += '</div>';
-    
+
     html += '<h4 class="font-bold text-lg text-gray-800 mb-3">LightGBM分析</h4>';
-    
+
     html += '<div class="bg-white rounded-lg p-4 mb-4">';
     html += '<p class="text-sm text-gray-700 mb-3">LightGBMは、高速で効率的な勾配ブースティングモデルです。GOSSとEFB技術により、大規模データでも高速に学習し、高い予測精度を実現します。</p>';
     html += '</div>';
-    
+
     // 特徴量の重要度を表示
     if (method.feature_importance && method.feature_importance.length > 0) {
         html += '<div class="bg-white rounded-lg p-4 mb-4">';
         html += '<h5 class="font-semibold text-gray-700 mb-3">特徴量の重要度（上位10件）</h5>';
         html += '<div class="space-y-2">';
-        
+
         const importanceWithIndex = method.feature_importance.map((val, idx) => ({ idx, val }));
         importanceWithIndex.sort((a, b) => b.val - a.val);
-        
+
         importanceWithIndex.slice(0, 10).forEach((item, rank) => {
             const percentage = (item.val * 100).toFixed(2);
             const maxImportance = importanceWithIndex[0].val;
             const widthPercent = (item.val / maxImportance * 100).toFixed(1);
-            
+
             html += '<div class="flex items-center gap-3 p-2 hover:bg-gray-50 rounded">';
             html += `<span class="text-xs font-semibold text-gray-600 w-8">${rank + 1}位</span>`;
             html += '<div class="flex-1 bg-gray-200 rounded-full h-4 relative max-w-xs">';
@@ -2994,11 +3105,11 @@ function renderLightGBMDetail(method, analysis) {
             html += `<span class="text-xs font-semibold text-gray-700 w-16 text-right">${percentage}%</span>`;
             html += '</div>';
         });
-        
+
         html += '</div>';
         html += '</div>';
     }
-    
+
     // 予測の説明
     html += '<div class="bg-white rounded-lg p-4">';
     html += '<h5 class="font-semibold text-gray-700 mb-3">予測プロセス</h5>';
@@ -3010,7 +3121,7 @@ function renderLightGBMDetail(method, analysis) {
     html += '<li><strong>予測の実行</strong>: 最新データから各桁の値を予測し、0-9の範囲に丸めて3桁の数字を生成</li>';
     html += '</ol>';
     html += '</div>';
-    
+
     html += '</div>';
     return html;
 }
@@ -3021,10 +3132,10 @@ function renderLightGBMDetail(method, analysis) {
 function renderARIMADetail(method, analysis) {
     const trends = analysis.trends || {};
     let html = '<div class="space-y-4">';
-    
+
     // 利用データ数
     html += getMethodDataUsageBadgeHtml('arima');
-    
+
     // 使用している分析結果を表示
     html += '<div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">';
     html += '<h5 class="font-semibold text-blue-800 mb-2">📊 使用している分析結果</h5>';
@@ -3034,13 +3145,13 @@ function renderARIMADetail(method, analysis) {
     html += '<li><strong>移動平均</strong>: 過去の誤差項をMA項として使用</li>';
     html += '</ul>';
     html += '</div>';
-    
+
     html += '<h4 class="font-bold text-lg text-gray-800 mb-3">ARIMA分析</h4>';
-    
+
     html += '<div class="bg-white rounded-lg p-4 mb-4">';
     html += '<p class="text-sm text-gray-700 mb-3">ARIMA(2,1,2)モデルは、統計的に確立された時系列予測手法です。自己回帰（AR）、和分（I）、移動平均（MA）の3つの要素を組み合わせて予測を行います。</p>';
     html += '</div>';
-    
+
     // ARIMAパラメータの説明
     html += '<div class="bg-white rounded-lg p-4 mb-4">';
     html += '<h5 class="font-semibold text-gray-700 mb-3">ARIMA(2,1,2)パラメータ</h5>';
@@ -3059,7 +3170,7 @@ function renderARIMADetail(method, analysis) {
     html += '</div>';
     html += '</div>';
     html += '</div>';
-    
+
     // 予測の説明
     html += '<div class="bg-white rounded-lg p-4">';
     html += '<h5 class="font-semibold text-gray-700 mb-3">予測プロセス</h5>';
@@ -3071,7 +3182,7 @@ function renderARIMADetail(method, analysis) {
     html += '<li><strong>予測値の調整</strong>: 予測値を0-9の範囲に丸めて、3桁の数字を生成</li>';
     html += '</ol>';
     html += '</div>';
-    
+
     html += '</div>';
     return html;
 }
@@ -3081,10 +3192,10 @@ function renderARIMADetail(method, analysis) {
  */
 function renderStackingDetail(method, analysis) {
     let html = '<div class="space-y-4">';
-    
+
     // 利用データ数
     html += getMethodDataUsageBadgeHtml('stacking');
-    
+
     // 使用している分析結果を表示
     html += '<div class="bg-blue-50 border-l-4 border-blue-500 p-4 mb-4">';
     html += '<h5 class="font-semibold text-blue-800 mb-2">📊 使用している分析結果</h5>';
@@ -3096,13 +3207,13 @@ function renderStackingDetail(method, analysis) {
     html += '<li><strong>複数の機械学習モデル</strong>: ランダムフォレスト、XGBoost、LightGBMの予測を統合</li>';
     html += '</ul>';
     html += '</div>';
-    
+
     html += '<h4 class="font-bold text-lg text-gray-800 mb-3">スタッキング分析</h4>';
-    
+
     html += '<div class="bg-white rounded-lg p-4 mb-4">';
     html += '<p class="text-sm text-gray-700 mb-3">スタッキングは、複数の異なる機械学習モデルの予測を、メタモデル（Ridge回帰）で統合するアンサンブル学習手法です。各ベースモデルの長所を活かし、より高い予測精度を実現します。</p>';
     html += '</div>';
-    
+
     // ベースモデルの説明
     html += '<div class="bg-white rounded-lg p-4 mb-4">';
     html += '<h5 class="font-semibold text-gray-700 mb-3">ベースモデル</h5>';
@@ -3121,7 +3232,7 @@ function renderStackingDetail(method, analysis) {
     html += '</div>';
     html += '</div>';
     html += '</div>';
-    
+
     // メタモデルの説明
     html += '<div class="bg-white rounded-lg p-4 mb-4">';
     html += '<h5 class="font-semibold text-gray-700 mb-3">メタモデル</h5>';
@@ -3130,7 +3241,7 @@ function renderStackingDetail(method, analysis) {
     html += '<div class="text-sm text-gray-700">ベースモデルの予測結果を入力として受け取り、最終的な予測を行います。正則化により過学習を抑制します。</div>';
     html += '</div>';
     html += '</div>';
-    
+
     // 予測の説明
     html += '<div class="bg-white rounded-lg p-4">';
     html += '<h5 class="font-semibold text-gray-700 mb-3">予測プロセス</h5>';
@@ -3143,7 +3254,7 @@ function renderStackingDetail(method, analysis) {
     html += '<li><strong>予測値の調整</strong>: 予測値を0-9の範囲に丸めて、3桁の数字を生成</li>';
     html += '</ol>';
     html += '</div>';
-    
+
     html += '</div>';
     return html;
 }
@@ -3153,16 +3264,16 @@ function renderStackingDetail(method, analysis) {
  */
 function renderHMMDetail(method, analysis) {
     let html = '<div class="space-y-4">';
-    
+
     // 利用データ数
     html += getMethodDataUsageBadgeHtml('hmm');
-    
+
     html += '<h4 class="font-bold text-lg text-gray-800 mb-3">隠れマルコフモデル（HMM）分析</h4>';
-    
+
     html += '<div class="bg-white rounded-lg p-4 mb-4">';
     html += '<p class="text-sm text-gray-700 mb-3">隠れマルコフモデル（HMM）は、観測できない隠れた状態の遷移をモデル化する手法です。各桁の数字の背後にある「状態」を推定し、その状態遷移から次の数字を予測します。</p>';
     html += '</div>';
-    
+
     // 分析過程の説明
     html += '<div class="bg-white rounded-lg p-4 mb-4">';
     html += '<h5 class="font-semibold text-gray-700 mb-3">分析プロセス</h5>';
@@ -3174,7 +3285,7 @@ function renderHMMDetail(method, analysis) {
     html += '<li><strong>予測値の調整</strong>: 予測値を0-9の範囲に丸めて、3桁の数字を生成</li>';
     html += '</ol>';
     html += '</div>';
-    
+
     html += '</div>';
     return html;
 }
@@ -3184,16 +3295,16 @@ function renderHMMDetail(method, analysis) {
  */
 function renderLSTMDetail(method, analysis) {
     let html = '<div class="space-y-4">';
-    
+
     // 利用データ数
     html += getMethodDataUsageBadgeHtml('lstm');
-    
+
     html += '<h4 class="font-bold text-lg text-gray-800 mb-3">LSTM（長短期記憶）分析</h4>';
-    
+
     html += '<div class="bg-white rounded-lg p-4 mb-4">';
     html += '<p class="text-sm text-gray-700 mb-3">LSTM（Long Short-Term Memory）は、長期の依存関係を学習できるリカレントニューラルネットワーク（RNN）の一種です。時系列データの複雑なパターンを学習し、高精度な予測を実現します。</p>';
     html += '</div>';
-    
+
     // 分析過程の説明
     html += '<div class="bg-white rounded-lg p-4 mb-4">';
     html += '<h5 class="font-semibold text-gray-700 mb-3">分析プロセス</h5>';
@@ -3205,7 +3316,7 @@ function renderLSTMDetail(method, analysis) {
     html += '<li><strong>予測値の調整</strong>: 予測値を0-9の範囲に丸めて、3桁の数字を生成</li>';
     html += '</ol>';
     html += '</div>';
-    
+
     html += '</div>';
     return html;
 }
@@ -3215,16 +3326,16 @@ function renderLSTMDetail(method, analysis) {
  */
 function renderConformalDetail(method, analysis) {
     let html = '<div class="space-y-4">';
-    
+
     // 利用データ数
     html += getMethodDataUsageBadgeHtml('conformal');
-    
+
     html += '<h4 class="font-bold text-lg text-gray-800 mb-3">コンフォーマル予測分析</h4>';
-    
+
     html += '<div class="bg-white rounded-lg p-4 mb-4">';
     html += '<p class="text-sm text-gray-700 mb-3">コンフォーマル予測は、予測区間を統計的に保証する手法です。過去の予測誤差を分析し、指定した信頼水準（デフォルト90%）で予測値が含まれる区間を計算します。</p>';
     html += '</div>';
-    
+
     // 分析過程の説明
     html += '<div class="bg-white rounded-lg p-4 mb-4">';
     html += '<h5 class="font-semibold text-gray-700 mb-3">分析プロセス</h5>';
@@ -3236,7 +3347,7 @@ function renderConformalDetail(method, analysis) {
     html += '<li><strong>統計的保証</strong>: 指定した信頼水準（デフォルト90%）で予測値が区間内に含まれることを保証</li>';
     html += '</ol>';
     html += '</div>';
-    
+
     // 予測区間の表示
     if (method.prediction_interval) {
         html += '<div class="bg-white rounded-lg p-4 mb-4">';
@@ -3248,7 +3359,7 @@ function renderConformalDetail(method, analysis) {
         html += '</div>';
         html += '</div>';
     }
-    
+
     html += '</div>';
     return html;
 }
@@ -3258,16 +3369,16 @@ function renderConformalDetail(method, analysis) {
  */
 function renderKalmanDetail(method, analysis) {
     let html = '<div class="space-y-4">';
-    
+
     // 利用データ数
     html += getMethodDataUsageBadgeHtml('kalman');
-    
+
     html += '<h4 class="font-bold text-lg text-gray-800 mb-3">カルマンフィルタ分析</h4>';
-    
+
     html += '<div class="bg-white rounded-lg p-4 mb-4">';
     html += '<p class="text-sm text-gray-700 mb-3">カルマンフィルタは、状態空間モデルに基づく時系列予測手法です。ノイズを含むデータから、真の状態を推定し、次の値を予測します。位置と速度の両方を考慮した2次元状態空間モデルを使用します。</p>';
     html += '</div>';
-    
+
     // 分析過程の説明
     html += '<div class="bg-white rounded-lg p-4 mb-4">';
     html += '<h5 class="font-semibold text-gray-700 mb-3">分析プロセス</h5>';
@@ -3278,7 +3389,7 @@ function renderKalmanDetail(method, analysis) {
     html += '<li><strong>予測値の調整</strong>: 予測された位置（状態の1次元目）を0-9の範囲に丸めて、3桁の数字を生成</li>';
     html += '</ol>';
     html += '</div>';
-    
+
     html += '</div>';
     return html;
 }
@@ -3291,16 +3402,16 @@ function renderWaveletDetail(waveletAnalysis, container) {
         container.innerHTML = '<p class="text-gray-600">ウェーブレット解析データがありません。</p>';
         return;
     }
-    
+
     let html = '<div class="space-y-4">';
     html += '<h4 class="font-bold text-lg text-gray-800 mb-3">ウェーブレット変換による時間-周波数解析</h4>';
-    
+
     html += '<div class="bg-white rounded-lg p-4 mb-4">';
     html += '<p class="text-sm text-gray-700 mb-3">ウェーブレット変換は、時間と周波数の両方の情報を保持した変換です。短期的な変動と長期的なトレンドを同時に分析できます。</p>';
     html += '</div>';
-    
+
     for (const [pos, posData] of Object.entries(waveletAnalysis)) {
-        const posName = {'hundred': '百の位', 'ten': '十の位', 'one': '一の位'}[pos] || pos;
+        const posName = { 'hundred': '百の位', 'ten': '十の位', 'one': '一の位' }[pos] || pos;
         html += `<div class="bg-white rounded-lg p-4 mb-4">`;
         html += `<h5 class="font-semibold text-gray-700 mb-3">${posName}</h5>`;
         html += `<div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">`;
@@ -3310,7 +3421,7 @@ function renderWaveletDetail(waveletAnalysis, container) {
         html += `</div>`;
         html += `</div>`;
     }
-    
+
     html += '</div>';
     container.innerHTML = html;
 }
@@ -3323,21 +3434,21 @@ function renderPCADetail(pcaAnalysis, container) {
         container.innerHTML = '<p class="text-gray-600">PCA解析データがありません。</p>';
         return;
     }
-    
+
     let html = '<div class="space-y-4">';
     html += '<h4 class="font-bold text-lg text-gray-800 mb-3">主成分分析（PCA）</h4>';
-    
+
     html += '<div class="bg-white rounded-lg p-4 mb-4">';
     html += '<p class="text-sm text-gray-700 mb-3">主成分分析（PCA）は、多次元データを低次元に圧縮し、主要な変動要因を抽出する手法です。データの本質的な構造を理解できます。</p>';
     html += '</div>';
-    
+
     html += '<div class="bg-white rounded-lg p-4 mb-4">';
     html += '<h5 class="font-semibold text-gray-700 mb-3">主成分統計</h5>';
     html += `<div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm mb-4">`;
     html += `<div><span class="text-gray-600">主成分数:</span> <span class="font-bold">${pcaAnalysis.n_components}</span></div>`;
     html += `<div><span class="text-gray-600">累積寄与率:</span> <span class="font-bold">${(pcaAnalysis.cumulative_variance * 100).toFixed(1)}%</span></div>`;
     html += `</div>`;
-    
+
     if (pcaAnalysis.explained_variance_ratio && pcaAnalysis.explained_variance_ratio.length > 0) {
         html += '<div class="space-y-2">';
         html += '<p class="text-sm font-semibold text-gray-700 mb-2">各主成分の寄与率:</p>';
@@ -3353,7 +3464,7 @@ function renderPCADetail(pcaAnalysis, container) {
         html += '</div>';
     }
     html += '</div>';
-    
+
     html += '</div>';
     container.innerHTML = html;
 }
@@ -3366,14 +3477,14 @@ function renderTSNEDetail(tsneAnalysis, container) {
         container.innerHTML = '<p class="text-gray-600">t-SNE解析データがありません。</p>';
         return;
     }
-    
+
     let html = '<div class="space-y-4">';
     html += '<h4 class="font-bold text-lg text-gray-800 mb-3">t-SNEによる可視化</h4>';
-    
+
     html += '<div class="bg-white rounded-lg p-4 mb-4">';
     html += '<p class="text-sm text-gray-700 mb-3">t-SNE（t-distributed Stochastic Neighbor Embedding）は、高次元データを2次元に可視化する手法です。パターンのクラスタリングを視覚的に理解できます。</p>';
     html += '</div>';
-    
+
     if (tsneAnalysis.latest_point) {
         html += '<div class="bg-white rounded-lg p-4 mb-4">';
         html += '<h5 class="font-semibold text-gray-700 mb-3">最新データポイントの位置</h5>';
@@ -3383,12 +3494,12 @@ function renderTSNEDetail(tsneAnalysis, container) {
         html += `</div>`;
         html += '</div>';
     }
-    
+
     html += '<div class="bg-white rounded-lg p-4">';
     html += `<p class="text-sm text-gray-700">データポイント数: <span class="font-bold">${tsneAnalysis.transformed_data.length}</span></p>`;
     html += '<p class="text-xs text-gray-500 mt-2">※2次元空間での位置関係により、データの構造を視覚的に理解できます</p>';
     html += '</div>';
-    
+
     html += '</div>';
     container.innerHTML = html;
 }
@@ -3401,19 +3512,19 @@ function renderContinuityDetail(continuityAnalysis, container) {
         container.innerHTML = '<p class="text-gray-600">連続性分析データがありません。</p>';
         return;
     }
-    
+
     let html = '<div class="space-y-4">';
     html += '<h4 class="font-bold text-lg text-gray-800 mb-3">連続性分析</h4>';
-    
+
     html += '<div class="bg-white rounded-lg p-4 mb-4">';
     html += '<p class="text-sm text-gray-700 mb-3">連続性分析は、同じ数字が連続して出る確率や、数字が交互に出るパターンを検出する手法です。連続出現パターンを発見できます。</p>';
     html += '</div>';
-    
+
     for (const [pos, posData] of Object.entries(continuityAnalysis)) {
-        const posName = {'hundred': '百の位', 'ten': '十の位', 'one': '一の位'}[pos] || pos;
+        const posName = { 'hundred': '百の位', 'ten': '十の位', 'one': '一の位' }[pos] || pos;
         html += `<div class="bg-white rounded-lg p-4 mb-4">`;
         html += `<h5 class="font-semibold text-gray-700 mb-3">${posName}</h5>`;
-        
+
         html += `<div class="mb-3">`;
         html += `<p class="text-sm font-semibold text-gray-700 mb-2">連続出現回数:</p>`;
         if (posData.consecutive_counts && Object.keys(posData.consecutive_counts).length > 0) {
@@ -3426,7 +3537,7 @@ function renderContinuityDetail(continuityAnalysis, container) {
             html += `<p class="text-sm text-gray-500">連続出現なし</p>`;
         }
         html += `</div>`;
-        
+
         html += `<div class="mb-3">`;
         html += `<p class="text-sm font-semibold text-gray-700 mb-2">交互出現パターン:</p>`;
         if (posData.alternating_patterns && Object.keys(posData.alternating_patterns).length > 0) {
@@ -3439,7 +3550,7 @@ function renderContinuityDetail(continuityAnalysis, container) {
             html += `<p class="text-sm text-gray-500">交互出現パターンなし</p>`;
         }
         html += `</div>`;
-        
+
         html += `<div>`;
         html += `<p class="text-sm font-semibold text-gray-700 mb-2">最大連続出現回数:</p>`;
         html += `<ul class="text-sm text-gray-600 space-y-1">`;
@@ -3450,10 +3561,10 @@ function renderContinuityDetail(continuityAnalysis, container) {
         });
         html += `</ul>`;
         html += `</div>`;
-        
+
         html += `</div>`;
     }
-    
+
     html += '</div>';
     container.innerHTML = html;
 }
@@ -3466,23 +3577,23 @@ function renderChangePointsDetail(changePoints, container) {
         container.innerHTML = '<p class="text-gray-600">変化点検出データがありません。</p>';
         return;
     }
-    
+
     let html = '<div class="space-y-4">';
     html += '<h4 class="font-bold text-lg text-gray-800 mb-3">変化点検出</h4>';
-    
+
     html += '<div class="bg-white rounded-lg p-4 mb-4">';
     html += '<p class="text-sm text-gray-700 mb-3">変化点検出は、トレンドの変化点やレジーム変化を検出する手法です。PELTアルゴリズムを使用して、パターンが変わった時期を特定します。</p>';
     html += '</div>';
-    
+
     for (const [pos, posData] of Object.entries(changePoints)) {
-        const posName = {'hundred': '百の位', 'ten': '十の位', 'one': '一の位'}[pos] || pos;
+        const posName = { 'hundred': '百の位', 'ten': '十の位', 'one': '一の位' }[pos] || pos;
         html += `<div class="bg-white rounded-lg p-4 mb-4">`;
         html += `<h5 class="font-semibold text-gray-700 mb-3">${posName}</h5>`;
         html += `<div class="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm mb-3">`;
         html += `<div><span class="text-gray-600">変化点数:</span> <span class="font-bold">${posData.n_change_points}</span></div>`;
         html += `<div><span class="text-gray-600">セグメント数:</span> <span class="font-bold">${posData.segments}</span></div>`;
         html += `</div>`;
-        
+
         if (posData.change_dates && posData.change_dates.length > 0) {
             html += `<div class="mt-3">`;
             html += `<p class="text-sm font-semibold text-gray-700 mb-2">変化点の日付:</p>`;
@@ -3495,7 +3606,7 @@ function renderChangePointsDetail(changePoints, container) {
         }
         html += `</div>`;
     }
-    
+
     html += '</div>';
     container.innerHTML = html;
 }
@@ -3508,31 +3619,31 @@ function renderNetworkDetail(networkAnalysis, container) {
         container.innerHTML = '<p class="text-gray-600">ネットワーク分析データがありません。</p>';
         return;
     }
-    
+
     let html = '<div class="space-y-4">';
     html += '<h4 class="font-bold text-lg text-gray-800 mb-3">ネットワーク分析（グラフ理論）</h4>';
-    
+
     html += '<div class="bg-white rounded-lg p-4 mb-4">';
     html += '<p class="text-sm text-gray-700 mb-3">ネットワーク分析は、数字の遷移をグラフとして分析する手法です。数字間の関係性を視覚化し、中心性指標を計算します。</p>';
     html += '</div>';
-    
+
     html += '<div class="bg-white rounded-lg p-4 mb-4">';
     html += `<div class="grid grid-cols-2 gap-4 text-sm mb-4">`;
     html += `<div><span class="text-gray-600">総ノード数:</span> <span class="font-bold">${networkAnalysis.overall_nodes}</span></div>`;
     html += `<div><span class="text-gray-600">総エッジ数:</span> <span class="font-bold">${networkAnalysis.overall_edges}</span></div>`;
     html += `</div>`;
     html += '</div>';
-    
+
     for (const [pos, posStats] of Object.entries(networkAnalysis.network_stats)) {
-        const posName = {'hundred': '百の位', 'ten': '十の位', 'one': '一の位'}[pos] || pos;
+        const posName = { 'hundred': '百の位', 'ten': '十の位', 'one': '一の位' }[pos] || pos;
         html += `<div class="bg-white rounded-lg p-4 mb-4">`;
         html += `<h5 class="font-semibold text-gray-700 mb-3">${posName}</h5>`;
-        
+
         html += `<div class="grid grid-cols-2 gap-4 text-sm mb-3">`;
         html += `<div><span class="text-gray-600">ノード数:</span> <span class="font-bold">${posStats.total_nodes}</span></div>`;
         html += `<div><span class="text-gray-600">エッジ数:</span> <span class="font-bold">${posStats.total_edges}</span></div>`;
         html += `</div>`;
-        
+
         if (posStats.top_transitions && posStats.top_transitions.length > 0) {
             html += `<div class="mt-3">`;
             html += `<p class="text-sm font-semibold text-gray-700 mb-2">最も頻繁な遷移（上位5件）:</p>`;
@@ -3545,7 +3656,7 @@ function renderNetworkDetail(networkAnalysis, container) {
         }
         html += `</div>`;
     }
-    
+
     html += '</div>';
     container.innerHTML = html;
 }
@@ -3558,19 +3669,19 @@ function renderGeneticDetail(geneticOptimization, container) {
         container.innerHTML = '<p class="text-gray-600">遺伝的アルゴリズム最適化データがありません。</p>';
         return;
     }
-    
+
     let html = '<div class="space-y-4">';
     html += '<h4 class="font-bold text-lg text-gray-800 mb-3">遺伝的アルゴリズムによる最適化</h4>';
-    
+
     html += '<div class="bg-white rounded-lg p-4 mb-4">';
     html += '<p class="text-sm text-gray-700 mb-3">遺伝的アルゴリズムは、生物の進化を模倣した最適化手法です。複雑な最適化問題を解くことができ、予測手法の重みを最適化します。</p>';
     html += '</div>';
-    
+
     html += '<div class="bg-white rounded-lg p-4 mb-4">';
     html += `<div class="grid grid-cols-2 gap-4 text-sm mb-4">`;
     html += `<div><span class="text-gray-600">適合度:</span> <span class="font-bold">${geneticOptimization.fitness.toFixed(4)}</span></div>`;
     html += `</div>`;
-    
+
     if (geneticOptimization.optimized_weights) {
         html += '<div class="mt-3">';
         html += '<p class="text-sm font-semibold text-gray-700 mb-2">最適化された重み:</p>';
@@ -3601,7 +3712,7 @@ function renderGeneticDetail(geneticOptimization, container) {
         html += '</div>';
     }
     html += '</div>';
-    
+
     html += '</div>';
     container.innerHTML = html;
 }
@@ -3614,25 +3725,25 @@ function renderFrequencyDetail(frequencyAnalysis, container) {
         container.innerHTML = '<p class="text-gray-600">周波数解析データがありません。</p>';
         return;
     }
-    
+
     let html = '<div class="space-y-4">';
     html += '<h4 class="font-bold text-lg text-gray-800 mb-3">フーリエ変換による周波数解析</h4>';
-    
+
     html += '<div class="bg-white rounded-lg p-4 mb-4">';
     html += '<p class="text-sm text-gray-700 mb-3">フーリエ変換により、時系列データを周波数領域に変換し、隠れた周期性やサイクルを検出します。主要な周波数成分は、データに含まれる周期的なパターンを示します。</p>';
     html += '</div>';
-    
+
     for (const [pos, posData] of Object.entries(frequencyAnalysis)) {
-        const posName = {'hundred': '百の位', 'ten': '十の位', 'one': '一の位'}[pos] || pos;
-        
+        const posName = { 'hundred': '百の位', 'ten': '十の位', 'one': '一の位' }[pos] || pos;
+
         html += '<div class="bg-white rounded-lg p-4 mb-4 border-2 border-yellow-200">';
         html += `<h5 class="font-semibold text-gray-700 mb-3">${posName}</h5>`;
-        
+
         if (posData.dominant_frequencies && posData.dominant_frequencies.length > 0) {
             html += '<div class="mb-3">';
             html += '<p class="text-xs font-semibold text-gray-600 mb-2">主要な周波数成分（上位5件）:</p>';
             html += '<div class="space-y-2">';
-            
+
             posData.dominant_frequencies.forEach((freq, idx) => {
                 html += '<div class="bg-yellow-50 rounded-lg p-2 border border-yellow-200">';
                 html += `<p class="text-xs text-gray-700"><strong>${idx + 1}位:</strong> 周波数 ${freq.frequency.toFixed(6)}, パワー ${freq.power.toFixed(2)}`;
@@ -3642,21 +3753,21 @@ function renderFrequencyDetail(frequencyAnalysis, container) {
                 html += '</p>';
                 html += '</div>';
             });
-            
+
             html += '</div>';
             html += '</div>';
         }
-        
+
         if (posData.max_power_period > 0 && posData.max_power_period < 1000) {
             html += '<div class="bg-yellow-100 rounded-lg p-3">';
             html += `<p class="text-sm text-gray-700"><strong>最大パワー周期:</strong> ${posData.max_power_period.toFixed(1)}回</p>`;
             html += `<p class="text-xs text-gray-600 mt-1">この周期が最も強い周期性を示しています。</p>`;
             html += '</div>';
         }
-        
+
         html += '</div>';
     }
-    
+
     html += '</div>';
     container.innerHTML = html;
 }

@@ -346,10 +346,20 @@ class NumbersAnalyzer:
     # --- LSTM専用設定（Fullモードのみ） ---
     # LSTMは計算コストが非常に高いです。
     LSTM_WINDOW_SIZE = 10  # LSTMで使用するシーケンス長（過去10回のデータ）
+    # LSTMの学習に使用する最大サンプル数
+    # 影響度: ★★★（データ量を制限して学習時間を短縮）
+    LSTM_MAX_TRAINING_SAMPLES = 1000
     # LSTMの学習エポック数（高速化のため5）
     # 影響度: ★★★（増やしすぎると学習時間が激増します。通常は50-100必要ですが5に制限中）
     LSTM_EPOCHS = 5
     LSTM_BATCH_SIZE = 32  # LSTMのバッチサイズ（影響度: ★★☆）
+
+    # --- HMM パラメータ ---
+    HMM_N_COMPONENTS = 5  # 状態数（影響度: ★★★）
+    HMM_N_ITER = 50       # 最大イテレーション数（影響度: ★★★）
+    
+    # --- ARIMA パラメータ ---
+    ARIMA_ORDER = (2, 1, 2) # ARIMA(p, d, q) パラメータ（影響度: ★★☆）
     
     # --- Random Forest パラメータ ---
     # 並列処理が効くので比較的早いですが、決定木の数に比例します。
@@ -390,8 +400,20 @@ class NumbersAnalyzer:
 
     # --- t-SNE パラメータ（Fullモードのみ） ---
     # t-SNEは計算量がO(N^2)で増えるため、データ数が最大のボトルネックになります。
-    # 現在はコード内で max_data_points = 250 にハードコードされています。
     # 影響度: ★★★（データ数を増やすと指数関数的に重くなります）  
+    TSNE_MAX_DATA_POINTS_LIGHT = 5
+    TSNE_MAX_DATA_POINTS_FULL = 250
+
+    # --- PCA パラメータ ---
+    PCA_MAX_DATA_POINTS = 50 # 影響度: ★★☆
+    
+    # --- 遺伝的アルゴリズム パラメータ ---
+    GENETIC_POPULATION_SIZE = 10 # 個体数（影響度: ★★★）
+    GENETIC_GENERATIONS = 5     # 世代数（影響度: ★★★）
+    
+    # --- 統計的予測・その他 ---
+    CONFORMAL_ALPHA = 0.1 # 信頼水準（影響度: ★☆☆）
+    KALMAN_R = 5.0 # 観測ノイズ（影響度: ★☆☆）
     # ============================================================================
     
     # ============================================================================
@@ -417,6 +439,76 @@ class NumbersAnalyzer:
         self.data = None
         self.df = None
         self.load_data()
+    
+    def get_analysis_parameters(self, mode: str = 'light') -> Dict[str, any]:
+        """
+        現在の分析に使用されているパラメータ設定を取得する
+        """
+        params = {
+            'common': {
+                'past_window_size': self.PREDICTION_PAST_WINDOW_SIZE,
+                'max_training_samples': self.PREDICTION_MAX_TRAINING_SAMPLES,
+            },
+            'models': {
+                'random_forest': {
+                    'n_estimators': self.RF_N_ESTIMATORS,
+                    'max_depth': self.RF_MAX_DEPTH
+                },
+                'xgboost': {
+                    'n_estimators': self.XGB_N_ESTIMATORS,
+                    'max_depth': self.XGB_MAX_DEPTH,
+                    'learning_rate': self.XGB_LEARNING_RATE
+                },
+                'lightgbm': {
+                    'n_estimators': self.LGB_N_ESTIMATORS,
+                    'max_depth': self.LGB_MAX_DEPTH,
+                    'learning_rate': self.LGB_LEARNING_RATE
+                },
+                'arima': {
+                    'order': list(self.ARIMA_ORDER)
+                },
+                'hmm': {
+                    'n_components': self.HMM_N_COMPONENTS,
+                    'n_iter': self.HMM_N_ITER
+                },
+                'kalman': {
+                    'r': self.KALMAN_R
+                },
+                'conformal': {
+                    'alpha': self.CONFORMAL_ALPHA
+                }
+            }
+        }
+        
+        if mode == 'full':
+            params['models'].update({
+                'lstm': {
+                    'window_size': self.LSTM_WINDOW_SIZE,
+                    'max_training_samples': self.LSTM_MAX_TRAINING_SAMPLES,
+                    'epochs': self.LSTM_EPOCHS,
+                    'batch_size': self.LSTM_BATCH_SIZE
+                },
+                'stacking': {
+                    'cv': self.STACKING_CV,
+                    'rf_n_estimators': self.STACKING_RF_N_ESTIMATORS,
+                    'xgb_n_estimators': self.STACKING_XGB_N_ESTIMATORS,
+                    'lgb_n_estimators': self.STACKING_LGB_N_ESTIMATORS
+                },
+                'pca': {
+                    'max_data_points': self.PCA_MAX_DATA_POINTS
+                },
+                'tsne': {
+                    'max_data_points': self.TSNE_MAX_DATA_POINTS_FULL
+                },
+                'genetic': {
+                    'population': self.GENETIC_POPULATION_SIZE,
+                    'generations': self.GENETIC_GENERATIONS
+                }
+            })
+        else:
+            params['models']['tsne'] = {'max_data_points': self.TSNE_MAX_DATA_POINTS_LIGHT}
+            
+        return params
     
     def load_data(self):
         """データを読み込む"""
@@ -1442,8 +1534,8 @@ class NumbersAnalyzer:
             
             try:
                 # 自動ARIMAモデル選択（計算コストが高いので簡易版を使用）
-                # 簡易版: 固定パラメータでARIMA(2,1,2)を使用
-                model = ARIMA(data, order=(2, 1, 2))
+                # 定義済みの定数を使用してARIMAを使用
+                model = ARIMA(data, order=self.ARIMA_ORDER)
                 fitted_model = model.fit()
                 
                 # 1ステップ先を予測
@@ -1655,8 +1747,8 @@ class NumbersAnalyzer:
                 continue
             
             try:
-                # 10状態のHMMモデル（0-9の数字に対応）
-                model = hmm.GaussianHMM(n_components=10, covariance_type="full", n_iter=100, random_state=42)
+                # 定義済みの定数を使用
+                model = hmm.GaussianHMM(n_components=self.HMM_N_COMPONENTS, covariance_type="full", n_iter=self.HMM_N_ITER, random_state=42)
                 model.fit(data)
                 
                 # 最新の状態から次の状態を予測
@@ -1723,9 +1815,8 @@ class NumbersAnalyzer:
         for pos in ['hundred', 'ten', 'one']:
             try:
                 # データを正規化（0-9を0-1に）
-                # 学習データを最新1000件に制限して高速化
-                max_samples = 1000
-                start_idx = max(0, len(self.df) - max_samples - window_size)
+                # 定義済みの定数を使用して学習データを制限して高速化
+                start_idx = max(0, len(self.df) - self.LSTM_MAX_TRAINING_SAMPLES - window_size)
                 data = self.df[pos].iloc[start_idx:].values.astype(float) / 9.0
                 
                 # シーケンスデータを作成
@@ -1791,17 +1882,19 @@ class NumbersAnalyzer:
             'reason': 'LSTM（長短期記憶）ニューラルネットワークによる予測'
         }
     
-    def predict_with_conformal(self, base_method: str = 'lightgbm', alpha: float = 0.1) -> Dict[str, any]:
+    def predict_with_conformal(self, base_method: str = 'lightgbm', alpha: Optional[float] = None) -> Dict[str, any]:
         """
         コンフォーマル予測（予測区間を統計的に保証）
         
         Args:
-            base_method: ベースとなる予測手法（デフォルトはlightgbmで高速化）
-            alpha: 信頼水準（デフォルト0.1 = 90%信頼区間）
+            base_method: ベースとなる予測手法
+            alpha: 信頼水準（デフォルトは self.CONFORMAL_ALPHA）
         
         Returns:
             予測結果の辞書（予測区間を含む）
         """
+        if alpha is None:
+            alpha = self.CONFORMAL_ALPHA
         # ベース予測を取得（高速化のためlightgbmをデフォルトに変更）
         base_prediction = None
         if base_method == 'stacking':
@@ -1967,15 +2060,13 @@ class NumbersAnalyzer:
             return None
         
         try:
-            # データ量を制限（最新50件のみ使用、計算時間を大幅に短縮）
-            # データ量が少ない場合は全データを使用
-            max_data_points = 50
-            if len(self.df) <= max_data_points:
+            # 定義済みの定数を使用してデータ量を制限
+            if len(self.df) <= self.PCA_MAX_DATA_POINTS:
                 df_for_pca = self.df
                 print(f"[analyze_pca] データ量が{len(self.df)}件のため、全データを使用します")
             else:
-                df_for_pca = self.df.tail(max_data_points)
-                print(f"[analyze_pca] データ量を{max_data_points}件に制限して計算します（全{len(self.df)}件中）")
+                df_for_pca = self.df.tail(self.PCA_MAX_DATA_POINTS)
+                print(f"[analyze_pca] データ量を{self.PCA_MAX_DATA_POINTS}件に制限して計算します（全{len(self.df)}件中）")
             
             # 特徴量を作成（各桁の値、合計値、範囲など）
             features = []
@@ -2020,16 +2111,13 @@ class NumbersAnalyzer:
             print(f"[analyze_pca] PCA解析に失敗: {e}")
             return None
     
-    def analyze_tsne(self, max_data_points: int = 50) -> Dict[str, any]:
+    def analyze_tsne(self, max_data_points: Optional[int] = None) -> Dict[str, any]:
         """
         t-SNEによる高次元データの可視化
-        
-        Args:
-            max_data_points: 計算に使用する最大データ数
-            
-        Returns:
-            t-SNE解析結果の辞書
         """
+        if max_data_points is None:
+            max_data_points = self.TSNE_MAX_DATA_POINTS_LIGHT
+            
         try:
             from sklearn.manifold import TSNE
             from sklearn.preprocessing import StandardScaler
@@ -2236,7 +2324,7 @@ class NumbersAnalyzer:
                 
                 # 共分散行列
                 kf.P *= 1000.
-                kf.R = 5  # 観測ノイズ
+                kf.R = self.KALMAN_R  # 観測ノイズ
                 kf.Q = np.array([[1., 0.],
                                 [0., 1.]])  # プロセスノイズ
                 
@@ -2320,9 +2408,9 @@ class NumbersAnalyzer:
             toolbox.register("mutate", tools.mutGaussian, mu=0, sigma=0.1, indpb=0.2)
             toolbox.register("select", tools.selTournament, tournsize=3)
             
-            # 遺伝的アルゴリズムを実行（処理時間短縮のため個体数と世代数を削減）
-            population = toolbox.population(n=30)
-            ngen = 10  # 世代数（20から10に削減）
+            # 遺伝的アルゴリズムを実行（定義済みの定数を使用）
+            population = toolbox.population(n=self.GENETIC_POPULATION_SIZE)
+            ngen = self.GENETIC_GENERATIONS
             
             algorithms.eaSimple(population, toolbox, cxpb=0.5, mutpb=0.2, ngen=ngen, verbose=False)
             
@@ -3046,8 +3134,8 @@ class NumbersAnalyzer:
         
         tsne_analysis = None
         try:
-            # モードに応じてデータ件数を変更（Light=10, Full=250）
-            tsne_limit = 250 if mode == 'full' else 10
+            # モードに応じてデータ件数を変更
+            tsne_limit = self.TSNE_MAX_DATA_POINTS_FULL if mode == 'full' else self.TSNE_MAX_DATA_POINTS_LIGHT
             print(f"[ensemble_predict] t-SNE解析を実行中（上限: {tsne_limit}件）...")
             tsne_start = time.time()
             tsne_analysis = self.analyze_tsne(max_data_points=tsne_limit)
@@ -3090,6 +3178,8 @@ class NumbersAnalyzer:
         
         return {
             'timestamp': jst_now.isoformat(),
+            'mode': mode,
+            'parameters': self.get_analysis_parameters(mode=mode),
             'set_predictions': [
                 {
                     'number': item[0],
