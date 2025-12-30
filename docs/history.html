@@ -18,9 +18,10 @@
         }
 
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%);
-            background-size: 400% 400%;
-            animation: gradientShift 15s ease infinite;
+            background: #111827;
+            background-image:
+                radial-gradient(circle at 50% 50%, rgba(17, 24, 39, 0.7) 0%, rgba(17, 24, 39, 1) 100%),
+                url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%236b7280' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2v-4h4v-2h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2v-4h4v-2H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
         }
 
         @keyframes gradientShift {
@@ -38,10 +39,10 @@
         }
 
         .glass-card {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            background: rgba(31, 41, 55, 0.8);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
         }
 
         .sidebar-link {
@@ -104,6 +105,7 @@
             background-color: #e5e7eb;
             color: #4b5563;
         }
+
         .section-content {
             scroll-margin-top: 100px;
         }
@@ -139,8 +141,8 @@
 <body class="min-h-screen">
     <!-- モバイルメニューボタン -->
     <button id="mobileMenuBtn"
-        class="fixed top-4 left-4 z-50 md:hidden bg-white/90 backdrop-blur-sm p-3 rounded-lg shadow-lg">
-        <svg class="w-6 h-6 text-gray-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        class="fixed top-4 left-4 z-50 md:hidden bg-gray-800/90 backdrop-blur-sm p-3 rounded-lg shadow-lg">
+        <svg class="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
         </svg>
     </button>
@@ -150,16 +152,13 @@
 
     <!-- サイドバー -->
     <aside id="sidebar"
-        class="fixed left-0 top-0 h-full w-64 bg-white/95 backdrop-blur-sm shadow-xl z-40 sidebar overflow-y-auto">
+        class="fixed left-0 top-0 h-full w-64 bg-gray-900/95 backdrop-blur-sm shadow-xl z-40 sidebar overflow-y-auto">
         <div class="p-6">
             <div class="mb-8 flex items-center justify-between">
-                <div>
-                    <h1
-                        class="text-2xl font-extrabold bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                        ナンバーズ3</h1>
-                    <p class="text-sm text-gray-600 mt-1">予測ツール</p>
+                <div class="flex flex-col items-center">
+                    <img src="./public/numberslogo_02.png" alt="NUMBERS3 PREDICT" class="w-48 mb-2">
                 </div>
-                <button id="closeSidebarBtn" class="md:hidden text-gray-500 hover:text-gray-700">
+                <button id="closeSidebarBtn" class="md:hidden text-gray-500 hover:text-gray-300">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
                         </path>
@@ -169,7 +168,7 @@
 
             <nav class="space-y-2">
                 <a href="index.html"
-                    class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 font-medium">
+                    class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 font-medium">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6">
@@ -178,7 +177,7 @@
                     トップ・統合予測
                 </a>
                 <a href="history.html"
-                    class="sidebar-link active flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 font-medium">
+                    class="sidebar-link active flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 font-medium">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01">
@@ -187,7 +186,7 @@
                     勝敗履歴
                 </a>
                 <a href="search/index.html"
-                    class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-700 font-medium">
+                    class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 font-medium">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -202,12 +201,12 @@
     <div class="md:ml-64">
         <div class="w-full max-w-full px-4 py-6 md:py-8">
             <header class="text-center mb-8 fade-in">
-                <div class="glass-card rounded-2xl p-6 md:p-8 w-full">
-                    <h1
-                        class="text-3xl md:text-4xl font-extrabold mb-2 bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                <div class="glass-card rounded-2xl p-6 md:p-8 w-full flex flex-col items-center">
+                    <img src="./public/numberslogo_02.png" alt="NUMBERS3 PREDICT" class="w-full max-w-md mb-6">
+                    <h1 class="text-3xl md:text-4xl font-extrabold mb-2 text-white">
                         勝敗履歴一覧
                     </h1>
-                    <p class="text-gray-600">過去の予測と実際の当選番号の照合結果</p>
+                    <p class="text-gray-400">過去の予測と実際の当選番号の照合結果</p>
                 </div>
             </header>
 
@@ -222,15 +221,15 @@
                 <!-- 統計カード -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                     <div class="glass-card rounded-xl p-5 text-center">
-                        <p class="text-sm text-gray-500 font-medium uppercase tracking-wider mb-1">検証回数</p>
-                        <p id="statTotal" class="text-3xl font-bold text-gray-800">-</p>
+                        <p class="text-sm text-gray-400 font-medium uppercase tracking-wider mb-1">検証回数</p>
+                        <p id="statTotal" class="text-3xl font-bold text-white">-</p>
                     </div>
                     <div class="glass-card rounded-xl p-5 text-center">
-                        <p class="text-sm text-gray-500 font-medium uppercase tracking-wider mb-1">セット/ボックス的中</p>
+                        <p class="text-sm text-gray-400 font-medium uppercase tracking-wider mb-1">セット/ボックス的中</p>
                         <p id="statHits" class="text-3xl font-bold text-red-600">-</p>
                     </div>
                     <div class="glass-card rounded-xl p-5 text-center">
-                        <p class="text-sm text-gray-500 font-medium uppercase tracking-wider mb-1">ミニ的中</p>
+                        <p class="text-sm text-gray-400 font-medium uppercase tracking-wider mb-1">ミニ的中</p>
                         <p id="statMiniHits" class="text-3xl font-bold text-green-600">-</p>
                     </div>
                 </div>
@@ -240,12 +239,12 @@
                     <div class="overflow-x-auto">
                         <table class="w-full text-left border-collapse">
                             <thead>
-                                <tr class="bg-gray-50/50">
-                                    <th class="px-6 py-4 text-sm font-bold text-gray-700 border-b">予測対象日</th>
-                                    <th class="px-6 py-4 text-sm font-bold text-gray-700 border-b">当選番号 (結果)</th>
-                                    <th class="px-6 py-4 text-sm font-bold text-gray-700 border-b">統合予測（セット）</th>
-                                    <th class="px-6 py-4 text-sm font-bold text-gray-700 border-b">統合予測（ミニ）</th>
-                                    <th class="px-6 py-4 text-sm font-bold text-gray-700 border-b">判定</th>
+                                <tr class="bg-gray-800/50">
+                                    <th class="px-6 py-4 text-sm font-bold text-gray-300 border-b">予測対象日</th>
+                                    <th class="px-6 py-4 text-sm font-bold text-gray-300 border-b">当選番号 (結果)</th>
+                                    <th class="px-6 py-4 text-sm font-bold text-gray-300 border-b">統合予測（セット）</th>
+                                    <th class="px-6 py-4 text-sm font-bold text-gray-300 border-b">統合予測（ミニ）</th>
+                                    <th class="px-6 py-4 text-sm font-bold text-gray-300 border-b">判定</th>
                                 </tr>
                             </thead>
                             <tbody id="historyTableBody">
