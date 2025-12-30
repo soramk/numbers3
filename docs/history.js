@@ -76,7 +76,7 @@ function renderHistory(predictionDetails) {
         const actualResult = entry.actualResult;
 
         const row = document.createElement('tr');
-        row.className = 'hover:bg-gray-50/50 transition-colors border-b last:border-0';
+        row.className = 'hover:bg-white/5 transition-colors border-b border-white/10 last:border-0';
 
         // 判定ロジック
         const setPredictions = entry.data.set_predictions || [];
@@ -91,16 +91,16 @@ function renderHistory(predictionDetails) {
             const { hitType } = checkHitLevel(actualResult, setPredictions, miniPredictions);
 
             if (hitType === 'set') {
-                judgementHtml = '<span class="px-2 py-1 bg-red-100 text-red-700 rounded-full text-xs font-bold whitespace-nowrap">セット的中！</span>';
+                judgementHtml = '<span class="px-2 py-1 bg-red-500/20 text-red-100 border border-red-500/50 rounded-full text-xs font-bold whitespace-nowrap shadow-[0_0_10px_rgba(239,68,68,0.2)]">セット的中！</span>';
                 setBoxHits++;
             } else if (hitType === 'box') {
-                judgementHtml = '<span class="px-2 py-1 bg-amber-100 text-amber-700 rounded-full text-xs font-bold whitespace-nowrap">ボックス的中！</span>';
+                judgementHtml = '<span class="px-2 py-1 bg-amber-500/20 text-amber-100 border border-amber-500/50 rounded-full text-xs font-bold whitespace-nowrap shadow-[0_0_10px_rgba(245,158,11,0.2)]">ボックス的中！</span>';
                 setBoxHits++;
             } else if (hitType === 'mini') {
-                judgementHtml = '<span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold whitespace-nowrap">ミニ的中！</span>';
+                judgementHtml = '<span class="px-2 py-1 bg-green-500/20 text-green-100 border border-green-500/50 rounded-full text-xs font-bold whitespace-nowrap shadow-[0_0_10px_rgba(16,185,129,0.2)]">ミニ的中！</span>';
                 miniHits++;
             } else {
-                judgementHtml = '<span class="text-gray-400">残念</span>';
+                judgementHtml = '<span class="text-gray-500">残念</span>';
             }
 
             // 当選番号の装飾
@@ -110,9 +110,9 @@ function renderHistory(predictionDetails) {
 
         if (tableBody) {
             row.innerHTML = `
-                <td class="px-6 py-4 text-sm text-gray-600">
-                    <div class="font-bold">${entry.date}</div>
-                    <div class="text-xs opacity-60">予測時刻: ${entry.time}</div>
+                <td class="px-6 py-4 text-sm">
+                    <div class="font-bold text-gray-100">${entry.date}</div>
+                    <div class="text-xs text-gray-400 opacity-80">予測時刻: ${entry.time}</div>
                 </td>
                 <td class="px-6 py-4">
                     <div class="flex items-center gap-1">
@@ -162,13 +162,13 @@ function checkHitLevel(actual, setPreds, miniPreds) {
 
 function highlightMatches(preds, actual, type) {
     if (!actual || actual.includes('?')) {
-        return preds.map(p => `<span class="px-2 py-1 bg-white border rounded text-gray-600">${p.number}</span>`).join('');
+        return preds.map(p => `<span class="px-2 py-1 bg-white/10 border border-white/20 rounded text-gray-200 font-mono">${p.number}</span>`).join('');
     }
 
     return preds.map(p => {
-        let bgColor = 'bg-white';
-        let textColor = 'text-gray-600';
-        let borderColor = 'border-gray-200';
+        let bgColor = 'bg-white/10';
+        let textColor = 'text-gray-200';
+        let borderColor = 'border-white/20';
 
         if (type === 'set') {
             if (p.number === actual) {
@@ -194,6 +194,6 @@ function highlightMatches(preds, actual, type) {
 
 function renderNumbers(numStr) {
     return numStr.split('').map(n =>
-        `<span class="w-8 h-8 flex items-center justify-center bg-gray-800 text-white rounded-full font-bold text-sm shadow-inner">${n}</span>`
+        `<span class="w-8 h-8 flex items-center justify-center bg-gray-900 text-white border border-white/10 rounded-full font-bold text-sm shadow-[inset_0_2px_4px_rgba(0,0,0,0.5)]">${n}</span>`
     ).join('');
 }

@@ -30,7 +30,7 @@
             background: #111827;
             background-image:
                 radial-gradient(circle at 50% 50%, rgba(17, 24, 39, 0.7) 0%, rgba(17, 24, 39, 1) 100%),
-                url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%236b7280' fill-opacity='0.1'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2v-4h4v-2h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2v-4h4v-2H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+                url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%236b7280' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2v-4h4v-2h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2v-4h4v-2H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
         }
 
         @keyframes gradientShift {
@@ -48,10 +48,10 @@
         }
 
         .glass-card {
-            background: rgba(31, 41, 55, 0.8);
-            backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+            background: rgba(17, 24, 39, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
         }
 
         .sidebar-link {
@@ -224,7 +224,7 @@
                     <h1 class="text-3xl md:text-4xl font-extrabold mb-2 text-white">
                         勝敗履歴一覧
                     </h1>
-                    <p class="text-gray-400">過去の予測と実際の当選番号の照合結果</p>
+                    <p class="text-gray-300">過去の予測と実際の当選番号の照合結果</p>
                 </div>
             </header>
 
@@ -239,16 +239,16 @@
                 <!-- 統計カード -->
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                     <div class="glass-card rounded-xl p-5 text-center">
-                        <p class="text-sm text-gray-400 font-medium uppercase tracking-wider mb-1">検証回数</p>
+                        <p class="text-sm text-gray-300 font-medium uppercase tracking-wider mb-1">検証回数</p>
                         <p id="statTotal" class="text-3xl font-bold text-white">-</p>
                     </div>
                     <div class="glass-card rounded-xl p-5 text-center">
-                        <p class="text-sm text-gray-400 font-medium uppercase tracking-wider mb-1">セット/ボックス的中</p>
-                        <p id="statHits" class="text-3xl font-bold text-red-600">-</p>
+                        <p class="text-sm text-gray-300 font-medium uppercase tracking-wider mb-1">セット/ボックス的中</p>
+                        <p id="statHits" class="text-3xl font-bold text-red-500">-</p>
                     </div>
                     <div class="glass-card rounded-xl p-5 text-center">
-                        <p class="text-sm text-gray-400 font-medium uppercase tracking-wider mb-1">ミニ的中</p>
-                        <p id="statMiniHits" class="text-3xl font-bold text-green-600">-</p>
+                        <p class="text-sm text-gray-300 font-medium uppercase tracking-wider mb-1">ミニ的中</p>
+                        <p id="statMiniHits" class="text-3xl font-bold text-green-500">-</p>
                     </div>
                 </div>
 
