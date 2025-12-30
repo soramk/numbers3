@@ -12,205 +12,293 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 
-<body>
-    <div class="container">
-        <header>
-            <div
-                style="display: flex; justify-content: space-between; align-items: center; width: 100%; flex-wrap: wrap; gap: 15px;">
+<body class="min-h-screen">
+    <!-- モバイルメニューボタン -->
+    <button id="mobileMenuBtn"
+        class="fixed top-4 left-4 z-50 md:hidden bg-gray-800/90 backdrop-blur-sm p-3 rounded-lg shadow-lg">
+        <svg class="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+    </button>
+
+    <!-- サイドバー -->
+    <aside id="sidebar"
+        class="fixed left-0 top-0 h-full w-64 bg-gray-900/95 backdrop-blur-sm shadow-xl z-40 sidebar overflow-y-auto">
+        <div class="p-6">
+            <div class="mb-8 flex items-center justify-between">
                 <div class="flex flex-col items-center">
-                    <img src="public/numberslogo_02.png" alt="NUMBERS3 PREDICT" style="width: 200px; max-width: 100%;">
+                    <img src="public/numberslogo_02.png" alt="NUMBERS3 PREDICT" class="w-48 mb-2">
                 </div>
-                <div style="display: flex; gap: 12px; align-items: center;">
-                    <a href="index.html"
-                        style="font-size: 0.9rem; color: var(--accent-color); text-decoration: none;">📊 予測結果表示へ</a>
-                    <button id="settingsBtn" class="settings-btn">⚙️ 設定</button>
-                </div>
+                <button id="closeSidebarBtn" class="md:hidden text-gray-500 hover:text-gray-300">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
+                </button>
             </div>
-        </header>
 
-        <main>
-            <section class="card">
-                <h2>1. Historical Analysis & Reverse Engineering</h2>
-                <p>約7000回分の履歴データから、当選3桁を生み出していると仮定した「波動方程式」の係数（位相）を逆算し、そのゆらぎパターンを解析します。</p>
+            <nav class="space-y-2">
+                <a href="index.html"
+                    class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 font-medium">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6">
+                        </path>
+                    </svg>
+                    トップ・統合予測
+                </a>
+                <a href="history.html"
+                    class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 font-medium">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01">
+                        </path>
+                    </svg>
+                    勝敗履歴
+                </a>
+                <a href="search/index.html"
+                    class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 font-medium">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    過去データ検索
+                </a>
+                <a href="analyzer.html"
+                    class="sidebar-link active flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 font-medium">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path>
+                    </svg>
+                    詳細分析ツール
+                </a>
+            </nav>
+        </div>
+    </aside>
 
-                <button id="analyzeBtn" class="primary-btn">データ解析・逆算開始</button>
-                <div class="chart-container">
-                    <canvas id="coeffChart"></canvas>
+    <div class="md:ml-64">
+        <div class="px-4 py-6 md:py-8">
+            <header class="text-center mb-8 fade-in">
+                <div class="glass-card rounded-2xl p-6 md:p-8 w-full flex justify-between items-center">
+                    <h1 class="text-3xl font-extrabold text-white">
+                        📈 詳細分析ツール
+                    </h1>
+                    <div style="display: flex; gap: 12px; align-items: center;">
+                        <button id="settingsBtn" class="settings-btn">⚙️ 設定</button>
+                    </div>
                 </div>
-                <div id="recentSummary" class="result-box hidden" style="margin-top:10px;">
-                    <h3>直近500回の「方程式」と実際の3桁数字</h3>
-                    <div class="scrollable-result">
-                        <div id="recentSummaryBody" class="console-text" style="white-space:pre; font-size:0.8rem;">
+            </header>
+
+            <main>
+                <section class="card">
+                    <h2>1. Historical Analysis & Reverse Engineering</h2>
+                    <p>約7000回分の履歴データから、当選3桁を生み出していると仮定した「波動方程式」の係数（位相）を逆算し、そのゆらぎパターンを解析します。</p>
+
+                    <button id="analyzeBtn" class="primary-btn">データ解析・逆算開始</button>
+                    <div class="chart-container">
+                        <canvas id="coeffChart"></canvas>
+                    </div>
+                    <div id="recentSummary" class="result-box hidden" style="margin-top:10px;">
+                        <h3>直近500回の「方程式」と実際の3桁数字</h3>
+                        <div class="scrollable-result">
+                            <div id="recentSummaryBody" class="console-text" style="white-space:pre; font-size:0.8rem;">
+                            </div>
                         </div>
                     </div>
-                </div>
-            </section>
+                </section>
 
-            <section class="card">
-                <h2>2. AI Inference (Gemini)</h2>
-                <p>逆算された位相パラメータと、全履歴から集計した統計情報（頻度・遷移・3桁コンボなど）、さらに高度な分析結果（相関分析、トレンド分析、クラスタリング、周波数解析、ウェーブレット変換、PCA、t-SNE、連続性分析、変化点検出、ネットワーク分析、遺伝的アルゴリズム最適化など）をもとに、AIが多角的な分析手法を統合して、次回の予測を提示します。
-                </p>
-                <ul style="margin-top: 8px; margin-left: 20px;">
-                    <li><strong>セット予測</strong>：3桁の数字を3パターン提示</li>
-                    <li><strong>ミニ予測</strong>：下2桁（十の位と一の位）を3パターン提示</li>
-                </ul>
-                <p style="margin-top: 12px; font-size: 0.9rem; color: var(--muted-text);">
-                    <strong>使用している分析手法：</strong>位相解析、統計的頻度分析、マルコフ連鎖、ベイズ統計、相関分析、トレンド分析、クラスタリング分析、周波数解析、頻出パターン分析、ギャップ分析、異常検知、周期性分析、ウェーブレット変換、主成分分析（PCA）、t-SNE可視化、連続性分析、変化点検出、ネットワーク分析、遺伝的アルゴリズム最適化
-                </p>
-                <button id="predictBtn" class="secondary-btn" disabled>Geminiに予測させる</button>
-                <div id="tokenEstimate" style="font-size:0.8rem; opacity:0.85; margin-top:6px;"></div>
-
-                <div id="promptArea" class="result-box hidden" style="margin-top:12px;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
-                        <h3 style="margin:0; font-size:0.96rem; color:#e5e7eb;">生成されたプロンプト</h3>
-                        <div style="display:flex; gap:8px; flex-wrap:wrap;">
-                            <button id="togglePromptBtn" class="secondary-btn"
-                                style="width:auto; padding:6px 14px; font-size:0.8rem;">表示/非表示</button>
-                            <button id="copyPromptBtn" class="secondary-btn"
-                                style="width:auto; padding:6px 14px; font-size:0.8rem;">📋 全テキストコピー</button>
-                            <button id="downloadPromptBtn" class="secondary-btn"
-                                style="width:auto; padding:6px 14px; font-size:0.8rem;">ダウンロード</button>
-                        </div>
-                    </div>
-                    <div id="promptContent" class="console-text"
-                        style="display:none; max-height:400px; overflow-y:auto; white-space:pre-wrap; word-break:break-word;">
-                    </div>
-                </div>
-
-                <div id="resultArea" class="result-box hidden">
-                    <h3>Prediction Result</h3>
-                    <div id="output" class="console-text"></div>
-                    <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
-                        <button id="savePredictionBtn" class="secondary-btn"
-                            style="width:auto; padding:6px 14px; font-size:0.8rem;">この予測結果を保存</button>
-                    </div>
-                </div>
-            </section>
-
-            <section class="card">
-                <h2>3. Prediction History</h2>
-                <p>保存した予測結果の履歴です。日付・時刻とともに、そのときのAIの出力を一覧できます（ブラウザのローカルに保存されます）。</p>
-                <div id="historyArea" class="result-box hidden">
-                    <h3>Saved Predictions</h3>
-                    <div id="historyBody" class="console-text"></div>
-                    <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
-                        <button id="exportHistoryBtn" class="secondary-btn"
-                            style="width:auto; padding:6px 14px; font-size:0.8rem;">履歴をファイルにエクスポート</button>
-                    </div>
-                </div>
-            </section>
-
-            <section class="card">
-                <h2>4. 各桁の頻出率分析</h2>
-                <p>過去のデータから、各桁（百の位、十の位、一の位）ごとの数字の出現頻度をグラフで表示します。全期間・年毎・年＋月・「全年を通した同じ月」で切り替えて確認できます。</p>
-
-                <div style="margin-bottom: 16px;">
-                    <label for="frequencyChartType" style="display: block; margin-bottom: 8px;">グラフタイプ:</label>
-                    <select id="frequencyChartType"
-                        style="padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-color); margin-bottom: 12px; font-size: 16px; width: 100%;">
-                        <option value="set">セット（各桁別）</option>
-                        <option value="mini">ミニ（下2桁）</option>
-                    </select>
-
-                    <label for="frequencyPeriodType" style="display: block; margin-bottom: 8px;">期間選択:</label>
-                    <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
-                        <select id="frequencyPeriodType"
-                            style="padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 16px; flex: 1; min-width: 0;">
-                            <option value="all">全期間</option>
-                            <option value="year">年毎</option>
-                            <option value="year_month">年＋月</option>
-                            <option value="month_all">月毎（全年）</option>
-                        </select>
-                        <select id="frequencyPeriodValue"
-                            style="padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-color); display: none; font-size: 16px; flex: 1; min-width: 0;">
-                            <option value="">選択してください</option>
-                        </select>
-                        <button id="updateFrequencyChart" class="secondary-btn"
-                            style="width: auto; padding: 6px 16px; flex-shrink: 0;">グラフ更新</button>
-                    </div>
-                </div>
-
-                <div class="chart-container" style="margin-top: 16px;">
-                    <canvas id="frequencyChart"></canvas>
-                </div>
-            </section>
-
-            <section class="card">
-                <h2>5. このツールで使っている分析手法</h2>
-                <p>内部では、物理モデル・統計モデル・機械学習・AIによる推論を組み合わせて、次回の当選3桁を推定しています。</p>
-                <ul class="method-list">
-                    <li><strong>波動方程式による位相解析</strong>：各回の当選3桁を、簡易的な正弦波モデル（時間 t と位相 Phase
-                        を持つ関数）で説明できるようにし、各桁ごとに「その回に最適だった位相」を逆算します。</li>
-                    <li><strong>全履歴の統計サマリ</strong>：約7000回分の履歴から、各桁ごとの数字頻度、数字の遷移パターン（前回→今回）、頻出3桁コンボ、直近の出目トレンドなどを集計します。
-                    </li>
-                    <li><strong>マルコフ連鎖</strong>：各桁ごとに、前回の数字から次回の数字への遷移確率行列を構築し、状態遷移を分析します。</li>
-                    <li><strong>ベイズ統計</strong>：数字の頻度を「事前分布」、直近の出目やトレンドを「新しい証拠（尤度）」とみなし、どの数字／パターンが事後的に有力になるかをAIに評価させます。
-                    </li>
-                    <li><strong>相関分析</strong>：桁間相関（百の位↔十の位、十の位↔一の位、百の位↔一の位）、自己相関（ラグ分析）、合計値との相関を分析します。</li>
-                    <li><strong>トレンド分析</strong>：各桁ごとの短期（直近10回）、中期（直近50回）、長期（直近200回）トレンドを分析し、各期間の平均値、傾き、ボラティリティを評価します。
-                    </li>
-                    <li><strong>クラスタリング分析</strong>：K-meansクラスタリングによりパターンをグループ化し、最新データがどのクラスタに属するかを分析します。</li>
-                    <li><strong>周波数解析</strong>：フーリエ変換により周期性を検出し、各桁ごとの主要な周波数成分と周期を分析します。</li>
-                    <li><strong>頻出パターン分析</strong>：3桁・2桁の頻出組み合わせ、各桁ペアの頻出パターンを抽出します。</li>
-                    <li><strong>ギャップ分析</strong>：数字の出現間隔を詳細に分析し、長期間出現していない数字を特定します。</li>
-                    <li><strong>異常検知</strong>：Z-scoreによる外れ値検出を行い、各桁の異常値の数と位置を特定します。</li>
-                    <li><strong>周期性分析</strong>：曜日・月次・四半期パターンを分析し、時間的な周期性を検出します。</li>
-                    <li><strong>ウェーブレット変換</strong>：時間と周波数の両方の情報を保持した解析により、短期的な変動と長期的なトレンドを同時に分析します。</li>
-                    <li><strong>主成分分析（PCA）</strong>：データ構造の次元削減と可視化を行い、データの本質的な変動要因を抽出します。</li>
-                    <li><strong>t-SNE可視化</strong>：高次元データを2次元に可視化し、パターンのクラスタリングを視覚的に理解します。</li>
-                    <li><strong>連続性分析</strong>：連続出現パターン（同じ数字が連続して出る確率）と交互出現パターンを検出します。</li>
-                    <li><strong>変化点検出</strong>：PELTアルゴリズムによりトレンド変化・レジーム変化を検出し、パターンが変わった時期を特定します。</li>
-                    <li><strong>ネットワーク分析</strong>：数字の遷移をグラフとして分析し、数字間の関係性と中心性指標を計算します。</li>
-                    <li><strong>遺伝的アルゴリズム最適化</strong>：予測手法の重みを最適化し、各予測手法の最適な重み付けを決定します。</li>
-                    <li><strong>コンフォーマル予測の考え方</strong>：過去データをもとに「候補集合として提示した場合にどれくらい当たりをカバーしそうか」を評価し、各3桁候補に対して信頼度レンジを言語的に付与します。
-                    </li>
-                    <li><strong>AIによる統合推論</strong>：これらの情報をまとめてGeminiに渡し、物理的な波動モデル、統計モデル、機械学習モデルの多角的な分析結果を統合して、一貫した3つの有力候補を選ぶよう指示しています。
-                    </li>
-                </ul>
-            </section>
-        </main>
-    </div>
-
-    <!-- 設定モーダル -->
-    <div id="settingsModal" class="modal hidden">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>設定</h2>
-                <button id="closeModalBtn" class="close-btn">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="setting-section">
-                    <label for="apiKey">Gemini API Key</label>
-                    <div style="display:flex; gap:8px; align-items:center; margin-top:6px; flex-wrap:wrap;">
-                        <input type="password" id="apiKey" placeholder="Gemini API Keyを入力"
-                            style="flex:1; min-width:0; font-size:16px;">
-                        <button id="saveKey" class="secondary-btn"
-                            style="width:auto; padding:8px 16px; flex-shrink:0;">保存</button>
-                    </div>
-                    <p style="font-size:0.75rem; color:var(--muted-text); margin-top:4px;">
-                        API Keyは<a href="https://aistudio.google.com/app/apikey" target="_blank"
-                            rel="noopener noreferrer">Google AI Studio</a>で取得できます。
+                <section class="card">
+                    <h2>2. AI Inference (Gemini)</h2>
+                    <p>逆算された位相パラメータと、全履歴から集計した統計情報（頻度・遷移・3桁コンボなど）、さらに高度な分析結果（相関分析、トレンド分析、クラスタリング、周波数解析、ウェーブレット変換、PCA、t-SNE、連続性分析、変化点検出、ネットワーク分析、遺伝的アルゴリズム最適化など）をもとに、AIが多角的な分析手法を統合して、次回の予測を提示します。
                     </p>
-                </div>
+                    <ul style="margin-top: 8px; margin-left: 20px;">
+                        <li><strong>セット予測</strong>：3桁の数字を3パターン提示</li>
+                        <li><strong>ミニ予測</strong>：下2桁（十の位と一の位）を3パターン提示</li>
+                    </ul>
+                    <p style="margin-top: 12px; font-size: 0.9rem; color: var(--muted-text);">
+                        <strong>使用している分析手法：</strong>位相解析、統計的頻度分析、マルコフ連鎖、ベイズ統計、相関分析、トレンド分析、クラスタリング分析、周波数解析、頻出パターン分析、ギャップ分析、異常検知、周期性分析、ウェーブレット変換、主成分分析（PCA）、t-SNE可視化、連続性分析、変化点検出、ネットワーク分析、遺伝的アルゴリズム最適化
+                    </p>
+                    <button id="predictBtn" class="secondary-btn" disabled>Geminiに予測させる</button>
+                    <div id="tokenEstimate" style="font-size:0.8rem; opacity:0.85; margin-top:6px;"></div>
 
-                <div class="setting-section" style="margin-top:20px;">
-                    <label for="modelSelect">使用モデル</label>
-                    <div style="display:flex; gap:8px; align-items:center; margin-top:6px; flex-wrap:wrap;">
-                        <select id="modelSelect" style="flex:1; min-width:0; font-size:16px;">
-                            <option value="gemini-2.5-flash">gemini-2.5-flash</option>
-                        </select>
-                        <button id="fetchModelsBtn" class="secondary-btn"
-                            style="width:auto; padding:8px 16px; flex-shrink:0;">モデル取得</button>
+                    <div id="promptArea" class="result-box hidden" style="margin-top:12px;">
+                        <div
+                            style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                            <h3 style="margin:0; font-size:0.96rem; color:#e5e7eb;">生成されたプロンプト</h3>
+                            <div style="display:flex; gap:8px; flex-wrap:wrap;">
+                                <button id="togglePromptBtn" class="secondary-btn"
+                                    style="width:auto; padding:6px 14px; font-size:0.8rem;">表示/非表示</button>
+                                <button id="copyPromptBtn" class="secondary-btn"
+                                    style="width:auto; padding:6px 14px; font-size:0.8rem;">📋 全テキストコピー</button>
+                                <button id="downloadPromptBtn" class="secondary-btn"
+                                    style="width:auto; padding:6px 14px; font-size:0.8rem;">ダウンロード</button>
+                            </div>
+                        </div>
+                        <div id="promptContent" class="console-text"
+                            style="display:none; max-height:400px; overflow-y:auto; white-space:pre-wrap; word-break:break-word;">
+                        </div>
                     </div>
-                    <div id="modelInfo"
-                        style="font-size:0.75rem; opacity:0.8; margin-top:6px; color:var(--muted-text);"></div>
+
+                    <div id="resultArea" class="result-box hidden">
+                        <h3>Prediction Result</h3>
+                        <div id="output" class="console-text"></div>
+                        <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+                            <button id="savePredictionBtn" class="secondary-btn"
+                                style="width:auto; padding:6px 14px; font-size:0.8rem;">この予測結果を保存</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <h2>3. Prediction History</h2>
+                    <p>保存した予測結果の履歴です。日付・時刻とともに、そのときのAIの出力を一覧できます（ブラウザのローカルに保存されます）。</p>
+                    <div id="historyArea" class="result-box hidden">
+                        <h3>Saved Predictions</h3>
+                        <div id="historyBody" class="console-text"></div>
+                        <div style="margin-top:8px; display:flex; gap:8px; flex-wrap:wrap;">
+                            <button id="exportHistoryBtn" class="secondary-btn"
+                                style="width:auto; padding:6px 14px; font-size:0.8rem;">履歴をファイルにエクスポート</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <h2>4. 各桁の頻出率分析</h2>
+                    <p>過去のデータから、各桁（百の位、十の位、一の位）ごとの数字の出現頻度をグラフで表示します。全期間・年毎・年＋月・「全年を通した同じ月」で切り替えて確認できます。</p>
+
+                    <div style="margin-bottom: 16px;">
+                        <label for="frequencyChartType" style="display: block; margin-bottom: 8px;">グラフタイプ:</label>
+                        <select id="frequencyChartType"
+                            style="padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-color); margin-bottom: 12px; font-size: 16px; width: 100%;">
+                            <option value="set">セット（各桁別）</option>
+                            <option value="mini">ミニ（下2桁）</option>
+                        </select>
+
+                        <label for="frequencyPeriodType" style="display: block; margin-bottom: 8px;">期間選択:</label>
+                        <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+                            <select id="frequencyPeriodType"
+                                style="padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-color); font-size: 16px; flex: 1; min-width: 0;">
+                                <option value="all">全期間</option>
+                                <option value="year">年毎</option>
+                                <option value="year_month">年＋月</option>
+                                <option value="month_all">月毎（全年）</option>
+                            </select>
+                            <select id="frequencyPeriodValue"
+                                style="padding: 6px 12px; border-radius: 4px; border: 1px solid var(--border-color); display: none; font-size: 16px; flex: 1; min-width: 0;">
+                                <option value="">選択してください</option>
+                            </select>
+                            <button id="updateFrequencyChart" class="secondary-btn"
+                                style="width: auto; padding: 6px 16px; flex-shrink: 0;">グラフ更新</button>
+                        </div>
+                    </div>
+
+                    <div class="chart-container" style="margin-top: 16px;">
+                        <canvas id="frequencyChart"></canvas>
+                    </div>
+                </section>
+
+                <section class="card">
+                    <h2>5. このツールで使っている分析手法</h2>
+                    <p>内部では、物理モデル・統計モデル・機械学習・AIによる推論を組み合わせて、次回の当選3桁を推定しています。</p>
+                    <ul class="method-list">
+                        <li><strong>波動方程式による位相解析</strong>：各回の当選3桁を、簡易的な正弦波モデル（時間 t と位相 Phase
+                            を持つ関数）で説明できるようにし、各桁ごとに「その回に最適だった位相」を逆算します。</li>
+                        <li><strong>全履歴の統計サマリ</strong>：約7000回分の履歴から、各桁ごとの数字頻度、数字の遷移パターン（前回→今回）、頻出3桁コンボ、直近の出目トレンドなどを集計します。
+                        </li>
+                        <li><strong>マルコフ連鎖</strong>：各桁ごとに、前回の数字から次回の数字への遷移確率行列を構築し、状態遷移を分析します。</li>
+                        <li><strong>ベイズ統計</strong>：数字の頻度を「事前分布」、直近の出目やトレンドを「新しい証拠（尤度）」とみなし、どの数字／パターンが事後的に有力になるかをAIに評価させます。
+                        </li>
+                        <li><strong>相関分析</strong>：桁間相関（百の位↔十の位、十の位↔一の位、百の位↔一の位）、自己相関（ラグ分析）、合計値との相関を分析します。</li>
+                        <li><strong>トレンド分析</strong>：各桁ごとの短期（直近10回）、中期（直近50回）、長期（直近200回）トレンドを分析し、各期間の平均値、傾き、ボラティリティを評価します。
+                        </li>
+                        <li><strong>クラスタリング分析</strong>：K-meansクラスタリングによりパターンをグループ化し、最新データがどのクラスタに属するかを分析します。</li>
+                        <li><strong>周波数解析</strong>：フーリエ変換により周期性を検出し、各桁ごとの主要な周波数成分と周期を分析します。</li>
+                        <li><strong>頻出パターン分析</strong>：3桁・2桁の頻出組み合わせ、各桁ペアの頻出パターンを抽出します。</li>
+                        <li><strong>ギャップ分析</strong>：数字の出現間隔を詳細に分析し、長期間出現していない数字を特定します。</li>
+                        <li><strong>異常検知</strong>：Z-scoreによる外れ値検出を行い、各桁の異常値の数と位置を特定します。</li>
+                        <li><strong>周期性分析</strong>：曜日・月次・四半期パターンを分析し、時間的な周期性を検出します。</li>
+                        <li><strong>ウェーブレット変換</strong>：時間と周波数の両方の情報を保持した解析により、短期的な変動と長期的なトレンドを同時に分析します。</li>
+                        <li><strong>主成分分析（PCA）</strong>：データ構造の次元削減と可視化を行い、データの本質的な変動要因を抽出します。</li>
+                        <li><strong>t-SNE可視化</strong>：高次元データを2次元に可視化し、パターンのクラスタリングを視覚的に理解します。</li>
+                        <li><strong>連続性分析</strong>：連続出現パターン（同じ数字が連続して出る確率）と交互出現パターンを検出します。</li>
+                        <li><strong>変化点検出</strong>：PELTアルゴリズムによりトレンド変化・レジーム変化を検出し、パターンが変わった時期を特定します。</li>
+                        <li><strong>ネットワーク分析</strong>：数字の遷移をグラフとして分析し、数字間の関係性と中心性指標を計算します。</li>
+                        <li><strong>遺伝的アルゴリズム最適化</strong>：予測手法の重みを最適化し、各予測手法の最適な重み付けを決定します。</li>
+                        <li><strong>コンフォーマル予測の考え方</strong>：過去データをもとに「候補集合として提示した場合にどれくらい当たりをカバーしそうか」を評価し、各3桁候補に対して信頼度レンジを言語的に付与します。
+                        </li>
+                        <li><strong>AIによる統合推論</strong>：これらの情報をまとめてGeminiに渡し、物理的な波動モデル、統計モデル、機械学習モデルの多角的な分析結果を統合して、一貫した3つの有力候補を選ぶよう指示しています。
+                        </li>
+                    </ul>
+                </section>
+            </main>
+        </div>
+
+        <!-- 設定モーダル -->
+        <div id="settingsModal" class="modal hidden">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>設定</h2>
+                    <button id="closeModalBtn" class="close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <div class="setting-section">
+                        <label for="apiKey">Gemini API Key</label>
+                        <div style="display:flex; gap:8px; align-items:center; margin-top:6px; flex-wrap:wrap;">
+                            <input type="password" id="apiKey" placeholder="Gemini API Keyを入力"
+                                style="flex:1; min-width:0; font-size:16px;">
+                            <button id="saveKey" class="secondary-btn"
+                                style="width:auto; padding:8px 16px; flex-shrink:0;">保存</button>
+                        </div>
+                        <p style="font-size:0.75rem; color:var(--muted-text); margin-top:4px;">
+                            API Keyは<a href="https://aistudio.google.com/app/apikey" target="_blank"
+                                rel="noopener noreferrer">Google AI Studio</a>で取得できます。
+                        </p>
+                    </div>
+
+                    <div class="setting-section" style="margin-top:20px;">
+                        <label for="modelSelect">使用モデル</label>
+                        <div style="display:flex; gap:8px; align-items:center; margin-top:6px; flex-wrap:wrap;">
+                            <select id="modelSelect" style="flex:1; min-width:0; font-size:16px;">
+                                <option value="gemini-2.5-flash">gemini-2.5-flash</option>
+                            </select>
+                            <button id="fetchModelsBtn" class="secondary-btn"
+                                style="width:auto; padding:8px 16px; flex-shrink:0;">モデル取得</button>
+                        </div>
+                        <div id="modelInfo"
+                            style="font-size:0.75rem; opacity:0.8; margin-top:6px; color:var(--muted-text);"></div>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- JSも public/ 配下から読み込む -->
-    <script type="module" src="public/js/app.js"></script>
+        <!-- スクリプト読み込み -->
+        <script>
+            // サイドバー制御
+            const sidebar = document.getElementById('sidebar');
+            const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+            const closeSidebarBtn = document.getElementById('closeSidebarBtn');
+
+            mobileMenuBtn.addEventListener('click', () => {
+                sidebar.classList.add('active');
+            });
+
+            closeSidebarBtn.addEventListener('click', () => {
+                sidebar.classList.remove('active');
+            });
+
+            // 外側をクリックして閉じる
+            document.addEventListener('click', (e) => {
+                if (sidebar.classList.contains('active') &&
+                    !sidebar.contains(e.target) &&
+                    !mobileMenuBtn.contains(e.target)) {
+                    sidebar.classList.remove('active');
+                }
+            });
+        </script>
+        <script type="module" src="public/js/app.js"></script>
+        <script src="analyzer.js"></script>
 </body>
 
 </html>

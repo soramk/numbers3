@@ -42,463 +42,549 @@
 </head>
 
 <body class="min-h-screen">
-    <div class="container mx-auto px-4 py-8 max-w-6xl">
-        <!-- ヘッダー -->
-        <header class="flex flex-col md:flex-row items-center justify-between mb-8 gap-6">
-            <div class="flex flex-col items-center">
-                <img src="../public/numberslogo_02.png" alt="NUMBERS3 PREDICT" class="w-48 mb-2">
-                <h1 class="text-xl font-bold text-white drop-shadow-md">
-                    🔎 過去データ検索・分析
-                </h1>
-            </div>
-            <a href="../index.html"
-                class="flex items-center gap-2 px-4 py-2 bg-gray-800/20 backdrop-blur-md hover:bg-white/30 text-white rounded-lg transition-all text-sm font-semibold">
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
-                </svg>
-                ホームに戻る
-            </a>
-        </header>
+    <!-- モバイルメニューボタン -->
+    <button id="mobileMenuBtn"
+        class="fixed top-4 left-4 z-50 md:hidden bg-gray-800/90 backdrop-blur-sm p-3 rounded-lg shadow-lg">
+        <svg class="w-6 h-6 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+        </svg>
+    </button>
 
-        <!-- 検索フォーム -->
-        <section class="glass-card rounded-2xl p-6 mb-8 shadow-xl">
-            <!-- タブ切り替え -->
-            <div class="flex border-b border-gray-200/50 mb-6">
-                <button id="tabNumber"
-                    class="flex-1 py-3 text-center font-bold text-indigo-600 border-b-2 border-indigo-600 transition-colors">
-                    🔢 数字で検索
-                </button>
-                <button id="tabDate"
-                    class="flex-1 py-3 text-center font-bold text-gray-400 hover:text-indigo-400 border-b-2 border-transparent hover:border-indigo-300 transition-colors">
-                    📅 日付で検索
-                </button>
-            </div>
-
-            <!-- 数字検索フォーム -->
-            <div id="formNumber">
-                <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                    <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                    </svg>
-                    数字を選択して検索
-                </h2>
-
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
-                    <!-- 百の位 -->
-                    <div class="space-y-2">
-                        <label class="block text-sm font-semibold text-gray-400">百の位</label>
-                        <select id="hundredSelect"
-                            class="w-full h-12 text-xl font-bold text-center bg-gray-800 border-2 border-indigo-900 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all">
-                            <option value="">-</option>
-                            <option value="0">0</option>
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                            <option value="5">5</option>
-                            <option value="6">6</option>
-                            <option value="7">7</option>
-                            <option value="8">8</option>
-                            <option value="9">9</option>
-                        </select>
-                    </div>
-
-                    <!-- 十の位 -->
-                    <div class="space-y-2">
-                        <label class="block text-sm font-semibold text-gray-400">十の位</label>
-                        <select id="tenSelect"
-                            class="w-full h-12 text-xl font-bold text-center bg-gray-800 border-2 border-indigo-900 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all">
-                            <option value="">-</option>
-                            <option value="0">0</option>
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                            <option value="5">5</option>
-                            <option value="6">6</option>
-                            <option value="7">7</option>
-                            <option value="8">8</option>
-                            <option value="9">9</option>
-                        </select>
-                    </div>
-
-                    <!-- 一の位 -->
-                    <div class="space-y-2">
-                        <label class="block text-sm font-semibold text-gray-400">一の位</label>
-                        <select id="oneSelect"
-                            class="w-full h-12 text-xl font-bold text-center bg-gray-800 border-2 border-indigo-900 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all">
-                            <option value="">-</option>
-                            <option value="0">0</option>
-                            <option value="1">1</option>
-                            <option value="2">2</option>
-                            <option value="3">3</option>
-                            <option value="4">4</option>
-                            <option value="5">5</option>
-                            <option value="6">6</option>
-                            <option value="7">7</option>
-                            <option value="8">8</option>
-                            <option value="9">9</option>
-                        </select>
-                    </div>
-
-                    <!-- 検索ボタン -->
-                    <div class="flex gap-2 w-full">
-                        <button id="resetNumberBtn"
-                            class="h-12 w-16 flex-shrink-0 bg-gray-200 hover:bg-gray-300 text-gray-400 font-bold rounded-xl shadow-sm hover:shadow transition-all flex items-center justify-center"
-                            aria-label="リセット" title="入力をリセット">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
-                                </path>
-                            </svg>
-                        </button>
-                        <button id="searchBtn"
-                            class="h-12 flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                            </svg>
-                            数字で検索
-                        </button>
-                    </div>
+    <!-- サイドバー -->
+    <aside id="sidebar"
+        class="fixed left-0 top-0 h-full w-64 bg-gray-900/95 backdrop-blur-sm shadow-xl z-40 sidebar overflow-y-auto">
+        <div class="p-6">
+            <div class="mb-8 flex items-center justify-between">
+                <div class="flex flex-col items-center">
+                    <img src="../public/numberslogo_02.png" alt="NUMBERS3 PREDICT" class="w-48 mb-2">
                 </div>
-
-                <!-- オプション -->
-                <div class="mt-4 pl-1">
-                    <label for="boxSearch"
-                        class="relative z-10 inline-flex items-start cursor-pointer group hover:bg-gray-800 p-2 rounded-lg transition-colors -ml-2">
-                        <div class="flex items-center h-5">
-                            <input id="boxSearch" type="checkbox"
-                                class="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer">
-                        </div>
-                        <div class="ml-3">
-                            <span
-                                class="block text-sm font-bold text-gray-300 group-hover:text-indigo-700 transition-colors select-none">ボックス検索（順不同）</span>
-                            <span class="block text-xs text-gray-500 mt-0.5 select-none">※ 3つの数字が全て一致する組み合わせを検索します（例:
-                                123 → 123, 132, 213...）</span>
-                        </div>
-                    </label>
-                </div>
-            </div>
-
-            <!-- 日付検索フォーム (初期非表示) -->
-            <div id="formDate" class="hidden">
-                <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                    <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z">
-                        </path>
-                    </svg>
-                    日付を選択して検索
-                </h2>
-
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
-                    <!-- 月 -->
-                    <div class="space-y-2">
-                        <label class="block text-sm font-semibold text-gray-400">月</label>
-                        <select id="searchMonth"
-                            class="w-full h-12 text-xl font-bold text-center bg-gray-800 border-2 border-orange-900 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all">
-                            <!-- JSで生成推奨だが静的に1-12を入れる -->
-                            <option value="">-</option>
-                            <option value="1">1月</option>
-                            <option value="2">2月</option>
-                            <option value="3">3月</option>
-                            <option value="4">4月</option>
-                            <option value="5">5月</option>
-                            <option value="6">6月</option>
-                            <option value="7">7月</option>
-                            <option value="8">8月</option>
-                            <option value="9">9月</option>
-                            <option value="10">10月</option>
-                            <option value="11">11月</option>
-                            <option value="12">12月</option>
-                        </select>
-                    </div>
-
-                    <!-- 日 -->
-                    <div class="space-y-2">
-                        <label class="block text-sm font-semibold text-gray-400">日</label>
-                        <select id="searchDay"
-                            class="w-full h-12 text-xl font-bold text-center bg-gray-800 border-2 border-orange-900 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all">
-                            <!-- JSでもいいが1-31まで入れる -->
-                            <option value="">-</option>
-                            <!-- 1-31は冗長なのでJSで入れたほうが賢明だが、ここでは簡易的にJSでpopulateする方針にするか、長くなるが書くか -->
-                            <!-- scriptで入れてもいいが、HTML構造としては空でよしとしてJSで埋める -->
-                        </select>
-                    </div>
-
-                    <!-- 検索ボタン -->
-                    <div class="flex gap-2 w-full">
-                        <button id="resetDateBtn"
-                            class="h-12 w-16 flex-shrink-0 bg-gray-200 hover:bg-gray-300 text-gray-400 font-bold rounded-xl shadow-sm hover:shadow transition-all flex items-center justify-center"
-                            aria-label="リセット" title="入力をリセット">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
-                                </path>
-                            </svg>
-                        </button>
-                        <button id="searchDateBtn"
-                            class="h-12 flex-1 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                            </svg>
-                            日付で検索
-                        </button>
-                    </div>
-                </div>
-                <div class="text-xs text-gray-500 mt-4 ml-1">※ 過去のこの日に当選した全ての番号を表示します。（年は無視されます）</div>
-            </div>
-
-        </section>
-
-        <!-- 結果表示エリア -->
-        <div id="resultArea" class="hidden space-y-8">
-
-            <!-- 基本統計カード -->
-            <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <!-- 出現回数 -->
-                <div class="glass-card rounded-2xl p-6 text-center">
-                    <h3 class="text-sm font-semibold text-gray-500 uppercase mb-1">出現回数</h3>
-                    <div class="text-4xl font-extrabold text-indigo-600">
-                        <span id="hitCount">0</span>
-                        <span class="text-base font-medium text-gray-400">回</span>
-                    </div>
-                    <div class="text-sm text-gray-500 mt-2">
-                        確率: <span id="hitRate" class="font-bold">0.00%</span>
-                    </div>
-                </div>
-
-                <!-- 平均出現間隔 -->
-                <div class="glass-card rounded-2xl p-6 text-center">
-                    <h3 class="text-sm font-semibold text-gray-500 uppercase mb-1">平均出現間隔</h3>
-                    <div class="text-4xl font-extrabold text-emerald-500">
-                        <span id="meanGap">0</span>
-                        <span class="text-base font-medium text-gray-400">日</span>
-                    </div>
-                    <div class="text-sm text-gray-500 mt-2">
-                        最短 <span id="minGap" class="font-bold">0</span> / 最長 <span id="maxGap"
-                            class="font-bold">0</span>
-                    </div>
-                </div>
-
-                <!-- 最新からの経過 -->
-                <div class="glass-card rounded-2xl p-6 text-center">
-                    <h3 class="text-sm font-semibold text-gray-500 uppercase mb-1">直近出現からの経過</h3>
-                    <div class="text-4xl font-extrabold text-orange-500">
-                        <span id="daysSinceLast">0</span>
-                        <span class="text-base font-medium text-gray-400">回前</span>
-                    </div>
-                    <div class="text-sm text-gray-500 mt-2">
-                        最終出現日: <span id="lastDate" class="font-bold">-</span>
-                    </div>
-                </div>
-            </section>
-
-            <!-- 収支シミュレーション (数字検索時のみ表示) -->
-            <section id="simulationSection" class="glass-card rounded-2xl p-6">
-                <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
-                    <svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
-                        </path>
-                    </svg>
-                    収支シミュレーション
-                </h2>
-                <div class="flex flex-col md:flex-row gap-6 items-start">
-                    <div class="w-full md:w-1/3 space-y-4">
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-500 mb-1">購入設定 (毎回)</label>
-                            <div class="flex items-center gap-2">
-                                <input type="number" id="simLines" value="1" min="1"
-                                    class="w-20 px-2 py-2 border rounded-lg text-center font-bold">
-                                <span class="text-sm">口 × 200円</span>
-                            </div>
-                        </div>
-                        <div>
-                            <label class="block text-xs font-semibold text-gray-500 mb-1">当選金額設定 (理論値 or 概算)</label>
-                            <div class="text-sm text-gray-300 mb-1">ストレート: <span class="font-bold">¥90,000</span></div>
-                            <div class="text-sm text-gray-300">ボックス: <span class="font-bold">¥15,000</span></div>
-                        </div>
-                        <button id="calcSimBtn"
-                            class="w-full py-2 bg-yellow-500 hover:bg-yellow-600 text-white font-bold rounded-lg shadow-sm transition-colors">
-                            再計算
-                        </button>
-                    </div>
-                    <div class="flex-1 w-full grid grid-cols-2 gap-4">
-                        <div class="bg-gray-800 rounded-xl p-4 text-center">
-                            <div class="text-xs text-gray-500 mb-1">総投資額</div>
-                            <div id="simTotalCost" class="text-xl font-bold text-white">¥0</div>
-                        </div>
-                        <div class="bg-gray-800 rounded-xl p-4 text-center">
-                            <div class="text-xs text-gray-500 mb-1">総当選額</div>
-                            <div id="simTotalWin" class="text-xl font-bold text-yellow-600">¥0</div>
-                        </div>
-                        <div class="bg-gray-800 rounded-xl p-4 text-center col-span-2">
-                            <div class="text-xs text-gray-500 mb-1">回収率 (ROI)</div>
-                            <div id="simRoi" class="text-3xl font-extrabold text-gray-400">---%</div>
-                            <div id="simBalance" class="text-sm font-bold text-gray-400 mt-1">±0</div>
-                        </div>
-                        <button id="showRankingBtn"
-                            class="col-span-2 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-md transition-colors flex items-center justify-center gap-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-                            </svg>
-                            👑 ROIランキング(TOP10)を表示
-                        </button>
-                    </div>
-                </div>
-            </section>
-
-            <!-- 次回出現傾向 -->
-            <section class="glass-card rounded-2xl p-6">
-                <h2 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                    <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-                    </svg>
-                    次回出現傾向 <span class="text-sm font-normal text-gray-500 ml-2">※ この数字が出た【次の回】には何が出やすい？</span>
-                </h2>
-
-                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    <!-- 出現しやすい数字 -->
-                    <div>
-                        <h3 class="text-sm font-semibold text-gray-400 mb-3">よく出る数字TOP5</h3>
-                        <div id="nextNumRanking" class="space-y-3">
-                            <!-- JSで生成 -->
-                        </div>
-                    </div>
-
-                    <!-- 合計値とパリティ -->
-                    <div class="space-y-6">
-                        <div>
-                            <h3 class="text-sm font-semibold text-gray-400 mb-3">合計値の傾向</h3>
-                            <div class="h-32 relative">
-                                <canvas id="nextSumChart"></canvas>
-                            </div>
-                        </div>
-                        <div>
-                            <h3 class="text-sm font-semibold text-gray-400 mb-3">偶数・奇数の傾向</h3>
-                            <div class="flex items-center gap-4">
-                                <div class="flex-1 bg-gray-100 rounded-lg p-3 text-center">
-                                    <div class="text-xs text-gray-500 mb-1">偶数多め</div>
-                                    <div id="evenRate" class="font-bold text-blue-600 text-lg">0%</div>
-                                </div>
-                                <div class="flex-1 bg-gray-100 rounded-lg p-3 text-center">
-                                    <div class="text-xs text-gray-500 mb-1">奇数多め</div>
-                                    <div id="oddRate" class="font-bold text-red-500 text-lg">0%</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- ヒートマップ (曜日・月) -->
-            <section class="glass-card rounded-2xl p-6">
-                <h2 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
-                    <svg class="w-6 h-6 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z">
-                        </path>
-                    </svg>
-                    出現タイミング分析
-                </h2>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
-                    <div class="bg-gray-900/50 rounded-xl p-4">
-                        <h3 class="text-sm font-semibold text-center text-gray-400 mb-4">曜日別出現率</h3>
-                        <div class="h-64 relative">
-                            <canvas id="weekdayChart"></canvas>
-                        </div>
-                    </div>
-                    <div class="bg-gray-900/50 rounded-xl p-4">
-                        <h3 class="text-sm font-semibold text-center text-gray-400 mb-4">月別出現率</h3>
-                        <div class="h-64 relative">
-                            <canvas id="monthChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- 出現履歴リスト -->
-            <section class="glass-card rounded-2xl p-6 overflow-hidden">
-                <div class="flex items-center justify-between mb-4">
-                    <h2 class="text-xl font-bold text-white flex items-center gap-2">
-                        <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
-                            </path>
-                        </svg>
-                        出現履歴一覧
-                    </h2>
-                    <button id="csvDownloadBtn"
-                        class="flex items-center gap-2 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-bold rounded-lg transition-colors shadow-sm">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
-                        </svg>
-                        CSV出力
-                    </button>
-                </div>
-                <div class="overflow-x-auto max-h-96 overflow-y-auto">
-                    <table class="w-full text-sm text-left">
-                        <thead class="text-xs text-gray-300 uppercase bg-gray-800/50 sticky top-0 backdrop-blur-sm">
-                            <tr>
-                                <th class="px-6 py-3">日付</th>
-                                <th class="px-6 py-3">曜日</th>
-                                <th class="px-6 py-3">回別</th>
-                                <th class="px-6 py-3">当選番号</th>
-                            </tr>
-                        </thead>
-                        <tbody id="historyTableBody" class="divide-y divide-gray-100">
-                            <!-- JSで生成 -->
-                        </tbody>
-                    </table>
-                </div>
-            </section>
-        </div>
-    </div>
-
-    <!-- ランキングモーダル -->
-    <div id="rankingModal"
-        class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
-        <div
-            class="bg-gray-900 rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col transform transition-all scale-100 border border-gray-700">
-            <div
-                class="p-6 border-b border-gray-700 flex justify-between items-center bg-gradient-to-r from-indigo-900 to-purple-900 text-white">
-                <h3 class="text-xl font-bold flex items-center gap-2">
-                    <span class="text-2xl">👑</span> ROI最強数字ランキング
-                </h3>
-                <button id="closeModalBtn" class="text-white/80 hover:text-white transition-colors">
+                <button id="closeSidebarBtn" class="md:hidden text-gray-500 hover:text-gray-300">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
                         </path>
                     </svg>
                 </button>
             </div>
-            <div class="p-6 overflow-y-auto bg-gray-900">
-                <p class="text-sm text-gray-400 mb-4">
-                    過去の全抽選において、<br>
-                    <strong>「毎回1,000円(5口)買い続けた場合」</strong>のシミュレーション結果です。<br>
-                    <span class="text-xs text-gray-500">※ストレート当選(9万円)と仮定して算出</span>
-                </p>
-                <div id="rankingList" class="space-y-3">
-                    <!-- JSで生成 -->
-                    <div class="animate-pulse space-y-3">
-                        <div class="h-16 bg-gray-800 rounded-xl"></div>
-                        <div class="h-16 bg-gray-800 rounded-xl"></div>
-                        <div class="h-16 bg-gray-800 rounded-xl"></div>
+
+            <nav class="space-y-2">
+                <a href="../index.html"
+                    class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 font-medium">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6">
+                        </path>
+                    </svg>
+                    トップ・統合予測
+                </a>
+                <a href="../history.html"
+                    class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 font-medium">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01">
+                        </path>
+                    </svg>
+                    勝敗履歴
+                </a>
+                <a href="index.html"
+                    class="sidebar-link active flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 font-medium">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    過去データ検索
+                </a>
+                <a href="../analyzer.html"
+                    class="sidebar-link flex items-center gap-3 px-4 py-3 rounded-lg text-gray-300 font-medium">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path>
+                    </svg>
+                    詳細分析ツール
+                </a>
+            </nav>
+        </div>
+    </aside>
+
+    <div class="md:ml-64">
+        <div class="w-full max-w-full px-4 py-6 md:py-8">
+            <!-- ヘッダー -->
+            <header class="text-center mb-8 fade-in">
+                <div class="glass-card rounded-2xl p-6 md:p-8 w-full">
+                    <h1 class="text-3xl md:text-4xl font-extrabold mb-2 text-white">
+                        🔎 過去データ検索・分析
+                    </h1>
+                    <p class="text-gray-400">過去の当選データから傾向を詳細に分析</p>
+                </div>
+            </header>
+
+            <!-- 検索フォーム -->
+            <section class="glass-card rounded-2xl p-6 mb-8 shadow-xl">
+                <!-- タブ切り替え -->
+                <div class="flex border-b border-gray-200/50 mb-6">
+                    <button id="tabNumber"
+                        class="flex-1 py-3 text-center font-bold text-indigo-600 border-b-2 border-indigo-600 transition-colors">
+                        🔢 数字で検索
+                    </button>
+                    <button id="tabDate"
+                        class="flex-1 py-3 text-center font-bold text-gray-400 hover:text-indigo-400 border-b-2 border-transparent hover:border-indigo-300 transition-colors">
+                        📅 日付で検索
+                    </button>
+                </div>
+
+                <!-- 数字検索フォーム -->
+                <div id="formNumber">
+                    <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                        数字を選択して検索
+                    </h2>
+
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 items-end">
+                        <!-- 百の位 -->
+                        <div class="space-y-2">
+                            <label class="block text-sm font-semibold text-gray-400">百の位</label>
+                            <select id="hundredSelect"
+                                class="w-full h-12 text-xl font-bold text-center bg-gray-800 border-2 border-indigo-900 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all">
+                                <option value="">-</option>
+                                <option value="0">0</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                            </select>
+                        </div>
+
+                        <!-- 十の位 -->
+                        <div class="space-y-2">
+                            <label class="block text-sm font-semibold text-gray-400">十の位</label>
+                            <select id="tenSelect"
+                                class="w-full h-12 text-xl font-bold text-center bg-gray-800 border-2 border-indigo-900 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all">
+                                <option value="">-</option>
+                                <option value="0">0</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                            </select>
+                        </div>
+
+                        <!-- 一の位 -->
+                        <div class="space-y-2">
+                            <label class="block text-sm font-semibold text-gray-400">一の位</label>
+                            <select id="oneSelect"
+                                class="w-full h-12 text-xl font-bold text-center bg-gray-800 border-2 border-indigo-900 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all">
+                                <option value="">-</option>
+                                <option value="0">0</option>
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                            </select>
+                        </div>
+
+                        <!-- 検索ボタン -->
+                        <div class="flex gap-2 w-full">
+                            <button id="resetNumberBtn"
+                                class="h-12 w-16 flex-shrink-0 bg-gray-200 hover:bg-gray-300 text-gray-400 font-bold rounded-xl shadow-sm hover:shadow transition-all flex items-center justify-center"
+                                aria-label="リセット" title="入力をリセット">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                                    </path>
+                                </svg>
+                            </button>
+                            <button id="searchBtn"
+                                class="h-12 flex-1 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                                数字で検索
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- オプション -->
+                    <div class="mt-4 pl-1">
+                        <label for="boxSearch"
+                            class="relative z-10 inline-flex items-start cursor-pointer group hover:bg-gray-800 p-2 rounded-lg transition-colors -ml-2">
+                            <div class="flex items-center h-5">
+                                <input id="boxSearch" type="checkbox"
+                                    class="w-5 h-5 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500 cursor-pointer">
+                            </div>
+                            <div class="ml-3">
+                                <span
+                                    class="block text-sm font-bold text-gray-300 group-hover:text-indigo-700 transition-colors select-none">ボックス検索（順不同）</span>
+                                <span class="block text-xs text-gray-500 mt-0.5 select-none">※
+                                    3つの数字が全て一致する組み合わせを検索します（例:
+                                    123 → 123, 132, 213...）</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 日付検索フォーム (初期非表示) -->
+                <div id="formDate" class="hidden">
+                    <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z">
+                            </path>
+                        </svg>
+                        日付を選択して検索
+                    </h2>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 items-end">
+                        <!-- 月 -->
+                        <div class="space-y-2">
+                            <label class="block text-sm font-semibold text-gray-400">月</label>
+                            <select id="searchMonth"
+                                class="w-full h-12 text-xl font-bold text-center bg-gray-800 border-2 border-orange-900 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all">
+                                <!-- JSで生成推奨だが静的に1-12を入れる -->
+                                <option value="">-</option>
+                                <option value="1">1月</option>
+                                <option value="2">2月</option>
+                                <option value="3">3月</option>
+                                <option value="4">4月</option>
+                                <option value="5">5月</option>
+                                <option value="6">6月</option>
+                                <option value="7">7月</option>
+                                <option value="8">8月</option>
+                                <option value="9">9月</option>
+                                <option value="10">10月</option>
+                                <option value="11">11月</option>
+                                <option value="12">12月</option>
+                            </select>
+                        </div>
+
+                        <!-- 日 -->
+                        <div class="space-y-2">
+                            <label class="block text-sm font-semibold text-gray-400">日</label>
+                            <select id="searchDay"
+                                class="w-full h-12 text-xl font-bold text-center bg-gray-800 border-2 border-orange-900 rounded-xl focus:ring-2 focus:ring-orange-500 focus:border-orange-500 transition-all">
+                                <!-- JSでもいいが1-31まで入れる -->
+                                <option value="">-</option>
+                                <!-- 1-31は冗長なのでJSで入れたほうが賢明だが、ここでは簡易的にJSでpopulateする方針にするか、長くなるが書くか -->
+                                <!-- scriptで入れてもいいが、HTML構造としては空でよしとしてJSで埋める -->
+                            </select>
+                        </div>
+
+                        <!-- 検索ボタン -->
+                        <div class="flex gap-2 w-full">
+                            <button id="resetDateBtn"
+                                class="h-12 w-16 flex-shrink-0 bg-gray-200 hover:bg-gray-300 text-gray-400 font-bold rounded-xl shadow-sm hover:shadow transition-all flex items-center justify-center"
+                                aria-label="リセット" title="入力をリセット">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                                    </path>
+                                </svg>
+                            </button>
+                            <button id="searchDateBtn"
+                                class="h-12 flex-1 bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                </svg>
+                                日付で検索
+                            </button>
+                        </div>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-4 ml-1">※ 過去のこの日に当選した全ての番号を表示します。（年は無視されます）</div>
+                </div>
+
+            </section>
+
+            <!-- 結果表示エリア -->
+            <div id="resultArea" class="hidden space-y-8">
+
+                <!-- 基本統計カード -->
+                <section class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- 出現回数 -->
+                    <div class="glass-card rounded-2xl p-6 text-center">
+                        <h3 class="text-sm font-semibold text-gray-500 uppercase mb-1">出現回数</h3>
+                        <div class="text-4xl font-extrabold text-indigo-600">
+                            <span id="hitCount">0</span>
+                            <span class="text-base font-medium text-gray-400">回</span>
+                        </div>
+                        <div class="text-sm text-gray-500 mt-2">
+                            確率: <span id="hitRate" class="font-bold">0.00%</span>
+                        </div>
+                    </div>
+
+                    <!-- 平均出現間隔 -->
+                    <div class="glass-card rounded-2xl p-6 text-center">
+                        <h3 class="text-sm font-semibold text-gray-500 uppercase mb-1">平均出現間隔</h3>
+                        <div class="text-4xl font-extrabold text-emerald-500">
+                            <span id="meanGap">0</span>
+                            <span class="text-base font-medium text-gray-400">日</span>
+                        </div>
+                        <div class="text-sm text-gray-500 mt-2">
+                            最短 <span id="minGap" class="font-bold">0</span> / 最長 <span id="maxGap"
+                                class="font-bold">0</span>
+                        </div>
+                    </div>
+
+                    <!-- 最新からの経過 -->
+                    <div class="glass-card rounded-2xl p-6 text-center">
+                        <h3 class="text-sm font-semibold text-gray-500 uppercase mb-1">直近出現からの経過</h3>
+                        <div class="text-4xl font-extrabold text-orange-500">
+                            <span id="daysSinceLast">0</span>
+                            <span class="text-base font-medium text-gray-400">回前</span>
+                        </div>
+                        <div class="text-sm text-gray-500 mt-2">
+                            最終出現日: <span id="lastDate" class="font-bold">-</span>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 収支シミュレーション (数字検索時のみ表示) -->
+                <section id="simulationSection" class="glass-card rounded-2xl p-6">
+                    <h2 class="text-lg font-bold text-white mb-4 flex items-center gap-2">
+                        <svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z">
+                            </path>
+                        </svg>
+                        収支シミュレーション
+                    </h2>
+                    <div class="flex flex-col md:flex-row gap-6 items-start">
+                        <div class="w-full md:w-1/3 space-y-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-500 mb-1">購入設定 (毎回)</label>
+                                <div class="flex items-center gap-2">
+                                    <input type="number" id="simLines" value="1" min="1"
+                                        class="w-20 px-2 py-2 border rounded-lg text-center font-bold">
+                                    <span class="text-sm">口 × 200円</span>
+                                </div>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-500 mb-1">当選金額設定 (理論値 or 概算)</label>
+                                <div class="text-sm text-gray-300 mb-1">ストレート: <span class="font-bold">¥90,000</span>
+                                </div>
+                                <div class="text-sm text-gray-300">ボックス: <span class="font-bold">¥15,000</span></div>
+                            </div>
+                            <button id="calcSimBtn"
+                                class="w-full py-2 bg-yellow-500 hover:bg-yellow-600 text-white font-bold rounded-lg shadow-sm transition-colors">
+                                再計算
+                            </button>
+                        </div>
+                        <div class="flex-1 w-full grid grid-cols-2 gap-4">
+                            <div class="bg-gray-800 rounded-xl p-4 text-center">
+                                <div class="text-xs text-gray-500 mb-1">総投資額</div>
+                                <div id="simTotalCost" class="text-xl font-bold text-white">¥0</div>
+                            </div>
+                            <div class="bg-gray-800 rounded-xl p-4 text-center">
+                                <div class="text-xs text-gray-500 mb-1">総当選額</div>
+                                <div id="simTotalWin" class="text-xl font-bold text-yellow-600">¥0</div>
+                            </div>
+                            <div class="bg-gray-800 rounded-xl p-4 text-center col-span-2">
+                                <div class="text-xs text-gray-500 mb-1">回収率 (ROI)</div>
+                                <div id="simRoi" class="text-3xl font-extrabold text-gray-400">---%</div>
+                                <div id="simBalance" class="text-sm font-bold text-gray-400 mt-1">±0</div>
+                            </div>
+                            <button id="showRankingBtn"
+                                class="col-span-2 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-lg shadow-md transition-colors flex items-center justify-center gap-2">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                                </svg>
+                                👑 ROIランキング(TOP10)を表示
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 次回出現傾向 -->
+                <section class="glass-card rounded-2xl p-6">
+                    <h2 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                        <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                        </svg>
+                        次回出現傾向 <span class="text-sm font-normal text-gray-500 ml-2">※ この数字が出た【次の回】には何が出やすい？</span>
+                    </h2>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <!-- 出現しやすい数字 -->
+                        <div>
+                            <h3 class="text-sm font-semibold text-gray-400 mb-3">よく出る数字TOP5</h3>
+                            <div id="nextNumRanking" class="space-y-3">
+                                <!-- JSで生成 -->
+                            </div>
+                        </div>
+
+                        <!-- 合計値とパリティ -->
+                        <div class="space-y-6">
+                            <div>
+                                <h3 class="text-sm font-semibold text-gray-400 mb-3">合計値の傾向</h3>
+                                <div class="h-32 relative">
+                                    <canvas id="nextSumChart"></canvas>
+                                </div>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-semibold text-gray-400 mb-3">偶数・奇数の傾向</h3>
+                                <div class="flex items-center gap-4">
+                                    <div class="flex-1 bg-gray-100 rounded-lg p-3 text-center">
+                                        <div class="text-xs text-gray-500 mb-1">偶数多め</div>
+                                        <div id="evenRate" class="font-bold text-blue-600 text-lg">0%</div>
+                                    </div>
+                                    <div class="flex-1 bg-gray-100 rounded-lg p-3 text-center">
+                                        <div class="text-xs text-gray-500 mb-1">奇数多め</div>
+                                        <div id="oddRate" class="font-bold text-red-500 text-lg">0%</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- ヒートマップ (曜日・月) -->
+                <section class="glass-card rounded-2xl p-6">
+                    <h2 class="text-xl font-bold text-white mb-6 flex items-center gap-2">
+                        <svg class="w-6 h-6 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z">
+                            </path>
+                        </svg>
+                        出現タイミング分析
+                    </h2>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="bg-gray-900/50 rounded-xl p-4">
+                            <h3 class="text-sm font-semibold text-center text-gray-400 mb-4">曜日別出現率</h3>
+                            <div class="h-64 relative">
+                                <canvas id="weekdayChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="bg-gray-900/50 rounded-xl p-4">
+                            <h3 class="text-sm font-semibold text-center text-gray-400 mb-4">月別出現率</h3>
+                            <div class="h-64 relative">
+                                <canvas id="monthChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 出現履歴リスト -->
+                <section class="glass-card rounded-2xl p-6 overflow-hidden">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
+                                </path>
+                            </svg>
+                            出現履歴一覧
+                        </h2>
+                        <button id="csvDownloadBtn"
+                            class="flex items-center gap-2 px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white text-sm font-bold rounded-lg transition-colors shadow-sm">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                            </svg>
+                            CSV出力
+                        </button>
+                    </div>
+                    <div class="overflow-x-auto max-h-96 overflow-y-auto">
+                        <table class="w-full text-sm text-left">
+                            <thead class="text-xs text-gray-300 uppercase bg-gray-800/50 sticky top-0 backdrop-blur-sm">
+                                <tr>
+                                    <th class="px-6 py-3">日付</th>
+                                    <th class="px-6 py-3">曜日</th>
+                                    <th class="px-6 py-3">回別</th>
+                                    <th class="px-6 py-3">当選番号</th>
+                                </tr>
+                            </thead>
+                            <tbody id="historyTableBody" class="divide-y divide-gray-100">
+                                <!-- JSで生成 -->
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <!-- ランキングモーダル -->
+        <div id="rankingModal"
+            class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+            <div
+                class="bg-gray-900 rounded-2xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-hidden flex flex-col transform transition-all scale-100 border border-gray-700">
+                <div
+                    class="p-6 border-b border-gray-700 flex justify-between items-center bg-gradient-to-r from-indigo-900 to-purple-900 text-white">
+                    <h3 class="text-xl font-bold flex items-center gap-2">
+                        <span class="text-2xl">👑</span> ROI最強数字ランキング
+                    </h3>
+                    <button id="closeModalBtn" class="text-white/80 hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12">
+                            </path>
+                        </svg>
+                    </button>
+                </div>
+                <div class="p-6 overflow-y-auto bg-gray-900">
+                    <p class="text-sm text-gray-400 mb-4">
+                        過去の全抽選において、<br>
+                        <strong>「毎回1,000円(5口)買い続けた場合」</strong>のシミュレーション結果です。<br>
+                        <span class="text-xs text-gray-500">※ストレート当選(9万円)と仮定して算出</span>
+                    </p>
+                    <div id="rankingList" class="space-y-3">
+                        <!-- JSで生成 -->
+                        <div class="animate-pulse space-y-3">
+                            <div class="h-16 bg-gray-800 rounded-xl"></div>
+                            <div class="h-16 bg-gray-800 rounded-xl"></div>
+                            <div class="h-16 bg-gray-800 rounded-xl"></div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
+
     </div>
 
     <!-- スクリプト読み込み -->
+    <script>
+        // サイドバー制御
+        const sidebar = document.getElementById('sidebar');
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn');
+        const closeSidebarBtn = document.getElementById('closeSidebarBtn');
+
+        mobileMenuBtn.addEventListener('click', () => {
+            sidebar.classList.add('active');
+        });
+
+        closeSidebarBtn.addEventListener('click', () => {
+            sidebar.classList.remove('active');
+        });
+
+        // 外側をクリックして閉じる
+        document.addEventListener('click', (e) => {
+            if (sidebar.classList.contains('active') &&
+                !sidebar.contains(e.target) &&
+                !mobileMenuBtn.contains(e.target)) {
+                sidebar.classList.remove('active');
+            }
+        });
+    </script>
     <script src="app.js"></script>
 </body>
 
