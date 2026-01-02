@@ -348,7 +348,7 @@ class NumbersAnalyzer:
     LSTM_WINDOW_SIZE = 10  # LSTMで使用するシーケンス長（過去10回のデータ）
     # LSTMの学習に使用する最大サンプル数
     # 影響度: ★★★（データ量を制限して学習時間を短縮）
-    LSTM_MAX_TRAINING_SAMPLES = 1000
+    LSTM_MAX_TRAINING_SAMPLES = 500
     # LSTMの学習エポック数（高速化のため5）
     # 影響度: ★★★（増やしすぎると学習時間が激増します。通常は50-100必要ですが5に制限中）
     LSTM_EPOCHS = 5
@@ -401,11 +401,14 @@ class NumbersAnalyzer:
     # --- t-SNE パラメータ（Fullモードのみ） ---
     # t-SNEは計算量がO(N^2)で増えるため、データ数が最大のボトルネックになります。
     # 影響度: ★★★（データ数を増やすと指数関数的に重くなります）  
-    TSNE_MAX_DATA_POINTS_LIGHT = 5
-    TSNE_MAX_DATA_POINTS_FULL = 250
+    TSNE_MAX_DATA_POINTS_LIGHT = 50
+    TSNE_MAX_DATA_POINTS_FULL = 500
 
-    # --- PCA パラメータ ---
-    PCA_MAX_DATA_POINTS = 50 # 影響度: ★★☆
+    PCA_MAX_DATA_POINTS = 100 # 影響度: ★★☆ (50から100に増加)
+    
+    # --- 変化点検出 パラメータ ---
+    # PELTアルゴリズムなどはデータ量に対して計算量が非線形に増えるため制限が必要。
+    CHANGE_POINTS_MAX_DATA_POINTS = 500 # 影響度: ★★★
     
     # --- 遺伝的アルゴリズム パラメータ ---
     GENETIC_POPULATION_SIZE = 10 # 個体数（影響度: ★★★）
@@ -2247,8 +2250,18 @@ class NumbersAnalyzer:
         
         change_points = {}
         
+        # データ量を制限（計算コスト削減のため）
+        max_points = self.CHANGE_POINTS_MAX_DATA_POINTS
+        if len(self.df) > max_points:
+            print(f"[detect_change_points] データ量を{max_points}件に制限して計算します（全{len(self.df)}件中）")
+            target_df = self.df.iloc[-max_points:].copy()
+            offset = len(self.df) - max_points
+        else:
+            target_df = self.df
+            offset = 0
+            
         for pos in ['hundred', 'ten', 'one']:
-            data = self.df[pos].values.astype(float)
+            data = target_df[pos].values.astype(float)
             
             if len(data) < 20:
                 continue
@@ -2264,11 +2277,13 @@ class NumbersAnalyzer:
                 # 変化点の日付を取得
                 change_dates = []
                 for idx in change_indices:
-                    if idx < len(self.df):
-                        change_dates.append(self.df.iloc[idx]['date'].strftime('%Y-%m-%d'))
+                    # offsetを足して元のインデックスに戻す
+                    original_idx = idx + offset
+                    if original_idx < len(self.df):
+                        change_dates.append(self.df.iloc[original_idx]['date'].strftime('%Y-%m-%d'))
                 
                 change_points[pos] = {
-                    'change_indices': [int(x) for x in change_indices],
+                    'change_indices': [int(x + offset) for x in change_indices],
                     'change_dates': change_dates,
                     'n_change_points': len(change_indices),
                     'segments': len(result)
@@ -2973,7 +2988,9 @@ class NumbersAnalyzer:
         conformal_pred = None
         try:
             print("[ensemble_predict] コンフォーマル予測を実行中...")
-            conformal_pred = self.predict_with_conformal(base_method='lightgbm')  # 高速化のためlightgbmに変更
+            conformal_start = time.time()
+            conformal_pred = self.predict_with_conformal(base_method='lightgbm')
+            print(f"[ensemble_predict] コンフォーマル予測完了（経過時間: {time.time() - conformal_start:.1f}秒）")
         except Exception as e:
             print(f"[ensemble_predict] コンフォーマル予測をスキップ: {e}")
         
@@ -2981,11 +2998,13 @@ class NumbersAnalyzer:
         kalman_pred = None
         try:
             print("[ensemble_predict] カルマンフィルタ予測を実行中...")
+            kalman_start = time.time()
             kalman_pred = self.predict_with_kalman()
+            print(f"[ensemble_predict] カルマンフィルタ予測完了（経過時間: {time.time() - kalman_start:.1f}秒）")
         except Exception as e:
             print(f"[ensemble_predict] カルマンフィルタ予測をスキップ: {e}")
         
-        print(f"[ensemble_predict] すべての予測手法完了（総経過時間: {time.time() - start_time:.1f}秒）")
+        print(f"[ensemble_predict] すべての予測手法完了（累計経過時間: {time.time() - start_time:.1f}秒）")
         
         # 各手法の予測を集計
         set_votes = {}
@@ -3145,13 +3164,19 @@ class NumbersAnalyzer:
         
         continuity_analysis = None
         try:
+            print("[ensemble_predict] 連続性分析を実行中...")
+            continuity_start = time.time()
             continuity_analysis = self.analyze_continuity()
+            print(f"[ensemble_predict] 連続性分析完了（経過時間: {time.time() - continuity_start:.1f}秒）")
         except Exception as e:
             print(f"[ensemble_predict] 連続性分析をスキップ: {e}")
         
         change_points = None
         try:
+            print("[ensemble_predict] 変化点検出を実行中...")
+            change_start = time.time()
             change_points = self.detect_change_points()
+            print(f"[ensemble_predict] 変化点検出完了（経過時間: {time.time() - change_start:.1f}秒）")
         except Exception as e:
             print(f"[ensemble_predict] 変化点検出をスキップ: {e}")
         
