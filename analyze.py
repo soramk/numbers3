@@ -341,78 +341,79 @@ class NumbersAnalyzer:
     # 学習に使用するデータ件数（最新N件のみを使用して高速化）
     # ★重要: これを増やすと、RandomForest, XGBoost, LightGBM, LSTMなど全ての学習時間が比例して伸びます。
     # 影響度: ★★☆（全モデルの学習時間に影響）
-    PREDICTION_MAX_TRAINING_SAMPLES = 100  
+    # 10分程度の動作を目指して 100 -> 1500 に大幅増加
+    PREDICTION_MAX_TRAINING_SAMPLES = 1500  
     
     # --- LSTM専用設定（Fullモードのみ） ---
     # LSTMは計算コストが非常に高いです。
     LSTM_WINDOW_SIZE = 10  # LSTMで使用するシーケンス長（過去10回のデータ）
     # LSTMの学習に使用する最大サンプル数
     # 影響度: ★★★（データ量を制限して学習時間を短縮）
-    LSTM_MAX_TRAINING_SAMPLES = 500
-    # LSTMの学習エポック数（高速化のため5）
-    # 影響度: ★★★（増やしすぎると学習時間が激増します。通常は50-100必要ですが5に制限中）
-    LSTM_EPOCHS = 5
+    LSTM_MAX_TRAINING_SAMPLES = 1000
+    # LSTMの学習エポック数（精度向上のため100）
+    # 影響度: ★★★（増やしすぎると学習時間が激増します。通常は50-100必要）
+    LSTM_EPOCHS = 100
     LSTM_BATCH_SIZE = 32  # LSTMのバッチサイズ（影響度: ★★☆）
 
     # --- HMM パラメータ ---
     HMM_N_COMPONENTS = 5  # 状態数（影響度: ★★★）
-    HMM_N_ITER = 50       # 最大イテレーション数（影響度: ★★★）
+    HMM_N_ITER = 200      # 最大イテレーション数（影響度: ★★★）
     
     # --- ARIMA パラメータ ---
     ARIMA_ORDER = (2, 1, 2) # ARIMA(p, d, q) パラメータ（影響度: ★★☆）
     
     # --- Random Forest パラメータ ---
     # 並列処理が効くので比較的早いですが、決定木の数に比例します。
-    RF_N_ESTIMATORS = 100  # Random Forestの木の数（影響度: ★★☆）
+    RF_N_ESTIMATORS = 200  # Random Forestの木の数（影響度: ★★☆）
     RF_MAX_DEPTH = 10  # Random Forestの最大深度（影響度: ★☆☆）
     
     # --- XGBoost パラメータ ---
     # 勾配ブースティングは逐次処理なので、木の数を増やすと時間がかかります。
-    XGB_N_ESTIMATORS = 30  # XGBoostの木の数（影響度: ★★☆）
+    XGB_N_ESTIMATORS = 100  # XGBoostの木の数（影響度: ★★☆）
     XGB_MAX_DEPTH = 5  # XGBoostの最大深度（影響度: ★☆☆）
     XGB_LEARNING_RATE = 0.1  # XGBoostの学習率（影響度: ★☆☆）
     
     # --- LightGBM パラメータ ---
     # 高速ですが、データ数が少ないとオーバーフィットしやすいです。
-    LGB_N_ESTIMATORS = 50  # LightGBMの木の数（影響度: ★★☆）
+    LGB_N_ESTIMATORS = 100  # LightGBMの木の数（影響度: ★★☆）
     LGB_MAX_DEPTH = 5  # LightGBMの最大深度（影響度: ★☆☆）
     LGB_LEARNING_RATE = 0.1  # LightGBMの学習率（影響度: ★☆☆）
     
     # --- Stacking パラメータ（Fullモードのみ） ---
     # ベースモデルの数 × バリデーション分割数(CV) の回数だけ学習が走るため、非常に重いです。
-    # スタッキングのクロスバリデーション分割数（高速化のため2）
-    # 影響度: ★★★（これを5などにすると計算時間が2.5倍になります）
-    STACKING_CV = 2
+    # スタッキングのクロスバリデーション分割数（精度向上のため5）
+    # 影響度: ★★★
+    STACKING_CV = 5
     
     # スタッキング内のRandom Forest
-    STACKING_RF_N_ESTIMATORS = 30  # スタッキング内のRandom Forestの木の数（影響度: ★★☆）
+    STACKING_RF_N_ESTIMATORS = 100  # スタッキング内のRandom Forestの木の数（影響度: ★★☆）
     STACKING_RF_MAX_DEPTH = 6  # スタッキング内のRandom Forestの最大深度（影響度: ★☆☆）
     
     # スタッキング内のXGBoost
-    STACKING_XGB_N_ESTIMATORS = 30  # スタッキング内のXGBoostの木の数（影響度: ★★☆）
+    STACKING_XGB_N_ESTIMATORS = 100  # スタッキング内のXGBoostの木の数（影響度: ★★☆）
     STACKING_XGB_MAX_DEPTH = 5  # スタッキング内のXGBoostの最大深度（影響度: ★☆☆）
     STACKING_XGB_LEARNING_RATE = 0.1  # スタッキング内のXGBoostの学習率（影響度: ★☆☆）
     
     # スタッキング内のLightGBM
-    STACKING_LGB_N_ESTIMATORS = 30  # スタッキング内のLightGBMの木の数（影響度: ★★☆）
+    STACKING_LGB_N_ESTIMATORS = 100  # スタッキング内のLightGBMの木の数（影響度: ★★☆）
     STACKING_LGB_MAX_DEPTH = 5  # スタッキング内のLightGBMの最大深度（影響度: ★☆☆）
     STACKING_LGB_LEARNING_RATE = 0.1  # スタッキング内のLightGBMの学習率（影響度: ★☆☆）
 
     # --- t-SNE パラメータ（Fullモードのみ） ---
     # t-SNEは計算量がO(N^2)で増えるため、データ数が最大のボトルネックになります。
     # 影響度: ★★★（データ数を増やすと指数関数的に重くなります）  
-    TSNE_MAX_DATA_POINTS_LIGHT = 50
-    TSNE_MAX_DATA_POINTS_FULL = 500
+    TSNE_MAX_DATA_POINTS_LIGHT = 500
+    TSNE_MAX_DATA_POINTS_FULL = 1500
 
-    PCA_MAX_DATA_POINTS = 100 # 影響度: ★★☆ (50から100に増加)
+    PCA_MAX_DATA_POINTS = 500 # 影響度: ★★☆
     
     # --- 変化点検出 パラメータ ---
     # PELTアルゴリズムなどはデータ量に対して計算量が非線形に増えるため制限が必要。
-    CHANGE_POINTS_MAX_DATA_POINTS = 500 # 影響度: ★★★
+    CHANGE_POINTS_MAX_DATA_POINTS = 2000 # 影響度: ★★★
     
     # --- 遺伝的アルゴリズム パラメータ ---
-    GENETIC_POPULATION_SIZE = 10 # 個体数（影響度: ★★★）
-    GENETIC_GENERATIONS = 5     # 世代数（影響度: ★★★）
+    GENETIC_POPULATION_SIZE = 100 # 個体数（影響度: ★★★）
+    GENETIC_GENERATIONS = 200     # 世代数（影響度: ★★★）
     
     # --- 統計的予測・その他 ---
     CONFORMAL_ALPHA = 0.1 # 信頼水準（影響度: ★☆☆）
