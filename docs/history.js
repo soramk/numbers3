@@ -15,6 +15,33 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 });
 
+/**
+ * 翌営業日（次の抽選日）を計算する
+ * ナンバーズ3は月～金に抽選があるため、土日は翌週月曜になる
+ * @param {string} dateStr - YYYY-MM-DD形式の日付
+ * @returns {string} 翌営業日のYYYY-MM-DD形式
+ */
+function getNextDrawDate(dateStr) {
+    const date = new Date(dateStr + 'T00:00:00+09:00');
+    // 翌日に進める
+    date.setDate(date.getDate() + 1);
+
+    // 土曜(6)の場合は月曜(翌々日)へ
+    // 日曜(0)の場合は月曜(翌日)へ
+    const dayOfWeek = date.getDay();
+    if (dayOfWeek === 6) { // 土曜
+        date.setDate(date.getDate() + 2);
+    } else if (dayOfWeek === 0) { // 日曜
+        date.setDate(date.getDate() + 1);
+    }
+
+    // YYYY-MM-DD形式に戻す
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
 async function initHistory() {
     const historyResponse = await fetch('data/prediction_history.json');
     if (!historyResponse.ok) throw new Error('History list not found');
@@ -37,16 +64,33 @@ async function initHistory() {
     const predictionDetails = await Promise.all(
         targetHistory.map(async (item) => {
             try {
-                // 当選番号の特定: 
-                // この予測日 (item.date) の結果は、historyList のどこかの statistics.last_date に記録されている
-                const resultEntry = historyList.find(h => h.statistics.last_date === item.date);
+                // 予測時刻の判定: 当選発表は18:45頃なので、それ以前の予測はその日の結果を対象とする
+                // それ以降の予測は翌営業日（次の抽選日）の結果を対象とする
+                const predictionTime = item.time; // "HHMMSS" 形式
+                const predictionHour = parseInt(predictionTime.substring(0, 2), 10);
+                const predictionMinute = parseInt(predictionTime.substring(2, 4), 10);
+                const isBeforeResult = (predictionHour < 18) || (predictionHour === 18 && predictionMinute < 45);
+
+                // 対象となる結果日を決定
+                let targetResultDate;
+                if (isBeforeResult) {
+                    // 当選発表前の予測 → その日の結果を対象とする
+                    targetResultDate = item.date;
+                } else {
+                    // 当選発表後の予測 → 翌営業日の結果を対象とする
+                    targetResultDate = getNextDrawDate(item.date);
+                }
+
+                // 当選番号の特定: targetResultDate の結果は、historyList のどこかの statistics.last_date に記録されている
+                const resultEntry = historyList.find(h => h.statistics.last_date === targetResultDate);
 
                 const res = await fetch(`data/${item.file}`);
                 if (!res.ok) return null;
                 return {
                     ...item,
                     data: await res.json(),
-                    actualResult: resultEntry ? resultEntry.statistics.last_number : null
+                    actualResult: resultEntry ? resultEntry.statistics.last_number : null,
+                    targetDate: targetResultDate // 表示用に追加
                 };
             } catch (e) {
                 return null;
@@ -118,7 +162,7 @@ function renderHistory(predictionDetails) {
                     <div class="flex items-center gap-1">
                         ${renderNumbers(actualResult || '???')}
                     </div>
-                    ${actualResult ? `<div class="text-[10px] text-gray-400 mt-1">${entry.date} の結果</div>` : ''}
+                    ${actualResult ? `<div class="text-[10px] text-gray-400 mt-1">${entry.targetDate} の結果</div>` : ''}
                 </td>
                 <td class="px-6 py-4 text-sm">
                     <div class="flex flex-wrap gap-2">${setHtml}</div>
