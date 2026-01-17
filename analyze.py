@@ -2842,54 +2842,56 @@ class NumbersAnalyzer:
         Returns:
             予測結果の辞書
         """
-        patterns = self.extract_frequent_patterns(top_n=10)
-        predictions = {}
+        patterns = self.extract_frequent_patterns(top_n=20)  # より多くのパターンを取得
         
         # 直近の数字を取得
         last_hundred = int(self.df.iloc[-1]['hundred'])
         last_ten = int(self.df.iloc[-1]['ten'])
         last_one = int(self.df.iloc[-1]['one'])
+        last_num = f"{last_hundred}{last_ten}{last_one}"
         
-        # 百の位と十の位の組み合わせから予測
-        hundred_ten_key = f"{last_hundred}{last_ten}"
-        if hundred_ten_key in patterns['hundred_ten_top']:
-            # 頻出パターンから次の一の位を予測
-            # 実際には、この組み合わせの後に来る一の位の頻度を見る必要がある
-            # 簡易版として、最も頻出する下2桁から予測
-            if patterns['mini_top']:
-                most_common_mini = list(patterns['mini_top'].keys())[0]
-                predicted_one = int(most_common_mini[1])
-            else:
-                predicted_one = last_one
-        else:
-            predicted_one = last_one
+        # 頻出するセット予測から前回当選番号を除外して選択
+        set_top_list = list(patterns['set_top'].keys())
+        selected_set = None
+        for candidate in set_top_list:
+            if candidate != last_num:
+                selected_set = candidate
+                break
         
-        # 十の位と一の位の組み合わせから予測
-        ten_one_key = f"{last_ten}{last_one}"
-        if ten_one_key in patterns['ten_one_top']:
-            # 頻出パターンから次の百の位を予測
-            if patterns['set_top']:
-                most_common_set = list(patterns['set_top'].keys())[0]
-                predicted_hundred = int(most_common_set[0])
-            else:
-                predicted_hundred = last_hundred
-        else:
-            predicted_hundred = last_hundred
+        # 前回除外候補がなければ2番目を選択（極めて稀）
+        if selected_set is None and len(set_top_list) > 1:
+            selected_set = set_top_list[1]
+        elif selected_set is None:
+            # フォールバック：マルコフ的に次の数字を推測
+            selected_set = f"{(last_hundred + 1) % 10}{(last_ten + 1) % 10}{(last_one + 1) % 10}"
         
-        # 十の位はマルコフ連鎖を使用
-        predictions['hundred'] = predicted_hundred
-        predictions['ten'] = last_ten  # 簡易版
-        predictions['one'] = predicted_one
+        predicted_hundred = int(selected_set[0])
+        predicted_ten = int(selected_set[1])
+        predicted_one = int(selected_set[2])
         
-        set_pred = f"{predictions['hundred']}{predictions['ten']}{predictions['one']}"
-        mini_pred = f"{predictions['ten']}{predictions['one']}"
+        # 同様にミニ予測も前回と異なるものを選択
+        mini_top_list = list(patterns['mini_top'].keys())
+        last_mini = f"{last_ten}{last_one}"
+        selected_mini = None
+        for candidate in mini_top_list:
+            if candidate != last_mini:
+                selected_mini = candidate
+                break
+        
+        if selected_mini is None and len(mini_top_list) > 1:
+            selected_mini = mini_top_list[1]
+        elif selected_mini is None:
+            selected_mini = f"{(last_ten + 1) % 10}{(last_one + 1) % 10}"
+        
+        set_pred = selected_set
+        mini_pred = selected_mini
         
         return {
             'method': 'pattern',
             'set_prediction': set_pred,
             'mini_prediction': mini_pred,
             'confidence': 0.68,
-            'reason': '頻出パターン分析から予測'
+            'reason': '頻出パターン分析から予測（前回当選番号は除外）'
         }
     
     def ensemble_predict(self, update_info: Optional[Dict[str, any]] = None, mode: str = 'light') -> Dict[str, any]:
@@ -3058,13 +3060,30 @@ class NumbersAnalyzer:
             set_votes[set_num] = set_votes.get(set_num, 0) + confidence * weight
             mini_votes[mini_num] = mini_votes.get(mini_num, 0) + confidence * weight
         
-        # 最も支持された予測を選択
-        best_set = max(set_votes.items(), key=lambda x: x[1])
-        best_mini = max(mini_votes.items(), key=lambda x: x[1])
+        # 前回当選番号を取得
+        last_hundred = int(self.df.iloc[-1]['hundred'])
+        last_ten = int(self.df.iloc[-1]['ten'])
+        last_one = int(self.df.iloc[-1]['one'])
+        last_number = f"{last_hundred}{last_ten}{last_one}"
+        last_mini = f"{last_ten}{last_one}"
         
-        # トップ5のセット予測
-        set_top5 = sorted(set_votes.items(), key=lambda x: x[1], reverse=True)[:5]
-        mini_top5 = sorted(mini_votes.items(), key=lambda x: x[1], reverse=True)[:5]
+        # 前回当選番号を除外して候補をソート
+        set_votes_filtered = {k: v for k, v in set_votes.items() if k != last_number}
+        mini_votes_filtered = {k: v for k, v in mini_votes.items() if k != last_mini}
+        
+        # フィルタ後に候補がない場合は除外せずに使用（稀なケース）
+        if not set_votes_filtered:
+            set_votes_filtered = set_votes
+        if not mini_votes_filtered:
+            mini_votes_filtered = mini_votes
+        
+        # 最も支持された予測を選択（前回当選番号を除外済み）
+        best_set = max(set_votes_filtered.items(), key=lambda x: x[1])
+        best_mini = max(mini_votes_filtered.items(), key=lambda x: x[1])
+        
+        # トップ5のセット予測（前回当選番号を除外済み）
+        set_top5 = sorted(set_votes_filtered.items(), key=lambda x: x[1], reverse=True)[:5]
+        mini_top5 = sorted(mini_votes_filtered.items(), key=lambda x: x[1], reverse=True)[:5]
         
         # 総重みで正規化
         total_weight = sum(weights.get(pred['method'], 0.65) for pred in predictions_list)
