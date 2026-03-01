@@ -3,43 +3,44 @@ name: Daily Prediction Update
 on:
   schedule:
     # 毎日 22:00 JST (13:00 UTC) に実行
-    - cron: '0 13 * * *'
-  workflow_dispatch:  # 手動実行を許可
+    # しばらく停止（2026/3/1時点）
+    # - cron: '0 13 * * *'
+  workflow_dispatch: # 手動実行を許可
     inputs:
       mode:
-        description: 'Execution Mode (light/full)'
+        description: "Execution Mode (light/full)"
         required: true
-        default: 'light'
+        default: "light"
         type: choice
         options:
-        - light
-        - full
+          - light
+          - full
 
 jobs:
   update-prediction:
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    
-    timeout-minutes: 360  # 暴走防止のため360分でタイムアウト
+
+    timeout-minutes: 360 # 暴走防止のため360分でタイムアウト
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-      
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
-          cache: 'pip'  # pipパッケージをキャッシュしてインストール時間を短縮
-      
+          python-version: "3.11"
+          cache: "pip" # pipパッケージをキャッシュしてインストール時間を短縮
+
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-      
+
       - name: Run analysis
         id: run-analysis
         run: |
@@ -49,16 +50,16 @@ jobs:
           python analyze.py --mode $MODE
           echo "analysis_completed=true" >> $GITHUB_OUTPUT
         continue-on-error: true
-      
+
       - name: Check for changes
         id: check-changes
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          
+
           # 変更があるファイルをチェック
           CHANGED_FILES=$(git status --porcelain)
-          
+
           if [ -z "$CHANGED_FILES" ]; then
             echo "has_changes=false" >> $GITHUB_OUTPUT
             echo "変更されたファイルはありません"
@@ -67,22 +68,21 @@ jobs:
             echo "変更されたファイル:"
             echo "$CHANGED_FILES"
           fi
-      
+
       - name: Commit and push all changes
         if: steps.check-changes.outputs.has_changes == 'true'
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          
+
           # すべての変更をステージング（データファイル、予測ファイル、履歴ファイルを含む）
           git add -A
-          
+
           # コミットメッセージを作成
           COMMIT_MSG="Auto update: $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
-          
+
           # コミット（変更がない場合はスキップ）
           git commit -m "$COMMIT_MSG" || exit 0
-          
+
           # プッシュ
           git push
-
